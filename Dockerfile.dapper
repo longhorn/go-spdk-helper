@@ -11,7 +11,7 @@ ENV DAPPER_DOCKER_SOCKET true
 ENV DAPPER_ENV TAG REPO
 ENV DAPPER_OUTPUT bin coverage.out
 ENV DAPPER_RUN_ARGS --privileged -v /dev:/host/dev -v /proc:/host/proc
-ENV DAPPER_SOURCE /go/src/github.com/longhorn/go-spdk-helper
+ENV DAPPER_SOURCE /go/src/github.com/shuo-wu/go-spdk-helper
 WORKDIR ${DAPPER_SOURCE}
 
 # Install packages
@@ -20,7 +20,7 @@ RUN apt-get update && \
     linux-libc-dev pkg-config devscripts libaio-dev libc6-dev gcc meson \
     python3-pyelftools python3-pip uuid-dev libssl-dev libibverbs-dev libfuse-dev \
     libiscsi-dev zlib1g-dev libfdt-dev libpcap0.8-dev libncurses-dev \
-    libcunit1-dev build-essential nasm autoconf libtool automake
+    libcunit1-dev build-essential nasm autoconf libtool automake linux-image-extra-virtual
 
 # needed for ${!var} substitution
 RUN rm -f /bin/sh && ln -s /bin/bash /bin/sh
