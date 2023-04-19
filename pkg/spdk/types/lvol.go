@@ -1,5 +1,10 @@
 package types
 
+import (
+	"fmt"
+	"strings"
+)
+
 type BdevDriverSpecificLvol struct {
 	LvolStoreUUID string   `json:"lvol_store_uuid"`
 	BaseBdev      string   `json:"base_bdev"`
@@ -78,4 +83,24 @@ type BdevLvolDecoupleParentRequest struct {
 type BdevLvolResizeRequest struct {
 	Name string `json:"name"`
 	Size uint64 `json:"size"`
+}
+
+func GetLvolAlias(lvsName, lvolName string) string {
+	return fmt.Sprintf("%s/%s", lvsName, lvolName)
+}
+
+func GetLvsNameFromAlias(alias string) string {
+	splitRes := strings.Split(alias, "/")
+	if len(splitRes) != 2 {
+		return ""
+	}
+	return splitRes[0]
+}
+
+func GetLvolNameFromAlias(alias string) string {
+	splitRes := strings.Split(alias, "/")
+	if len(splitRes) != 2 {
+		return ""
+	}
+	return splitRes[1]
 }
