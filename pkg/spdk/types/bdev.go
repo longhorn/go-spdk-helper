@@ -27,7 +27,8 @@ type BdevInfoBasic struct {
 
 	AssignedRateLimits AssignedRateLimits `json:"assigned_rate_limits"`
 
-	Claimed bool `json:"claimed"`
+	Claimed   bool      `json:"claimed"`
+	ClaimType ClaimType `json:"claim_type,omitempty"`
 
 	Zoned            bool   `json:"zoned"`
 	ZoneSize         uint64 `json:"zone_size,omitempty"`
@@ -48,6 +49,16 @@ type AssignedRateLimits struct {
 	RMbytesPerSec  uint64 `json:"r_mbytes_per_sec"`
 	WMbytesPerSec  uint64 `json:"w_mbytes_per_sec"`
 }
+
+type ClaimType string
+
+const (
+	ClaimTypeNone                = ClaimType("none")
+	ClaimTypeExclusiveWrite      = ClaimType("exclusive_write")
+	ClaimTypeReadManyWriteOne    = ClaimType("read_many_write_one")
+	ClaimTypeReadManyWriteNone   = ClaimType("read_many_write_none")
+	ClaimTypeReadManyWriteShared = ClaimType("read_many_write_shared")
+)
 
 type SupportedIoTypes struct {
 	Read            bool `json:"read"`
