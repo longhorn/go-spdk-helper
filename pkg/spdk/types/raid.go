@@ -19,7 +19,15 @@ type BdevRaidInfo struct {
 	RaidLevel              BdevRaidLevel `json:"raid_level"`
 	NumBaseBdevs           uint8         `json:"num_base_bdevs"`
 	NumBaseBdevsDiscovered uint8         `json:"num_base_bdevs_discovered"`
-	BaseBdevsList          []string      `json:"base_bdevs_list"`
+	BaseBdevsList          []BaseBdev    `json:"base_bdevs_list"`
+}
+
+type BaseBdev struct {
+	Name         string `json:"name"`
+	UUID         string `json:"uuid"`
+	IsConfigured bool   `json:"is_configured"`
+	DataOffset   uint64 `json:"data_offset"`
+	DataSize     uint64 `json:"data_size"`
 }
 
 type BdevRaidCreateRequest struct {
