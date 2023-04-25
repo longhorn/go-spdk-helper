@@ -9,7 +9,6 @@ import (
 
 	"github.com/longhorn/nsfilelock"
 
-	"github.com/longhorn/go-spdk-helper/pkg/types"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
@@ -36,20 +35,15 @@ type Initiator struct {
 	logger logrus.FieldLogger
 }
 
-func NewInitiator(subsystemNQN, transportServiceID string) (*Initiator, error) {
-	// localIP, err := util.GetIPToHost()
-	// if err != nil {
-	// 	return err
-	// }
-
+func NewInitiator(subsystemNQN, transportAddress, transportServiceID string) (*Initiator, error) {
 	dev := &Initiator{
 		SubsystemNQN:       subsystemNQN,
-		TransportAddress:   types.LocalIP,
+		TransportAddress:   transportAddress,
 		TransportServiceID: transportServiceID,
 
 		logger: logrus.WithFields(logrus.Fields{
 			"subsystemNQN":       subsystemNQN,
-			"transportAddress":   types.LocalIP,
+			"transportAddress":   transportAddress,
 			"transportServiceID": transportServiceID,
 		}),
 	}
