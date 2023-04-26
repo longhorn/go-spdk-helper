@@ -224,7 +224,7 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	c.Assert(int(raidList[0].NumBaseBdevs), Equals, 2)
 	c.Assert(int(raidList[0].NumBaseBdevsDiscovered), Equals, 2)
 	c.Assert(len(raidList[0].BaseBdevsList), Equals, 2)
-	if raidList[0].BaseBdevsList[0] != lvolUUID1 {
+	if raidList[0].BaseBdevsList[0].UUID != lvolUUID1 {
 		c.Assert(raidList[0].BaseBdevsList[0], Equals, lvolUUID2)
 		c.Assert(raidList[0].BaseBdevsList[1], Equals, lvolUUID1)
 	} else {
