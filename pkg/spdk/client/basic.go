@@ -357,7 +357,7 @@ func (c *Client) BdevRaidGetBdevs(category spdktypes.BdevRaidCategory) (bdevRaid
 
 // BdevNvmeAttachController constructs NVMe bdev.
 //
-//	"name": Name of the NVMe controller, prefix for each bdev name.
+//	"name": Name of the NVMe controller. And the corresponding bdev nvme name are same as the nvme namespace name, which is `{ControllerName}n1`
 //
 //	"subnqn": NVMe-oF target subnqn. It can be the nvmf subsystem nqn.
 //
