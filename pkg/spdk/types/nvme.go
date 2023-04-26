@@ -1,5 +1,7 @@
 package types
 
+import "fmt"
+
 type NvmeTransportType string
 
 const (
@@ -135,3 +137,7 @@ type BdevNvmeGetControllersRequest struct {
 // type BdevNvmeGetControllerHealthInfoRequest struct {
 //	Name string `json:"name"`
 // }
+
+func GetNvmeNamespaceName(controllerName string) string {
+	return fmt.Sprintf("%sn1", controllerName)
+}
