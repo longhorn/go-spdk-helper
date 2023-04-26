@@ -5,6 +5,8 @@ type BdevProductName string
 const (
 	BdevProductNameAio  = BdevProductName("AIO disk")
 	BdevProductNameLvol = BdevProductName("Logical Volume")
+	BdevProductNameRaid = BdevProductName("Raid Volume")
+	BdevProductNameNvme = BdevProductName("NVMe disk")
 )
 
 type BdevInfoBasic struct {
