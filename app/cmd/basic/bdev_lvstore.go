@@ -3,12 +3,12 @@ package basic
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/longhorn/go-spdk-helper/pkg/types"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
+	"github.com/longhorn/go-spdk-helper/pkg/types"
 )
 
 func BdevLvstoreCmd() cli.Command {
@@ -19,6 +19,7 @@ func BdevLvstoreCmd() cli.Command {
 			BdevLvstoreCreateCmd(),
 			BdevLvstoreDeleteCmd(),
 			BdevLvstoreGetCmd(),
+			BdevLvstoreRenameCmd(),
 		},
 	}
 }
@@ -66,6 +67,48 @@ func bdevLvstoreCreate(c *cli.Context) error {
 		return err
 	}
 	fmt.Println(string(bdevLvstoreCreateRespJSON))
+
+	return nil
+}
+
+func BdevLvstoreRenameCmd() cli.Command {
+	return cli.Command{
+		Name: "rename",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "old-name",
+				Usage: "Required. Old name of the logical volume store",
+			},
+			cli.StringFlag{
+				Name:  "new-name",
+				Usage: "Required. New name of the logical volume store",
+			},
+		},
+		Usage: "rename a bdev lvstore: \"rename --old-name <OLD NAME> --new-name <NEW NAME>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvstoreRename(c); err != nil {
+				logrus.WithError(err).Fatalf("Error running rename bdev lvstore command")
+			}
+		},
+	}
+}
+
+func bdevLvstoreRename(c *cli.Context) error {
+	spdkCli, err := client.NewClient()
+	if err != nil {
+		return err
+	}
+
+	renamed, err := spdkCli.BdevLvolRenameLvstore(c.String("old-name"), c.String("new-name"))
+	if err != nil {
+		return err
+	}
+
+	bdevLvstoreRenameRespJSON, err := json.Marshal(renamed)
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(bdevLvstoreRenameRespJSON))
 
 	return nil
 }
