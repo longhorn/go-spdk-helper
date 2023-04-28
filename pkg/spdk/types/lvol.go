@@ -39,6 +39,11 @@ type BdevLvolDeleteLvstoreRequest struct {
 	LvsName string `json:"lvs_name,omitempty"`
 }
 
+type BdevLvolRenameLvstoreRequest struct {
+	OldName string `json:"old_name"`
+	NewName string `json:"new_name"`
+}
+
 type BdevLvolGetLvstoreRequest struct {
 	UUID    string `json:"uuid,omitempty"`
 	LvsName string `json:"lvs_name,omitempty"`

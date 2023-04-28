@@ -132,6 +132,21 @@ func (c *Client) BdevLvolGetLvstore(lvsName, uuid string) (lvstoreInfoList []spd
 	return lvstoreInfoList, json.Unmarshal(cmdOutput, &lvstoreInfoList)
 }
 
+// BdevLvolRenameLvstore renames a logical volume store.
+func (c *Client) BdevLvolRenameLvstore(oldName, newName string) (renamed bool, err error) {
+	req := spdktypes.BdevLvolRenameLvstoreRequest{
+		OldName: oldName,
+		NewName: newName,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_rename_lvstore", req)
+	if err != nil {
+		return false, err
+	}
+
+	return renamed, json.Unmarshal(cmdOutput, &renamed)
+}
+
 // BdevLvolCreate create a logical volume on a logical volume store.
 //
 //	"lvol_name": Required. Name of logical volume to create. The bdev name/alias will be <LVSTORE NAME>/<LVOL NAME>.
