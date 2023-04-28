@@ -9,6 +9,8 @@ const (
 	LocalIP = "127.0.0.1"
 
 	MiB = 1 << 20
+
+	FrontendSPDKTCPBlockDev = "spdk-tcp-blockdev"
 )
 
 func GetNQN(name string) string {
