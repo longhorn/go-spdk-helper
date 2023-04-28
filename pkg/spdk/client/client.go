@@ -26,3 +26,10 @@ func NewClient() (*Client, error) {
 		jsonCli: jsonrpc.NewClient(conn),
 	}, nil
 }
+
+func (c *Client) Close() error {
+	if c.conn == nil {
+		return nil
+	}
+	return c.conn.Close()
+}
