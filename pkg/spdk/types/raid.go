@@ -13,13 +13,15 @@ const (
 )
 
 type BdevRaidInfo struct {
-	Name                   string        `json:"name"`
-	StripSizeKb            uint32        `json:"strip_size_kb"`
-	State                  string        `json:"state"`
-	RaidLevel              BdevRaidLevel `json:"raid_level"`
-	NumBaseBdevs           uint8         `json:"num_base_bdevs"`
-	NumBaseBdevsDiscovered uint8         `json:"num_base_bdevs_discovered"`
-	BaseBdevsList          []BaseBdev    `json:"base_bdevs_list"`
+	Name                    string        `json:"name,omitempty"`
+	StripSizeKb             uint32        `json:"strip_size_kb"`
+	State                   string        `json:"state"`
+	RaidLevel               BdevRaidLevel `json:"raid_level"`
+	NumBaseBdevs            uint8         `json:"num_base_bdevs"`
+	NumBaseBdevsDiscovered  uint8         `json:"num_base_bdevs_discovered"`
+	NumBaseBdevsOperational uint8         `json:"num_base_bdevs_operational,omitempty"`
+	BaseBdevsList           []BaseBdev    `json:"base_bdevs_list"`
+	Superblock              bool          `json:"superblock"`
 }
 
 type BaseBdev struct {
