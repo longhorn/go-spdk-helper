@@ -106,7 +106,7 @@ func (i *Initiator) StartInitiator() error {
 	return nil
 }
 
-func (i *Initiator) StopInitator() error {
+func (i *Initiator) StopInitiator() error {
 	lock := nsfilelock.NewLockWithTimeout(util.GetHostNamespacePath(HostProc), LockFile, LockTimeout)
 	if err := lock.Lock(); err != nil {
 		return errors.Wrap(err, "failed to lock")
