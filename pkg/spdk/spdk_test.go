@@ -217,20 +217,39 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 		c.Assert(deleted, Equals, true)
 	}()
 
-	raidList, err := spdkCli.BdevRaidGetBdevs(spdktypes.BdevRaidCategoryOnline)
+	// Test 2 kinds of raid get APIs
+	raidInfoList, err := spdkCli.BdevRaidGetInfoByCategory(spdktypes.BdevRaidCategoryOnline)
 	c.Assert(err, IsNil)
-	c.Assert(len(raidList), Equals, 1)
-	c.Assert(raidList[0].Name, Equals, raidName)
-	c.Assert(int(raidList[0].NumBaseBdevs), Equals, 2)
-	c.Assert(int(raidList[0].NumBaseBdevsDiscovered), Equals, 2)
-	c.Assert(len(raidList[0].BaseBdevsList), Equals, 2)
-	if raidList[0].BaseBdevsList[0].UUID != lvolUUID1 {
-		c.Assert(raidList[0].BaseBdevsList[0], Equals, lvolUUID2)
-		c.Assert(raidList[0].BaseBdevsList[1], Equals, lvolUUID1)
+	c.Assert(len(raidInfoList), Equals, 1)
+	c.Assert(raidInfoList[0].Name, Equals, raidName)
+	c.Assert(int(raidInfoList[0].NumBaseBdevs), Equals, 2)
+	c.Assert(int(raidInfoList[0].NumBaseBdevsDiscovered), Equals, 2)
+	c.Assert(len(raidInfoList[0].BaseBdevsList), Equals, 2)
+	if raidInfoList[0].BaseBdevsList[0].UUID != lvolUUID1 {
+		c.Assert(raidInfoList[0].BaseBdevsList[0].UUID, Equals, lvolUUID2)
+		c.Assert(raidInfoList[0].BaseBdevsList[1].UUID, Equals, lvolUUID1)
 	} else {
-		c.Assert(raidList[0].BaseBdevsList[0], Equals, lvolUUID1)
-		c.Assert(raidList[0].BaseBdevsList[1], Equals, lvolUUID2)
+		c.Assert(raidInfoList[0].BaseBdevsList[0].UUID, Equals, lvolUUID1)
+		c.Assert(raidInfoList[0].BaseBdevsList[1].UUID, Equals, lvolUUID2)
 	}
+	c.Assert(raidInfoList[0].BaseBdevsList[0].IsConfigured, Equals, true)
+	c.Assert(raidInfoList[0].BaseBdevsList[1].IsConfigured, Equals, true)
+	raidBdevList, err := spdkCli.BdevRaidGet(raidName, 0)
+	c.Assert(len(raidBdevList), Equals, 1)
+	raidBdev := raidBdevList[0]
+	c.Assert(int(raidBdev.DriverSpecific.Raid.NumBaseBdevs), Equals, 2)
+	c.Assert(int(raidBdev.DriverSpecific.Raid.NumBaseBdevsDiscovered), Equals, 2)
+	c.Assert(int(raidBdev.DriverSpecific.Raid.NumBaseBdevsOperational), Equals, 2)
+	c.Assert(len(raidBdev.DriverSpecific.Raid.BaseBdevsList), Equals, 2)
+	if raidBdev.DriverSpecific.Raid.BaseBdevsList[0].UUID != lvolUUID1 {
+		c.Assert(raidBdev.DriverSpecific.Raid.BaseBdevsList[0].UUID, Equals, lvolUUID2)
+		c.Assert(raidBdev.DriverSpecific.Raid.BaseBdevsList[1].UUID, Equals, lvolUUID1)
+	} else {
+		c.Assert(raidBdev.DriverSpecific.Raid.BaseBdevsList[0].UUID, Equals, lvolUUID1)
+		c.Assert(raidBdev.DriverSpecific.Raid.BaseBdevsList[1].UUID, Equals, lvolUUID2)
+	}
+	c.Assert(raidBdev.DriverSpecific.Raid.BaseBdevsList[0].IsConfigured, Equals, true)
+	c.Assert(raidBdev.DriverSpecific.Raid.BaseBdevsList[1].IsConfigured, Equals, true)
 
 	nqn := types.GetNQN(raidName)
 	err = spdkCli.StartExposeBdev(nqn, raidName, types.LocalIP, defaultPort1)

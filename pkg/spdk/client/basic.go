@@ -349,15 +349,52 @@ func (c *Client) BdevRaidDelete(name string) (deleted bool, err error) {
 	return deleted, json.Unmarshal(cmdOutput, &deleted)
 }
 
-// BdevRaidGetBdevs is used to list all the raid bdev details based on the input category requested.
+// BdevRaidGet gets information about raid bdevs.
 //
-//		"category": Required.
-//	   This should be one of 'all', 'online', 'configuring' or 'offline'.
-//		    'all' means all the raid bdevs whether they are online or configuring or offline.
-//		    'online' is the raid bdev which is registered with bdev layer.
-//		    'offline' is the raid bdev which is not registered with bdev as of now and it has encountered any error or user has requested to offline the raid bdev.
-//		    'configuring' is the raid bdev which does not have full configuration discovered yet.
-func (c *Client) BdevRaidGetBdevs(category spdktypes.BdevRaidCategory) (bdevRaidInfoList []spdktypes.BdevRaidInfo, err error) {
+//	"name": Optional. UUID or name of the raid.
+//		 	If this is not specified, the function will list all raid bdevs.
+//
+//	"timeout": Optional. 0 by default, meaning the method returns immediately whether the raid exists or not.
+func (c *Client) BdevRaidGet(name string, timeout uint64) (bdevRaidInfoList []spdktypes.BdevInfo, err error) {
+	req := spdktypes.BdevGetBdevsRequest{
+		Name:    name,
+		Timeout: timeout,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_get_bdevs", req)
+	if err != nil {
+		return nil, err
+	}
+	bdevInfoList := []spdktypes.BdevInfo{}
+	if err := json.Unmarshal(cmdOutput, &bdevInfoList); err != nil {
+		return nil, err
+	}
+
+	bdevRaidInfoList = []spdktypes.BdevInfo{}
+	for _, b := range bdevInfoList {
+		if b.ProductName != spdktypes.BdevProductNameRaid {
+			continue
+		}
+		if b.DriverSpecific.Raid == nil {
+			continue
+		}
+		// For the result of bdev_get_bdevs, this field is empty.
+		// To avoid confusion or potential issues, we will fill it manually here.
+		b.DriverSpecific.Raid.Name = name
+		bdevRaidInfoList = append(bdevRaidInfoList, b)
+	}
+
+	return bdevRaidInfoList, nil
+}
+
+// BdevRaidGetInfoByCategory is used to list all the raid info details based on the input category requested.
+//
+//	"category": Required. This should be one of 'all', 'online', 'configuring' or 'offline'.
+//		'all' means all the raid bdevs whether they are online or configuring or offline.
+//		'online' is the raid bdev which is registered with bdev layer.
+//		'offline' is the raid bdev which is not registered with bdev as of now and it has encountered any error or user has requested to offline the raid bdev.
+//		'configuring' is the raid bdev which does not have full configuration discovered yet.
+func (c *Client) BdevRaidGetInfoByCategory(category spdktypes.BdevRaidCategory) (bdevRaidInfoList []spdktypes.BdevRaidInfo, err error) {
 	req := spdktypes.BdevRaidGetBdevsRequest{
 		Category: category,
 	}
