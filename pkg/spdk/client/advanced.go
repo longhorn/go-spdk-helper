@@ -54,7 +54,7 @@ func (c *Client) StartExposeBdev(nqn, bdevName, ip, port string) error {
 	if err != nil {
 		return err
 	}
-	if len(nvmfTransportList) == 0 {
+	if nvmfTransportList != nil && len(nvmfTransportList) == 0 {
 		if _, err := c.NvmfCreateTransport(spdktypes.NvmeTransportTypeTCP); err != nil {
 			return err
 		}
@@ -76,14 +76,20 @@ func (c *Client) StartExposeBdev(nqn, bdevName, ip, port string) error {
 }
 
 func (c *Client) StopExposeBdev(nqn string) error {
-	nvmfTransportList, err := c.NvmfGetTransports(spdktypes.NvmeTransportTypeTCP, "")
+	var subsystem *spdktypes.NvmfSubsystem
+	subsystemList, err := c.NvmfGetSubsystems("")
 	if err != nil {
 		return err
 	}
-	if len(nvmfTransportList) == 0 {
-		if _, err := c.NvmfCreateTransport(spdktypes.NvmeTransportTypeTCP); err != nil {
-			return err
+	for _, s := range subsystemList {
+		if s.Nqn != nqn {
+			continue
 		}
+		subsystem = &s
+		break
+	}
+	if subsystem == nil {
+		return nil
 	}
 
 	listenerList, err := c.NvmfSubsystemGetListeners(nqn, "")
@@ -96,28 +102,14 @@ func (c *Client) StopExposeBdev(nqn string) error {
 		}
 	}
 
-	nsList, err := c.NvmfSubsystemsGetNss(nqn, "", 0)
-	if err != nil {
-		return err
-	}
-	for _, ns := range nsList {
+	for _, ns := range subsystem.Namespaces {
 		if _, err := c.NvmfSubsystemRemoveNs(nqn, ns.Nsid); err != nil {
 			return err
 		}
 	}
 
-	subsystemList, err := c.NvmfGetSubsystems("")
-	if err != nil {
+	if _, err := c.NvmfDeleteSubsystem(nqn, ""); err != nil {
 		return err
-	}
-	for _, s := range subsystemList {
-		if s.Nqn != nqn {
-			continue
-		}
-		if _, err := c.NvmfDeleteSubsystem(nqn, ""); err != nil {
-			return err
-		}
-		break
 	}
 
 	return nil
