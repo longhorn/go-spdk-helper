@@ -739,6 +739,10 @@ func (c *Client) NvmfSubsystemRemoveListener(nqn, traddr, trsvcid string, trtype
 //	"nqn": Required. Subsystem NQN.
 //
 //	"tgtName": Optional. Parent NVMe-oF target name.
+//
+// Note:
+//
+//  1. Trying to get listeners of a non-existing subsystem will return error: {"code": -32602, "message": "Invalid parameters"}
 func (c *Client) NvmfSubsystemGetListeners(nqn, tgtName string) (listenerList []spdktypes.NvmfSubsystemListener, err error) {
 	req := spdktypes.NvmfSubsystemGetListenersRequest{
 		Nqn:     nqn,
