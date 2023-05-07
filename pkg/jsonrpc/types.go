@@ -20,6 +20,18 @@ func NewMessage(id uint32, method string, params interface{}) *Message {
 	}
 }
 
+type RespErrorMsg string
+
+const (
+	RespErrorMsgNoSuchDevice = "No such device"
+)
+
+type RespErrorCode int32
+
+const (
+	RespErrorCodeNoSuchDevice = -19
+)
+
 type Response struct {
 	ID        uint32         `json:"id"`
 	Version   string         `json:"jsonrpc"`
@@ -28,10 +40,18 @@ type Response struct {
 }
 
 type ResponseError struct {
-	Code    int32  `json:"code"`
-	Message string `json:"message"`
+	Code    RespErrorCode `json:"code"`
+	Message RespErrorMsg  `json:"message"`
 }
 
-func (re *ResponseError) Error() string {
+func (re ResponseError) Error() string {
 	return fmt.Sprintf("{\n\t\"code\": %d,\n\t\"message\": \"%s\"\n}", re.Code, re.Message)
+}
+
+func IsJsonRPCRespErrorNoSuchDevice(err error) bool {
+	jsonRPCError, ok := err.(ResponseError)
+	if !ok {
+		return false
+	}
+	return jsonRPCError.Code == RespErrorCodeNoSuchDevice && jsonRPCError.Message == RespErrorMsgNoSuchDevice
 }
