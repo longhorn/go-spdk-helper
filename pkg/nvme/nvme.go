@@ -4,17 +4,13 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"strings"
 )
 
 const (
 	nvmeBinary = "nvme"
 
-	devPath = "/dev"
-
-	DefaultTransportType   = "tcp"
-	DefaultNVMeNamespaceID = 1
+	DefaultTransportType = "tcp"
 )
 
 type Device struct {
@@ -44,14 +40,6 @@ type Namespace struct {
 	MaximumLBA   uint32
 	PhysicalSize uint64
 	SectorSize   uint32
-}
-
-func GetControllerPath(controllerName string) string {
-	return filepath.Join(devPath, controllerName)
-}
-
-func GetDefaultStorageNamespacePath(controllerName string) string {
-	return filepath.Join(devPath, fmt.Sprintf("%sn%d", controllerName, DefaultNVMeNamespaceID))
 }
 
 func CheckForNVMeCliExistence(execute func(name string, args []string) (string, error)) error {

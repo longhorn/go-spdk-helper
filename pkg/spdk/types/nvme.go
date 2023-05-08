@@ -1,10 +1,5 @@
 package types
 
-import (
-	"fmt"
-	"strings"
-)
-
 type NvmeTransportType string
 
 const (
@@ -140,13 +135,3 @@ type BdevNvmeGetControllersRequest struct {
 // type BdevNvmeGetControllerHealthInfoRequest struct {
 //	Name string `json:"name"`
 // }
-
-const NvmeNamespaceSuffix = "n1"
-
-func GetNvmeNamespaceNameFromControllerName(controllerName string) string {
-	return fmt.Sprintf("%s%s", controllerName, NvmeNamespaceSuffix)
-}
-
-func GetNvmeControllerNameFromNamespaceName(nsName string) string {
-	return strings.TrimSuffix(nsName, NvmeNamespaceSuffix)
-}
