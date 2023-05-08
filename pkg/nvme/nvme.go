@@ -160,7 +160,7 @@ func GetDevices(ip, port, nqn string, execute func(name string, args []string) (
 	//  "Devices" : [
 	//    {
 	//      "Subsystem" : "nvme-subsys0",
-	//      "SubsystemNQN" : "nqn.2023-01.io.spdk:raid01",
+	//      "SubsystemNQN" : "nqn.2023-01.io.longhorn.spdk:raid01",
 	//      "Controllers" : [
 	//        {
 	//          "Controller" : "nvme0",
@@ -230,13 +230,16 @@ func GetDevices(ip, port, nqn string, execute func(name string, args []string) (
 			match = true
 			break
 		}
+		if len(d.Namespaces) == 0 {
+			continue
+		}
 		if match {
 			res = append(res, d)
 		}
 	}
 
 	if len(res) == 0 {
-		return nil, fmt.Errorf("nvme device with subsystem NQN %s and address %s:%s not found", nqn, ip, port)
+		return nil, fmt.Errorf("cannot find a valid nvme device with subsystem NQN %s and address %s:%s", nqn, ip, port)
 	}
 	return res, nil
 }
