@@ -2,13 +2,13 @@ package util
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os/exec"
 	"path/filepath"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -70,13 +70,6 @@ func (ne *NamespaceExecutor) ExecuteWithTimeout(timeout time.Duration, name stri
 	return ExecuteWithTimeout(timeout, NSBinary, ne.prepareCommandArgs(name, args))
 }
 
-func (ne *NamespaceExecutor) ExecuteWithoutTimeout(name string, args []string) (string, error) {
-	if ne.ns == "" {
-		return ExecuteWithoutTimeout(name, args)
-	}
-	return ExecuteWithoutTimeout(NSBinary, ne.prepareCommandArgs(name, args))
-}
-
 type TimeoutExecutor struct {
 	timeout time.Duration
 }
@@ -96,50 +89,19 @@ func Execute(binary string, args []string) (string, error) {
 }
 
 func ExecuteWithTimeout(timeout time.Duration, binary string, args []string) (string, error) {
-	var err error
-	cmd := exec.Command(binary, args...)
-	done := make(chan struct{})
+	ctx := context.Background()
+	if timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+	}
+	cmd := exec.CommandContext(ctx, binary, args...)
 
 	var output, stderr bytes.Buffer
 	cmd.Stdout = &output
 	cmd.Stderr = &stderr
 
-	go func() {
-		err = cmd.Run()
-		done <- struct{}{}
-	}()
-
-	select {
-	case <-done:
-	case <-time.After(timeout):
-		if cmd.Process != nil {
-			if err := cmd.Process.Kill(); err != nil {
-				logrus.Warnf("Problem killing process pid=%v: %s", cmd.Process.Pid, err)
-			}
-
-		}
-		return "", errors.Wrapf(err, "timeout executing: %v %v, output %s, stderr %s",
-			binary, args, output.String(), stderr.String())
-	}
-
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to execute: %v %v, output %s, stderr %s",
-			binary, args, output.String(), stderr.String())
-	}
-	return output.String(), nil
-}
-
-// TODO: Merge this with ExecuteWithTimeout
-
-func ExecuteWithoutTimeout(binary string, args []string) (string, error) {
-	var err error
-	var output, stderr bytes.Buffer
-
-	cmd := exec.Command(binary, args...)
-	cmd.Stdout = &output
-	cmd.Stderr = &stderr
-
-	if err = cmd.Run(); err != nil {
+	if err := cmd.Run(); err != nil {
 		return "", errors.Wrapf(err, "failed to execute: %v %v, output %s, stderr %s",
 			binary, args, output.String(), stderr.String())
 	}
@@ -160,9 +122,9 @@ func (ne *NamespaceExecutor) ExecuteWithStdin(name string, args []string, stdinS
 }
 
 func ExecuteWithStdin(binary string, args []string, stdinString string) (string, error) {
-	var err error
-	cmd := exec.Command(binary, args...)
-	done := make(chan struct{})
+	ctx, cancel := context.WithTimeout(context.Background(), CmdTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, binary, args...)
 
 	var output, stderr bytes.Buffer
 	cmd.Stdout = &output
@@ -178,25 +140,7 @@ func ExecuteWithStdin(binary string, args []string, stdinString string) (string,
 		io.WriteString(stdin, stdinString)
 	}()
 
-	go func() {
-		err = cmd.Run()
-		done <- struct{}{}
-	}()
-
-	select {
-	case <-done:
-	case <-time.After(CmdTimeout):
-		if cmd.Process != nil {
-			if err := cmd.Process.Kill(); err != nil {
-				logrus.Warnf("Problem killing process pid=%v: %s", cmd.Process.Pid, err)
-			}
-
-		}
-		return "", errors.Wrapf(err, "timeout executing: %v %v, output %s, stderr %s",
-			binary, args, output.String(), stderr.String())
-	}
-
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		return "", errors.Wrapf(err, "failed to execute: %v %v, output %s, stderr %s",
 			binary, args, output.String(), stderr.String())
 	}
