@@ -48,7 +48,7 @@ func (re ResponseError) Error() string {
 	return fmt.Sprintf("{\n\t\"code\": %d,\n\t\"message\": \"%s\"\n}", re.Code, re.Message)
 }
 
-func IsJsonRPCRespErrorNoSuchDevice(err error) bool {
+func IsJSONRPCRespErrorNoSuchDevice(err error) bool {
 	jsonRPCError, ok := err.(ResponseError)
 	if !ok {
 		return false
