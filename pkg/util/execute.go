@@ -13,11 +13,13 @@ import (
 
 const (
 	NSBinary = "nsenter"
+
+	CmdTimeout = time.Minute
 )
 
-var (
-	cmdTimeout = time.Minute // one minute by default
-)
+type Executor interface {
+	Execute(binary string, args []string) (string, error)
+}
 
 type NamespaceExecutor struct {
 	ns string
@@ -75,8 +77,22 @@ func (ne *NamespaceExecutor) ExecuteWithoutTimeout(name string, args []string) (
 	return ExecuteWithoutTimeout(NSBinary, ne.prepareCommandArgs(name, args))
 }
 
+type TimeoutExecutor struct {
+	timeout time.Duration
+}
+
+func NewTimeoutExecutor(timeout time.Duration) *TimeoutExecutor {
+	return &TimeoutExecutor{
+		timeout: timeout,
+	}
+}
+
+func (te *TimeoutExecutor) Execute(binary string, args []string) (string, error) {
+	return ExecuteWithTimeout(te.timeout, binary, args)
+}
+
 func Execute(binary string, args []string) (string, error) {
-	return ExecuteWithTimeout(cmdTimeout, binary, args)
+	return ExecuteWithTimeout(CmdTimeout, binary, args)
 }
 
 func ExecuteWithTimeout(timeout time.Duration, binary string, args []string) (string, error) {
@@ -169,7 +185,7 @@ func ExecuteWithStdin(binary string, args []string, stdinString string) (string,
 
 	select {
 	case <-done:
-	case <-time.After(cmdTimeout):
+	case <-time.After(CmdTimeout):
 		if cmd.Process != nil {
 			if err := cmd.Process.Kill(); err != nil {
 				logrus.Warnf("Problem killing process pid=%v: %s", cmd.Process.Pid, err)

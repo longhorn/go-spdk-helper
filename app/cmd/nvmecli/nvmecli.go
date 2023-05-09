@@ -46,7 +46,7 @@ func DiscoverCmd() cli.Command {
 }
 
 func discover(c *cli.Context) error {
-	subnqn, err := nvme.DiscoverTarget(c.String("traddr"), c.String("trsvcid"), util.Execute)
+	subnqn, err := nvme.DiscoverTarget(c.String("traddr"), c.String("trsvcid"), util.NewTimeoutExecutor(util.CmdTimeout))
 	if err != nil {
 		return err
 	}
@@ -81,14 +81,14 @@ func ConnectCmd() cli.Command {
 		Usage: "Connect a NVMe-oF target subsystem as a NVMe device/initiator: connect --traddr <IP> --trsvcid <PORT NUMBER> --nqn <SUBSYSTEM NQN> ",
 		Action: func(c *cli.Context) {
 			if err := connect(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running connect bdev command")
+				logrus.WithError(err).Fatalf("Error running nvme-cli connect command")
 			}
 		},
 	}
 }
 
 func connect(c *cli.Context) error {
-	controllerName, err := nvme.ConnectTarget(c.String("traddr"), c.String("trsvcid"), c.String("nqn"), util.Execute)
+	controllerName, err := nvme.ConnectTarget(c.String("traddr"), c.String("trsvcid"), c.String("nqn"), util.NewTimeoutExecutor(util.CmdTimeout))
 	if err != nil {
 		return err
 	}
@@ -108,14 +108,14 @@ func DisconnectCmd() cli.Command {
 		Usage: "Disconnect a NVMe-oF target subsystem to stop a NVMe device/initiator: disconnect <SUBSYSTEM NQN>",
 		Action: func(c *cli.Context) {
 			if err := disconnect(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running nvme-cli connect command")
+				logrus.WithError(err).Fatalf("Error running nvme-cli disconnect command")
 			}
 		},
 	}
 }
 
 func disconnect(c *cli.Context) error {
-	return nvme.DisconnectTarget(c.Args().First(), util.Execute)
+	return nvme.DisconnectTarget(c.Args().First(), util.NewTimeoutExecutor(util.CmdTimeout))
 }
 
 func GetCmd() cli.Command {
@@ -146,7 +146,7 @@ func GetCmd() cli.Command {
 }
 
 func get(c *cli.Context) error {
-	getResp, err := nvme.GetDevices(c.String("traddr"), c.String("trsvcid"), c.String("nqn"), util.Execute)
+	getResp, err := nvme.GetDevices(c.String("traddr"), c.String("trsvcid"), c.String("nqn"), util.NewTimeoutExecutor(util.CmdTimeout))
 	if err != nil {
 		return err
 	}
