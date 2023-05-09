@@ -58,7 +58,7 @@ func BdevNvmeAttachControllerCmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := bdevNvmeAttachController(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running attach nvme controller command")
+				logrus.WithError(err).Fatalf("Failed to run attach nvme controller command")
 			}
 		},
 	}
@@ -92,7 +92,7 @@ func BdevNvmeDetachControllerCmd() cli.Command {
 		Usage: "detach a nvme controller from the current host: detach-controller <CONTROLLER NAME>",
 		Action: func(c *cli.Context) {
 			if err := bdevNvmeDetachController(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running detach nvme controller command")
+				logrus.WithError(err).Fatalf("Failed to run detach nvme controller command")
 			}
 		},
 	}
@@ -124,7 +124,7 @@ func BdevNvmeGetControllersCmd() cli.Command {
 		Usage: "get all nvme controllers if the name is not specified: get <CONTROLLER NAME>",
 		Action: func(c *cli.Context) {
 			if err := bdevNvmeGetControllers(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running get nvme controller command")
+				logrus.WithError(err).Fatalf("Failed to run get nvme controller command")
 			}
 		},
 	}
@@ -171,7 +171,7 @@ func BdevNvmeGetCmd() cli.Command {
 		Usage: "get all Nvme bdevs if the name is not specified: \"get\", or \"get --name <NVME CONTROLLER NAME>n1\", or \"get --uuid <UUID>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevNvmeGet(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running get nvme controller command")
+				logrus.WithError(err).Fatalf("Failed to run get nvme controller command")
 			}
 		},
 	}

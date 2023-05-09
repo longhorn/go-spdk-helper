@@ -24,7 +24,7 @@ func Cmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := spdkTGT(c); err != nil {
-				logrus.WithError(err).Fatalf("Error starting spdk-tgt command")
+				logrus.WithError(err).Fatalf("Failed to run spdk-tgt start command")
 			}
 		},
 	}

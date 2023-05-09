@@ -31,7 +31,7 @@ func BdevGetCmd() cli.Command {
 		Usage: "get all bdevs if a bdev name is not specified: get <BDEV NAME>",
 		Action: func(c *cli.Context) {
 			if err := bdevGet(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running get bdev command")
+				logrus.WithError(err).Fatalf("Failed to run get bdev command")
 			}
 		},
 	}

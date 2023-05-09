@@ -45,7 +45,7 @@ func NvmfCreateTransportCmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := nvmfCreateTransport(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running create nvmf transport command")
+				logrus.WithError(err).Fatalf("Failed to run create nvmf transport command")
 			}
 		},
 	}
@@ -87,7 +87,7 @@ func NvmfGetTransportsCmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := nvmfGetTransports(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running get nvmf transports command")
+				logrus.WithError(err).Fatalf("Failed to run get nvmf transports command")
 			}
 		},
 	}
@@ -119,7 +119,7 @@ func NvmfCreateSubsystemCmd() cli.Command {
 		Usage: "create a subsystem for nvmf: subsystem-create <SUBSYSTEM NQN>",
 		Action: func(c *cli.Context) {
 			if err := nvmfCreateSubsystem(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running create nvmf subsystem command")
+				logrus.WithError(err).Fatalf("Failed to run create nvmf subsystem command")
 			}
 		},
 	}
@@ -151,7 +151,7 @@ func NvmfDeleteSubsystemCmd() cli.Command {
 		Usage: "delete a subsystem for nvmf: subsystem-delete <SUBSYSTEM NQN>",
 		Action: func(c *cli.Context) {
 			if err := nvmfDeleteSubsystem(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running delete nvmf subsystem command")
+				logrus.WithError(err).Fatalf("Failed to run delete nvmf subsystem command")
 			}
 		},
 	}
@@ -183,7 +183,7 @@ func NvmfGetSubsystemsCmd() cli.Command {
 		Usage: "list all subsystem for the specified NVMe-oF target: subsystem-get <TGT NAME>",
 		Action: func(c *cli.Context) {
 			if err := nvmfGetSubsystems(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running get nvmf subsystems command")
+				logrus.WithError(err).Fatalf("Failed to run get nvmf subsystems command")
 			}
 		},
 	}
@@ -225,7 +225,7 @@ func NvmfSubsystemAddNsCmd() cli.Command {
 		Usage: "add a bdev as a namespace for subsystem of nvmf: ns-add <SUBSYSTEM NQN>",
 		Action: func(c *cli.Context) {
 			if err := nvmfSubsystemAddNs(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running add nvmf subsystem namespace command")
+				logrus.WithError(err).Fatalf("Failed to run add nvmf subsystem namespace command")
 			}
 		},
 	}
@@ -267,7 +267,7 @@ func NvmfSubsystemRemoveNsCmd() cli.Command {
 		Usage: "remove a namespace from a subsystem of nvmf: ns-remove --nqn <SUBSYSTEM NQN> --nsid <NAMESPACE ID>",
 		Action: func(c *cli.Context) {
 			if err := nvmfSubsystemRemoveNs(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running remove nvmf subsystem namespace command")
+				logrus.WithError(err).Fatalf("Failed to run remove nvmf subsystem namespace command")
 			}
 		},
 	}
@@ -313,7 +313,7 @@ func NvmfSubsystemGetNssCmd() cli.Command {
 		Usage: "list all namespaces for a subsystem of nvmf: ns-get <SUBSYSTEM NQN>",
 		Action: func(c *cli.Context) {
 			if err := nvmfSubsystemGetNss(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running get nvmf subsystem namespaces command")
+				logrus.WithError(err).Fatalf("Failed to run get nvmf subsystem namespaces command")
 			}
 		},
 	}
@@ -374,7 +374,7 @@ func NvmfSubsystemAddListenerCmd() cli.Command {
 		Usage: "add a listener for subsystem of nvmf: listener-add --nqn <SUBSYSTEM NQN> --traddr <IP> --trsvcid <PORT NUMBER>",
 		Action: func(c *cli.Context) {
 			if err := nvmfSubsystemAddListener(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running add nvmf subsystem listener command")
+				logrus.WithError(err).Fatalf("Failed to run add nvmf subsystem listener command")
 			}
 		},
 	}
@@ -431,7 +431,7 @@ func NvmfSubsystemRemoveListenerCmd() cli.Command {
 		Usage: "remove a listener from a subsystem of nvmf: listener-remove --nqn <SUBSYSTEM NQN> --traddr <IP> --trsvcid <PORT NUMBER>",
 		Action: func(c *cli.Context) {
 			if err := nvmfSubsystemRemoveListener(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running remove nvmf subsystem listener command")
+				logrus.WithError(err).Fatalf("Failed to run remove nvmf subsystem listener command")
 			}
 		},
 	}
@@ -464,7 +464,7 @@ func NvmfSubsystemGetListenersCmd() cli.Command {
 		Usage: "list all listeners for a subsystem of nvmf: listener-get <SUBSYSTEM NQN>",
 		Action: func(c *cli.Context) {
 			if err := nvmfSubsystemGetListeners(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running get nvmf subsystem listeners command")
+				logrus.WithError(err).Fatalf("Failed to run get nvmf subsystem listeners command")
 			}
 		},
 	}

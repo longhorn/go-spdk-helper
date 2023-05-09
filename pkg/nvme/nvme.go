@@ -135,6 +135,8 @@ func DisconnectTarget(nqn string, executor util.Executor) error {
 
 	// The output example:
 	// NQN:nqn.2023-01.io.spdk:raid01 disconnected 1 controller(s)
+	//
+	// And trying to disconnect a non-existing target would return exit code 0
 	_, err := executor.Execute(nvmeBinary, opts)
 	return err
 }
