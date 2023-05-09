@@ -43,7 +43,7 @@ func StarExposeCmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := startExpose(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running start expose command")
+				logrus.WithError(err).Fatalf("Failed to run start expose command")
 			}
 		},
 	}
@@ -76,7 +76,7 @@ func StopExposeCmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := stopExpose(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running stop expose command")
+				logrus.WithError(err).Fatalf("Failed to run stop expose command")
 			}
 		},
 	}

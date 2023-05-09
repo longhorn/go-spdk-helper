@@ -102,7 +102,7 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 			transportAddress, transportServiceID)
 	}
 
-	i.logger.Infof("Stopping NVMe initiator blindly  before starting")
+	i.logger.Infof("Stopping NVMe initiator blindly before starting")
 	if err := i.stopWithoutLock(); err != nil {
 		return errors.Wrapf(err, "failed to stop the mismatching NVMe initiator %s before starting", i.Name)
 	}

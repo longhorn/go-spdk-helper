@@ -41,7 +41,7 @@ func DiscoverCmd() cli.Command {
 		Usage: "Discover a NVMe-oF target: discover --traddr <IP> --trsvcid <PORT NUMBER>",
 		Action: func(c *cli.Context) {
 			if err := discover(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running nvme-cli discover command")
+				logrus.WithError(err).Fatalf("Failed to run nvme-cli discover command")
 			}
 		},
 	}
@@ -83,7 +83,7 @@ func ConnectCmd() cli.Command {
 		Usage: "Connect a NVMe-oF target subsystem as a NVMe device/initiator: connect --traddr <IP> --trsvcid <PORT NUMBER> --nqn <SUBSYSTEM NQN> ",
 		Action: func(c *cli.Context) {
 			if err := connect(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running nvme-cli connect command")
+				logrus.WithError(err).Fatalf("Failed to run nvme-cli connect command")
 			}
 		},
 	}
@@ -110,7 +110,7 @@ func DisconnectCmd() cli.Command {
 		Usage: "Disconnect a NVMe-oF target subsystem to stop a NVMe device/initiator: disconnect <SUBSYSTEM NQN>",
 		Action: func(c *cli.Context) {
 			if err := disconnect(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running nvme-cli disconnect command")
+				logrus.WithError(err).Fatalf("Failed to run nvme-cli disconnect command")
 			}
 		},
 	}
@@ -141,7 +141,7 @@ func GetCmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := get(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running nvme-cli get command")
+				logrus.WithError(err).Fatalf("Failed to run nvme-cli get command")
 			}
 		},
 	}
@@ -192,7 +192,7 @@ func StartCmd() cli.Command {
 		Usage: "Start a NVMe-oF initiator and make a device based on the name: start --name <NAME> --traddr <IP> --trsvcid <PORT NUMBER> --nqn <SUBSYSTEM NQN>",
 		Action: func(c *cli.Context) {
 			if err := start(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running initiator start command")
+				logrus.WithError(err).Fatalf("Failed to run initiator start command")
 			}
 		},
 	}
@@ -243,7 +243,7 @@ func StopCmd() cli.Command {
 		Usage: "Stop a NVMe-oF initiator and remove the corresponding device: stop --name <NAME> --nqn <SUBSYSTEM NQN>",
 		Action: func(c *cli.Context) {
 			if err := stop(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running initiator stop command")
+				logrus.WithError(err).Fatalf("Failed to run initiator stop command")
 			}
 		},
 	}

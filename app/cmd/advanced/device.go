@@ -35,7 +35,7 @@ func DeviceAddCmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := deviceAdd(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running add device command")
+				logrus.WithError(err).Fatalf("Failed to run add device command")
 			}
 		},
 	}
@@ -74,7 +74,7 @@ func DeviceDeleteCmd() cli.Command {
 		Usage: "Delete a device for SPDK. The aio name and the lvs name should be the file device file name: delete <device path>",
 		Action: func(c *cli.Context) {
 			if err := deviceDelete(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running delete device command")
+				logrus.WithError(err).Fatalf("Failed to run delete device command")
 			}
 		},
 	}

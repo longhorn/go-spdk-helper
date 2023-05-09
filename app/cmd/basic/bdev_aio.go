@@ -43,7 +43,7 @@ func BdevAioCreateCmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := bdevAioCreate(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running create bdev aio command")
+				logrus.WithError(err).Fatalf("Failed to run create bdev aio command")
 			}
 		},
 	}
@@ -75,7 +75,7 @@ func BdevAioDeleteCmd() cli.Command {
 		Usage: "delete a bdev aio using a block device: delete <BDEV NAME>",
 		Action: func(c *cli.Context) {
 			if err := bdevAioDelete(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running delete bdev aio command")
+				logrus.WithError(err).Fatalf("Failed to run delete bdev aio command")
 			}
 		},
 	}
@@ -114,7 +114,7 @@ func BdevAioGetCmd() cli.Command {
 		Usage: "get all bdev aio if a bdev name is not specified: get <BDEV NAME>",
 		Action: func(c *cli.Context) {
 			if err := bdevAioGet(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running get bdev aio command")
+				logrus.WithError(err).Fatalf("Failed to run get bdev aio command")
 			}
 		},
 	}

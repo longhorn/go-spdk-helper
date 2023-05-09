@@ -49,7 +49,7 @@ func BdevRaidCreateCmd() cli.Command {
 		},
 		Action: func(c *cli.Context) {
 			if err := bdevRaidCreate(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running create bdev raid command")
+				logrus.WithError(err).Fatalf("Failed to run create bdev raid command")
 			}
 		},
 	}
@@ -81,7 +81,7 @@ func BdevRaidDeleteCmd() cli.Command {
 		Usage: "delete a bdev raid using a block device: delete <RAID NAME>",
 		Action: func(c *cli.Context) {
 			if err := bdevRaidDelete(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running delete bdev raid command")
+				logrus.WithError(err).Fatalf("Failed to run delete bdev raid command")
 			}
 		},
 	}
@@ -128,7 +128,7 @@ func BdevRaidGetCmd() cli.Command {
 		Usage: "get all raid bdevs if the info is not specified: \"get\", or \"get --name <RAID NAME>\", or \"get --uuid <UUID>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevRaidGet(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running get bdev raid command")
+				logrus.WithError(err).Fatalf("Failed to run get bdev raid command")
 			}
 		},
 	}

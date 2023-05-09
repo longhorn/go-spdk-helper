@@ -51,7 +51,7 @@ func BdevLvolCreateCmd() cli.Command {
 		Usage: "create a bdev lvol on a lvstore: \"create --lvs-name <LVSTORE NAME> --lvol-name <LVOL NAME> --size <LVOL SIZE in MIB>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevLvolCreate(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running create bdev lvol command")
+				logrus.WithError(err).Fatalf("Failed to run create bdev lvol command")
 			}
 		},
 	}
@@ -97,7 +97,7 @@ func BdevLvolDeleteCmd() cli.Command {
 		Usage: "delete a bdev lvol using a block device: \"delete --alias <LVSTORE NAME>/<LVOL NAME>\" or \"delete --uuid <UUID>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevLvolDelete(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running delete bdev lvol command")
+				logrus.WithError(err).Fatalf("Failed to run delete bdev lvol command")
 			}
 		},
 	}
@@ -149,7 +149,7 @@ func BdevLvolGetCmd() cli.Command {
 		Usage: "get all bdev lvol if the info is not specified: \"get\", or \"get --alias <LVSTORE NAME>/<LVOL NAME>\", or \"get --uuid <UUID>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevLvolGet(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running get bdev lvol command")
+				logrus.WithError(err).Fatalf("Failed to run get bdev lvol command")
 			}
 		},
 	}
@@ -200,7 +200,7 @@ func BdevLvolSnapshotCmd() cli.Command {
 		Usage: "create a snapshot as a new bdev lvol based on an existing one: \"snapshot --alias <LVSTORE NAME>/<LVOL NAME> --snapshot-name <SNAPSHOT NAME>\", or \"snapshot --uuid <UUID> --snapshot-name <SNAPSHOT NAME>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevLvolSnapshot(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running snapshot bdev lvol command")
+				logrus.WithError(err).Fatalf("Failed to run snapshot bdev lvol command")
 			}
 		},
 	}
@@ -247,7 +247,7 @@ func BdevLvolCloneCmd() cli.Command {
 		Usage: "create a clone lvol based on an existing snapshot lvol: \"clone --alias <LVSTORE NAME>/<SNAPSHOT LVOL NAME> --clone-name <CLONE NAME>\", or \"clone --uuid <SNAPSHOT LVOL UUID> --clone-name <CLONE NAME>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevLvolClone(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running clone bdev lvol command")
+				logrus.WithError(err).Fatalf("Failed to run clone bdev lvol command")
 			}
 		},
 	}
@@ -290,7 +290,7 @@ func BdevLvolDecoupleParentCmd() cli.Command {
 		Usage: "decouple a lvol from its parent lvol: \"decouple --alias <LVSTORE NAME>/<LVOL NAME>\", or \"decouple --uuid <LVOL UUID>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevLvolDecoupleParent(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running decouple parent bdev lvol command")
+				logrus.WithError(err).Fatalf("Failed to run decouple parent bdev lvol command")
 			}
 		},
 	}
@@ -341,7 +341,7 @@ func BdevLvolResizeCmd() cli.Command {
 		Usage: "resize a lvol to a new size: \"resize --alias <LVSTORE NAME>/<LVOL NAME> --size <SIZE>\", or \"resize --uuid <LVOL UUID> --size <SIZE>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevLvolResize(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running resize bdev lvol command")
+				logrus.WithError(err).Fatalf("Failed to run resize bdev lvol command")
 			}
 		},
 	}

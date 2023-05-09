@@ -45,7 +45,7 @@ func BdevLvstoreCreateCmd() cli.Command {
 		Usage: "create a bdev lvstore based on a block device: \"create --bdev-name <BDEV NAME> --lvs-name <LVSTORE NAME>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevLvstoreCreate(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running create bdev lvstore command")
+				logrus.WithError(err).Fatalf("Failed to run create bdev lvstore command")
 			}
 		},
 	}
@@ -87,7 +87,7 @@ func BdevLvstoreRenameCmd() cli.Command {
 		Usage: "rename a bdev lvstore: \"rename --old-name <OLD NAME> --new-name <NEW NAME>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevLvstoreRename(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running rename bdev lvstore command")
+				logrus.WithError(err).Fatalf("Failed to run rename bdev lvstore command")
 			}
 		},
 	}
@@ -129,7 +129,7 @@ func BdevLvstoreDeleteCmd() cli.Command {
 		Usage: "delete a bdev lvstore using a block device: \"delete --lvs-name <LVSTORE NAME>\" or \"delete --uuid <UUID>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevLvstoreDelete(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running delete bdev lvstore command")
+				logrus.WithError(err).Fatalf("Failed to run delete bdev lvstore command")
 			}
 		},
 	}
@@ -171,7 +171,7 @@ func BdevLvstoreGetCmd() cli.Command {
 		Usage: "get all bdev lvstore if the info is not specified: \"get\", or \"get --lvs-name <LVSTORE NAME>\", or \"get --uuid <UUID>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevLvstoreGet(c); err != nil {
-				logrus.WithError(err).Fatalf("Error running get bdev lvstore command")
+				logrus.WithError(err).Fatalf("Failed to run get bdev lvstore command")
 			}
 		},
 	}
