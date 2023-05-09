@@ -24,7 +24,7 @@ func BdevGetCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.Uint64Flag{
 				Name:  "timeout, t",
-				Usage: "Optional. Determine the timeout of the execution",
+				Usage: "Determine the timeout of the execution",
 				Value: 0,
 			},
 		},

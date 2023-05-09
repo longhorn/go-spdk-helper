@@ -30,20 +30,24 @@ func BdevNvmeAttachControllerCmd() cli.Command {
 		Usage: "attach a nvme controller to the current host: attach-controller --name <CONTROLLER NAME> --subnqn <SUBSYSTEM NQN> --traddr <IP ADDRESS> --trsvcid <PORT NUMBER>",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "name",
-				Usage: "Name of the NVMe controller, prefix for each bdev name.",
+				Name:     "name",
+				Usage:    "Name of the NVMe controller, prefix for each bdev name",
+				Required: true,
 			},
 			cli.StringFlag{
-				Name:  "subnqn",
-				Usage: "NVMe-oF target subnqn. It can be the nvmf subsystem nqn.",
+				Name:     "subnqn",
+				Usage:    "NVMe-oF target subnqn. It can be the nvmf subsystem nqn",
+				Required: true,
 			},
 			cli.StringFlag{
-				Name:  "traddr",
-				Usage: "NVMe-oF target address: a ip or BDF",
+				Name:     "traddr",
+				Usage:    "NVMe-oF target address: a ip or BDF",
+				Required: true,
 			},
 			cli.StringFlag{
-				Name:  "trsvcid",
-				Usage: "NVMe-oF target trsvcid: a port number",
+				Name:     "trsvcid",
+				Usage:    "NVMe-oF target trsvcid: a port number",
+				Required: true,
 			},
 			cli.StringFlag{
 				Name:  "trtype",
@@ -156,15 +160,15 @@ func BdevNvmeGetCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "name",
-				Usage: "Optional. The name of a nvme bdev is typically \"<Nvme Controller NAME>n1\". If you want to get one specific Nvme info, please input this or uuid.",
+				Usage: "The name of a nvme bdev is typically \"<Nvme Controller NAME>n1\". If you want to get one specific Nvme info, please input this or uuid",
 			},
 			cli.StringFlag{
 				Name:  "uuid",
-				Usage: "Optional. If you want to get one specific Nvme info, please input this or name",
+				Usage: "If you want to get one specific Nvme info, please input this or name",
 			},
 			cli.Uint64Flag{
 				Name:  "timeout, t",
-				Usage: "Optional. Determine the timeout of the execution",
+				Usage: "Determine the timeout of the execution",
 				Value: 0,
 			},
 		},

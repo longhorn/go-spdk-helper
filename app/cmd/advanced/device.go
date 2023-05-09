@@ -29,7 +29,7 @@ func DeviceAddCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.UintFlag{
 				Name:  "cluster-size",
-				Usage: "Optional. Logical volume store cluster size, by default 1MiB.",
+				Usage: "Logical volume store cluster size, by default 1MiB",
 				Value: types.MiB,
 			},
 		},

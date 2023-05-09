@@ -28,16 +28,18 @@ func BdevAioCreateCmd() cli.Command {
 		Usage: "create a bdev aio based on a block device: create --file-path <BLOCK DEVICE PATH> --bdev-name <BDEV NAME> --block-size <BLOCK SIZE>",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "file-path, f",
-				Usage: "Required. Path to device or file",
+				Name:     "file-path, f",
+				Usage:    "Path to device or file",
+				Required: true,
 			},
 			cli.StringFlag{
-				Name:  "bdev-name, n",
-				Usage: "Required. Bdev name to use",
+				Name:     "bdev-name, n",
+				Usage:    "Bdev name to use",
+				Required: true,
 			},
 			cli.Uint64Flag{
 				Name:  "block-size, b",
-				Usage: "Optional. The block size in bytes. By default 4096",
+				Usage: "The block size in bytes. By default 4096",
 				Value: 4096,
 			},
 		},
@@ -107,7 +109,7 @@ func BdevAioGetCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.Uint64Flag{
 				Name:  "timeout, t",
-				Usage: "Optional. Determine the timeout of the execution",
+				Usage: "Determine the timeout of the execution",
 				Value: 0,
 			},
 		},
