@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/longhorn/go-spdk-helper/pkg/util"
@@ -201,20 +202,17 @@ func GetDevices(ip, port, nqn string, executor util.Executor) (devices []Device,
 	}
 
 	res := []Device{}
-	addressPrefix, addressSuffix := "", ""
-	if ip != "" {
-		addressPrefix = fmt.Sprintf("traddr=%s ", ip)
-	}
-	if port != "" {
-		addressSuffix = fmt.Sprintf(" trsvcid=%s", port)
-	}
 	for _, d := range output["Devices"] {
 		match := false
 		if d.SubsystemNQN != nqn {
 			continue
 		}
 		for _, c := range d.Controllers {
-			if !strings.HasPrefix(c.Address, addressPrefix) || !strings.HasSuffix(c.Address, addressSuffix) {
+			controllerIP, controllerPort := GetIPAndPortFromControllerAddress(c.Address)
+			if ip != "" && ip != controllerIP {
+				continue
+			}
+			if port != "" && port != controllerPort {
 				continue
 			}
 			match = true
@@ -232,4 +230,12 @@ func GetDevices(ip, port, nqn string, executor util.Executor) (devices []Device,
 		return nil, fmt.Errorf("cannot find a valid nvme device with subsystem NQN %s and address %s:%s", nqn, ip, port)
 	}
 	return res, nil
+}
+
+func GetIPAndPortFromControllerAddress(addr string) (ip, port string) {
+	reg := regexp.MustCompile(`traddr=([^"]*) trsvcid=\d*$`)
+	ip = reg.ReplaceAllString(addr, "${1}")
+	reg = regexp.MustCompile(`traddr=.* trsvcid=([^"]*)$`)
+	port = reg.ReplaceAllString(addr, "${1}")
+	return ip, port
 }
