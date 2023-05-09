@@ -26,11 +26,12 @@ func BdevRaidCmd() cli.Command {
 func BdevRaidCreateCmd() cli.Command {
 	return cli.Command{
 		Name:  "create",
-		Usage: "create a bdev raid based on a bunch of existing bdevs: create --name <RAID NAME> --level <RAID LEVEL> --strip-size-kb <STRIP SIZE KB> --base-bdevs <BASE BDEV1> --base-bdevs <BASE BDEV2> ......",
+		Usage: "create a bdev raid based on a bunch of existing bdevs: create --name <RAID NAME> --level <RAID LEVEL> --strip-size-kb <STRIP SIZE KB> --base-bdevs <BASE BDEV1> --base-bdevs <BASE BDEV2> ...",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "name,n",
-				Usage: "User defined raid bdev name",
+				Name:     "name,n",
+				Usage:    "User defined raid bdev name",
+				Required: true,
 			},
 			cli.StringFlag{
 				Name:  "level,l",
@@ -43,8 +44,9 @@ func BdevRaidCreateCmd() cli.Command {
 				Value: 0,
 			},
 			cli.StringSliceFlag{
-				Name:  "base-bdevs,b",
-				Usage: "Names of Nvme bdevs, the input is like \"--base-devs Nvme0n1 --base-devs Nvme1n1\"",
+				Name:     "base-bdevs,b",
+				Usage:    "Names of Nvme bdevs, the input is like \"--base-devs Nvme0n1 --base-devs Nvme1n1\"",
+				Required: true,
 			},
 		},
 		Action: func(c *cli.Context) {
@@ -113,11 +115,11 @@ func BdevRaidGetCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "name",
-				Usage: "Optional. If you want to get one specific raid bdev info, please input this or uuid.",
+				Usage: "If you want to get one specific raid bdev info, please input this or uuid",
 			},
 			cli.StringFlag{
 				Name:  "uuid",
-				Usage: "Optional. If you want to get one specific raid bdev info, please input this or name",
+				Usage: "If you want to get one specific raid bdev info, please input this or name",
 			},
 			cli.Uint64Flag{
 				Name:  "timeout, t",

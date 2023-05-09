@@ -17,9 +17,10 @@ func Cmd() cli.Command {
 		Usage:     "Start SPDK target: tgt --spdk-dir <SPDK DIRECTORY>",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "spdk-dir",
-				Usage: "The SPDK directory that contains the setup scripts and binary \"spdk_tgt\"",
-				Value: os.Getenv("SPDK_DIR"),
+				Name:     "spdk-dir",
+				Usage:    "The SPDK directory that contains the setup scripts and binary \"spdk_tgt\"",
+				Required: true,
+				Value:    os.Getenv("SPDK_DIR"),
 			},
 		},
 		Action: func(c *cli.Context) {

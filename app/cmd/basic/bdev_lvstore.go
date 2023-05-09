@@ -29,16 +29,18 @@ func BdevLvstoreCreateCmd() cli.Command {
 		Name: "create",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "bdev-name",
-				Usage: "Required. The bdev on which to construct logical volume store",
+				Name:     "bdev-name",
+				Usage:    "The bdev on which to construct logical volume store",
+				Required: true,
 			},
 			cli.StringFlag{
-				Name:  "lvs-name",
-				Usage: "Required. Name of the logical volume store to create",
+				Name:     "lvs-name",
+				Usage:    "Name of the logical volume store to create",
+				Required: true,
 			},
 			cli.UintFlag{
 				Name:  "cluster-size",
-				Usage: "Optional. Logical volume store cluster size, by default 1MiB.",
+				Usage: "Logical volume store cluster size, by default 1MiB",
 				Value: types.MiB,
 			},
 		},
@@ -76,12 +78,14 @@ func BdevLvstoreRenameCmd() cli.Command {
 		Name: "rename",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "old-name",
-				Usage: "Required. Old name of the logical volume store",
+				Name:     "old-name",
+				Usage:    "Old name of the logical volume store",
+				Required: true,
 			},
 			cli.StringFlag{
-				Name:  "new-name",
-				Usage: "Required. New name of the logical volume store",
+				Name:     "new-name",
+				Usage:    "New name of the logical volume store",
+				Required: true,
 			},
 		},
 		Usage: "rename a bdev lvstore: \"rename --old-name <OLD NAME> --new-name <NEW NAME>\"",
@@ -119,11 +123,11 @@ func BdevLvstoreDeleteCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "lvs-name",
-				Usage: "Optional. Specify this or uuid",
+				Usage: "Specify this or uuid",
 			},
 			cli.StringFlag{
 				Name:  "uuid",
-				Usage: "Optional. Specify this or lvs-name",
+				Usage: "Specify this or lvs-name",
 			},
 		},
 		Usage: "delete a bdev lvstore using a block device: \"delete --lvs-name <LVSTORE NAME>\" or \"delete --uuid <UUID>\"",
@@ -161,11 +165,11 @@ func BdevLvstoreGetCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "lvs-name",
-				Usage: "Optional. If you want to get one specific Lvstore info, please input this or uuid",
+				Usage: "If you want to get one specific Lvstore info, please input this or uuid",
 			},
 			cli.StringFlag{
 				Name:  "uuid",
-				Usage: "Optional. If you want to get one specific Lvstore info, please input this or lvs-name",
+				Usage: "If you want to get one specific Lvstore info, please input this or lvs-name",
 			},
 		},
 		Usage: "get all bdev lvstore if the info is not specified: \"get\", or \"get --lvs-name <LVSTORE NAME>\", or \"get --uuid <UUID>\"",

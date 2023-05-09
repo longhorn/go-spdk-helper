@@ -39,7 +39,7 @@ func NvmfCreateTransportCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "trtype",
-				Usage: "Optional. NVMe-oF target trtype: \"tcp\", \"rdma\" or \"pcie\"",
+				Usage: "NVMe-oF target trtype: \"tcp\", \"rdma\" or \"pcie\"",
 				Value: string(spdktypes.NvmeTransportTypeTCP),
 			},
 		},
@@ -78,11 +78,11 @@ func NvmfGetTransportsCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "trtype",
-				Usage: "Optional. NVMe-oF target trtype: \"tcp\", \"rdma\" or \"pcie\"",
+				Usage: "NVMe-oF target trtype: \"tcp\", \"rdma\" or \"pcie\"",
 			},
 			cli.StringFlag{
 				Name:  "tgt-name",
-				Usage: "Optional. Parent NVMe-oF target name.",
+				Usage: "Parent NVMe-oF target name",
 			},
 		},
 		Action: func(c *cli.Context) {
@@ -214,12 +214,14 @@ func NvmfSubsystemAddNsCmd() cli.Command {
 		Name: "ns-add",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "nqn",
-				Usage: "Required. Subsystem NQN.",
+				Name:     "nqn",
+				Usage:    "Subsystem NQN",
+				Required: true,
 			},
 			cli.StringFlag{
-				Name:  "bdev-name",
-				Usage: "Required. Name of bdev to expose as a namespace.",
+				Name:     "bdev-name",
+				Usage:    "Name of bdev to expose as a namespace",
+				Required: true,
 			},
 		},
 		Usage: "add a bdev as a namespace for subsystem of nvmf: ns-add <SUBSYSTEM NQN>",
@@ -256,12 +258,14 @@ func NvmfSubsystemRemoveNsCmd() cli.Command {
 		Name: "ns-remove",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "nqn",
-				Usage: "Required. Subsystem NQN.",
+				Name:     "nqn",
+				Usage:    "Subsystem NQN",
+				Required: true,
 			},
 			cli.UintFlag{
-				Name:  "nsid",
-				Usage: "Required. Removing namespace ID.",
+				Name:     "nsid",
+				Usage:    "Removing namespace ID",
+				Required: true,
 			},
 		},
 		Usage: "remove a namespace from a subsystem of nvmf: ns-remove --nqn <SUBSYSTEM NQN> --nsid <NAMESPACE ID>",
@@ -298,16 +302,17 @@ func NvmfSubsystemGetNssCmd() cli.Command {
 		Name: "ns-get",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "nqn",
-				Usage: "Required. Subsystem NQN.",
+				Name:     "nqn",
+				Usage:    "Subsystem NQN",
+				Required: true,
 			},
 			cli.StringFlag{
 				Name:  "bdev-name",
-				Usage: "Optional. Name of bdev to expose as a namespace. It's better not to specify this and \"nsid\" simultaneously.",
+				Usage: "Name of bdev to expose as a namespace. It's better not to specify this and \"nsid\" simultaneously",
 			},
 			cli.UintFlag{
 				Name:  "nsid",
-				Usage: "Optional. The specified namespace ID. It's better not to specify this and \"bdev-name\" simultaneously.",
+				Usage: "The specified namespace ID. It's better not to specify this and \"bdev-name\" simultaneously",
 			},
 		},
 		Usage: "list all namespaces for a subsystem of nvmf: ns-get <SUBSYSTEM NQN>",
@@ -349,16 +354,19 @@ func NvmfSubsystemAddListenerCmd() cli.Command {
 		Name: "listener-add",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "nqn",
-				Usage: "NVMe-oF target subnqn. It can be the nvmf subsystem nqn.",
+				Name:     "nqn",
+				Usage:    "NVMe-oF target subnqn. It can be the nvmf subsystem nqn",
+				Required: true,
 			},
 			cli.StringFlag{
-				Name:  "traddr",
-				Usage: "NVMe-oF target address: a ip or BDF",
+				Name:     "traddr",
+				Usage:    "NVMe-oF target address: a ip or BDF",
+				Required: true,
 			},
 			cli.StringFlag{
-				Name:  "trsvcid",
-				Usage: "NVMe-oF target trsvcid: a port number",
+				Name:     "trsvcid",
+				Usage:    "NVMe-oF target trsvcid: a port number",
+				Required: true,
 			},
 			cli.StringFlag{
 				Name:  "trtype",
@@ -406,16 +414,19 @@ func NvmfSubsystemRemoveListenerCmd() cli.Command {
 		Name: "listener-remove",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "nqn",
-				Usage: "NVMe-oF target subnqn. It can be the nvmf subsystem nqn.",
+				Name:     "nqn",
+				Usage:    "NVMe-oF target subnqn. It can be the nvmf subsystem nqn",
+				Required: true,
 			},
 			cli.StringFlag{
-				Name:  "traddr",
-				Usage: "NVMe-oF target address: a ip or BDF",
+				Name:     "traddr",
+				Usage:    "NVMe-oF target address: a ip or BDF",
+				Required: true,
 			},
 			cli.StringFlag{
-				Name:  "trsvcid",
-				Usage: "NVMe-oF target trsvcid: a port number",
+				Name:     "trsvcid",
+				Usage:    "NVMe-oF target trsvcid: a port number",
+				Required: true,
 			},
 			cli.StringFlag{
 				Name:  "trtype",

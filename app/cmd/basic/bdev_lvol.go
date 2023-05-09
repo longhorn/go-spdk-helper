@@ -32,20 +32,20 @@ func BdevLvolCreateCmd() cli.Command {
 		Name: "create",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "lvs-name",
-				Usage: "Required.",
+				Name:     "lvs-name",
+				Required: true,
 			},
 			cli.StringFlag{
-				Name:  "lvol-name",
-				Usage: "Required.",
+				Name:     "lvol-name",
+				Required: true,
 			},
 			cli.Uint64Flag{
-				Name:  "size",
-				Usage: "Required. Specify bdev lvol size in MiB.",
+				Name:     "size",
+				Usage:    "Specify bdev lvol size in MiB",
+				Required: true,
 			},
 			cli.StringFlag{
-				Name:  "uuid",
-				Usage: "Optional.",
+				Name: "uuid",
 			},
 		},
 		Usage: "create a bdev lvol on a lvstore: \"create --lvs-name <LVSTORE NAME> --lvol-name <LVOL NAME> --size <LVOL SIZE in MIB>\"",
@@ -87,11 +87,11 @@ func BdevLvolDeleteCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "alias",
-				Usage: "Optional. The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid.",
+				Usage: "The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
 			},
 			cli.StringFlag{
 				Name:  "uuid",
-				Usage: "Optional. Specify this or alias",
+				Usage: "Specify this or alias",
 			},
 		},
 		Usage: "delete a bdev lvol using a block device: \"delete --alias <LVSTORE NAME>/<LVOL NAME>\" or \"delete --uuid <UUID>\"",
@@ -134,15 +134,15 @@ func BdevLvolGetCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "alias",
-				Usage: "Optional. The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. If you want to get one specific Lvol info, please input this or uuid.",
+				Usage: "The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. If you want to get one specific Lvol info, please input this or uuid",
 			},
 			cli.StringFlag{
 				Name:  "uuid",
-				Usage: "Optional. If you want to get one specific Lvol info, please input this or alias",
+				Usage: "If you want to get one specific Lvol info, please input this or alias",
 			},
 			cli.Uint64Flag{
 				Name:  "timeout, t",
-				Usage: "Optional. Determine the timeout of the execution",
+				Usage: "Determine the timeout of the execution",
 				Value: 0,
 			},
 		},
@@ -186,15 +186,16 @@ func BdevLvolSnapshotCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "alias",
-				Usage: "Optional. The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid.",
+				Usage: "The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
 			},
 			cli.StringFlag{
 				Name:  "uuid",
-				Usage: "Optional. Specify this or alias",
+				Usage: "Specify this or alias",
 			},
 			cli.StringFlag{
-				Name:  "snapshot-name",
-				Usage: "Required. The snapshot lvol name.",
+				Name:     "snapshot-name",
+				Usage:    "The snapshot lvol name",
+				Required: true,
 			},
 		},
 		Usage: "create a snapshot as a new bdev lvol based on an existing one: \"snapshot --alias <LVSTORE NAME>/<LVOL NAME> --snapshot-name <SNAPSHOT NAME>\", or \"snapshot --uuid <UUID> --snapshot-name <SNAPSHOT NAME>\"",
@@ -233,15 +234,16 @@ func BdevLvolCloneCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "alias",
-				Usage: "Optional. The alias of a snapshot lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid.",
+				Usage: "The alias of a snapshot lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
 			},
 			cli.StringFlag{
 				Name:  "uuid",
-				Usage: "Optional. Specify this or alias",
+				Usage: "Specify this or alias",
 			},
 			cli.StringFlag{
-				Name:  "clone-name",
-				Usage: "Required. The cloned lvol name.",
+				Name:     "clone-name",
+				Usage:    "The cloned lvol name",
+				Required: true,
 			},
 		},
 		Usage: "create a clone lvol based on an existing snapshot lvol: \"clone --alias <LVSTORE NAME>/<SNAPSHOT LVOL NAME> --clone-name <CLONE NAME>\", or \"clone --uuid <SNAPSHOT LVOL UUID> --clone-name <CLONE NAME>\"",
@@ -280,11 +282,11 @@ func BdevLvolDecoupleParentCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "alias",
-				Usage: "Optional. The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid.",
+				Usage: "The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
 			},
 			cli.StringFlag{
 				Name:  "uuid",
-				Usage: "Optional. Specify this or alias",
+				Usage: "Specify this or alias",
 			},
 		},
 		Usage: "decouple a lvol from its parent lvol: \"decouple --alias <LVSTORE NAME>/<LVOL NAME>\", or \"decouple --uuid <LVOL UUID>\"",
@@ -327,15 +329,15 @@ func BdevLvolResizeCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "alias",
-				Usage: "Optional. The alias of a snapshot lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid.",
+				Usage: "The alias of a snapshot lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
 			},
 			cli.StringFlag{
 				Name:  "uuid",
-				Usage: "Optional. Specify this or alias",
+				Usage: "Specify this or alias",
 			},
 			cli.Uint64Flag{
-				Name:  "size",
-				Usage: "Required.",
+				Name:     "size",
+				Required: true,
 			},
 		},
 		Usage: "resize a lvol to a new size: \"resize --alias <LVSTORE NAME>/<LVOL NAME> --size <SIZE>\", or \"resize --uuid <LVOL UUID> --size <SIZE>\"",

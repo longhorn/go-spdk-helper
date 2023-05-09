@@ -25,20 +25,24 @@ func StarExposeCmd() cli.Command {
 		Usage: "Expose a bdev via nvmf: start --nqn <NVMF SUBSYSTEM NQN> --bdev-name <BDEV ALIAS or BDEV UUID> --ip <IP ADDRESS> --port <PORT NUMBER>",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "nqn",
-				Usage: "Required. NVMe-oF target subsystem NQN",
+				Name:     "nqn",
+				Usage:    "NVMe-oF target subsystem NQN",
+				Required: true,
 			},
 			cli.StringFlag{
-				Name:  "bdev-name",
-				Usage: "Required. Name of the exported bdev lvol",
+				Name:     "bdev-name",
+				Usage:    "Name of the exported bdev lvol",
+				Required: true,
 			},
 			cli.StringFlag{
-				Name:  "ip",
-				Usage: "Required. This can be host IP or localhost IP",
+				Name:     "ip",
+				Usage:    "This can be host IP or localhost IP",
+				Required: true,
 			},
 			cli.StringFlag{
-				Name:  "port",
-				Usage: "Required. Port number",
+				Name:     "port",
+				Usage:    "Port number",
+				Required: true,
 			},
 		},
 		Action: func(c *cli.Context) {
@@ -70,8 +74,9 @@ func StopExposeCmd() cli.Command {
 		Usage: "Stop exposing a bdev via nvmf: stop --nqn <NVMF SUBSYSTEM NQN>",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "nqn",
-				Usage: "Required. NVMe-oF target subsystem NQN.",
+				Name:     "nqn",
+				Usage:    "NVMe-oF target subsystem NQN",
+				Required: true,
 			},
 		},
 		Action: func(c *cli.Context) {
