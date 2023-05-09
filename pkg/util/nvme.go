@@ -7,13 +7,18 @@ import (
 )
 
 const (
-	devPath = "/dev"
+	DevPath        = "/dev"
+	LonghornDevDir = "/longhorn"
 
 	DefaultNVMeNamespaceID = 1
 )
 
 func GetNvmeDevicePath(name string) string {
-	return filepath.Join(devPath, name)
+	return filepath.Join(DevPath, name)
+}
+
+func GetLonghornDevicePath(name string) string {
+	return filepath.Join(DevPath, LonghornDevDir, name)
 }
 
 func GetNvmeNamespaceNameFromControllerName(controllerName string, nsID int) string {
