@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	. "gopkg.in/check.v1"
 )
@@ -29,6 +30,21 @@ func (s *TestSuite) TestNamespaceExecutor(c *C) {
 	c.Assert(err, IsNil)
 	_, err = ne.Execute("mount", []string{})
 	c.Assert(err, IsNil)
+}
+
+func (s *TestSuite) TestTimeoutExecutor(c *C) {
+	var err error
+
+	te := NewTimeoutExecutor(5 * time.Second)
+	_, err = te.Execute("ls", []string{})
+	c.Assert(err, IsNil)
+	_, err = te.Execute("mount", []string{})
+	c.Assert(err, IsNil)
+
+	_, err = te.Execute("sleep", []string{"4"})
+	c.Assert(err, IsNil)
+	_, err = te.Execute("sleep", []string{"6"})
+	c.Assert(err, NotNil)
 }
 
 func (s *TestSuite) TestFindDockerdProcess(c *C) {

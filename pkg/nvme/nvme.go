@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
 const (
@@ -42,15 +44,15 @@ type Namespace struct {
 	SectorSize   uint32
 }
 
-func CheckForNVMeCliExistence(execute func(name string, args []string) (string, error)) error {
+func CheckForNVMeCliExistence(executor util.Executor) error {
 	opts := []string{
 		"--version",
 	}
-	_, err := execute(nvmeBinary, opts)
+	_, err := executor.Execute(nvmeBinary, opts)
 	return err
 }
 
-func DiscoverTarget(ip, port string, execute func(name string, args []string) (string, error)) (subnqn string, err error) {
+func DiscoverTarget(ip, port string, executor util.Executor) (subnqn string, err error) {
 	opts := []string{
 		"discover",
 		"-t", DefaultTransportType,
@@ -70,7 +72,7 @@ func DiscoverTarget(ip, port string, execute func(name string, args []string) (s
 	//   subnqn:  nqn.2023-01.io.spdk:raid01
 	//   traddr:  127.0.0.1
 	//   sectype: none
-	output, err := execute(nvmeBinary, opts)
+	output, err := executor.Execute(nvmeBinary, opts)
 	if err != nil {
 		return "", err
 	}
@@ -91,7 +93,7 @@ func DiscoverTarget(ip, port string, execute func(name string, args []string) (s
 	return subnqn, nil
 }
 
-func ConnectTarget(ip, port, nqn string, execute func(name string, args []string) (string, error)) (controllerName string, err error) {
+func ConnectTarget(ip, port, nqn string, executor util.Executor) (controllerName string, err error) {
 	opts := []string{
 		"connect",
 		"-t", DefaultTransportType,
@@ -103,7 +105,7 @@ func ConnectTarget(ip, port, nqn string, execute func(name string, args []string
 
 	// Trying to connect an existing subsystem will error out with exit code 114.
 	// Hence, it's better to check the existence first.
-	if devices, err := GetDevices(ip, port, nqn, execute); err == nil && len(devices) > 0 {
+	if devices, err := GetDevices(ip, port, nqn, executor); err == nil && len(devices) > 0 {
 		return devices[0].Controllers[0].Controller, nil
 	}
 
@@ -111,7 +113,7 @@ func ConnectTarget(ip, port, nqn string, execute func(name string, args []string
 	// {
 	//  "device" : "nvme0"
 	// }
-	outputStr, err := execute(nvmeBinary, opts)
+	outputStr, err := executor.Execute(nvmeBinary, opts)
 	if err != nil {
 		return "", err
 	}
@@ -124,7 +126,7 @@ func ConnectTarget(ip, port, nqn string, execute func(name string, args []string
 	return output["device"], nil
 }
 
-func DisconnectTarget(nqn string, execute func(name string, args []string) (string, error)) error {
+func DisconnectTarget(nqn string, executor util.Executor) error {
 	opts := []string{
 		"disconnect",
 		"--nqn", nqn,
@@ -132,11 +134,11 @@ func DisconnectTarget(nqn string, execute func(name string, args []string) (stri
 
 	// The output example:
 	// NQN:nqn.2023-01.io.spdk:raid01 disconnected 1 controller(s)
-	_, err := execute(nvmeBinary, opts)
+	_, err := executor.Execute(nvmeBinary, opts)
 	return err
 }
 
-func GetDevices(ip, port, nqn string, execute func(name string, args []string) (string, error)) (devices []Device, err error) {
+func GetDevices(ip, port, nqn string, executor util.Executor) (devices []Device, err error) {
 	opts := []string{
 		"list",
 		"-v",
@@ -185,7 +187,7 @@ func GetDevices(ip, port, nqn string, execute func(name string, args []string) (
 	//    }
 	//  ]
 	// }
-	outputStr, err := execute(nvmeBinary, opts)
+	outputStr, err := executor.Execute(nvmeBinary, opts)
 	if err != nil {
 		return nil, err
 	}
