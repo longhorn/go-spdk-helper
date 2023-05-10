@@ -9,6 +9,7 @@ import (
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
+	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
 func NvmfCmd() cli.Command {
@@ -66,9 +67,8 @@ func nvmfCreateTransport(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(bdevNvmfCreateTransportRespJSON))
 
-	return nil
+	return util.PrintObject(bdevNvmfCreateTransportRespJSON)
 }
 
 func NvmfGetTransportsCmd() cli.Command {
@@ -104,13 +104,7 @@ func nvmfGetTransports(c *cli.Context) error {
 		return err
 	}
 
-	bdevNvmfGetTransportRespJSON, err := json.MarshalIndent(transportList, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevNvmfGetTransportRespJSON))
-
-	return nil
+	return util.PrintObject(transportList)
 }
 
 func NvmfCreateSubsystemCmd() cli.Command {
@@ -136,13 +130,7 @@ func nvmfCreateSubsystem(c *cli.Context) error {
 		return err
 	}
 
-	bdevNvmfCreateSubsystemRespJSON, err := json.MarshalIndent(created, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevNvmfCreateSubsystemRespJSON))
-
-	return nil
+	return util.PrintObject(created)
 }
 
 func NvmfDeleteSubsystemCmd() cli.Command {
@@ -168,13 +156,7 @@ func nvmfDeleteSubsystem(c *cli.Context) error {
 		return err
 	}
 
-	bdevNvmfDeleteSubsystemRespJSON, err := json.MarshalIndent(deleted, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevNvmfDeleteSubsystemRespJSON))
-
-	return nil
+	return util.PrintObject(deleted)
 }
 
 func NvmfGetSubsystemsCmd() cli.Command {
@@ -200,13 +182,7 @@ func nvmfGetSubsystems(c *cli.Context) error {
 		return err
 	}
 
-	bdevNvmfGetSubsystemRespJSON, err := json.MarshalIndent(subsystemList, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevNvmfGetSubsystemRespJSON))
-
-	return nil
+	return util.PrintObject(subsystemList)
 }
 
 func NvmfSubsystemAddNsCmd() cli.Command {
@@ -244,13 +220,7 @@ func nvmfSubsystemAddNs(c *cli.Context) error {
 		return err
 	}
 
-	bdevNvmfSubsystemAddNsRespJSON, err := json.MarshalIndent(added, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevNvmfSubsystemAddNsRespJSON))
-
-	return nil
+	return util.PrintObject(added)
 }
 
 func NvmfSubsystemRemoveNsCmd() cli.Command {
@@ -288,13 +258,7 @@ func nvmfSubsystemRemoveNs(c *cli.Context) error {
 		return err
 	}
 
-	bdevNvmfSubsystemRemoveNsRespJSON, err := json.MarshalIndent(deleted, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevNvmfSubsystemRemoveNsRespJSON))
-
-	return nil
+	return util.PrintObject(deleted)
 }
 
 func NvmfSubsystemGetNssCmd() cli.Command {
@@ -340,13 +304,7 @@ func nvmfSubsystemGetNss(c *cli.Context) error {
 		return err
 	}
 
-	bdevNvmfSubsystemGetNssRespJSON, err := json.MarshalIndent(nsList, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevNvmfSubsystemGetNssRespJSON))
-
-	return nil
+	return util.PrintObject(nsList)
 }
 
 func NvmfSubsystemAddListenerCmd() cli.Command {
@@ -400,13 +358,7 @@ func nvmfSubsystemAddListener(c *cli.Context) error {
 		return err
 	}
 
-	bdevNvmfSubsystemAddListenerRespJSON, err := json.MarshalIndent(added, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevNvmfSubsystemAddListenerRespJSON))
-
-	return nil
+	return util.PrintObject(added)
 }
 
 func NvmfSubsystemRemoveListenerCmd() cli.Command {
@@ -460,13 +412,7 @@ func nvmfSubsystemRemoveListener(c *cli.Context) error {
 		return err
 	}
 
-	bdevNvmfSubsystemRemoveListenerRespJSON, err := json.MarshalIndent(deleted, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevNvmfSubsystemRemoveListenerRespJSON))
-
-	return nil
+	return util.PrintObject(deleted)
 }
 
 func NvmfSubsystemGetListenersCmd() cli.Command {
@@ -492,11 +438,5 @@ func nvmfSubsystemGetListeners(c *cli.Context) error {
 		return err
 	}
 
-	bdevNvmfSubsystemGetListenersRespJSON, err := json.MarshalIndent(listenerList, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevNvmfSubsystemGetListenersRespJSON))
-
-	return nil
+	return util.PrintObject(listenerList)
 }

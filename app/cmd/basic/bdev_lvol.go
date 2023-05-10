@@ -1,7 +1,6 @@
 package basic
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
+	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
 func BdevLvolCmd() cli.Command {
@@ -72,13 +72,7 @@ func bdevLvolCreate(c *cli.Context) error {
 		return err
 	}
 
-	bdevLvolCreateRespJSON, err := json.MarshalIndent(map[string]string{"uuid": uuid, "alias": fmt.Sprintf("%s/%s", lvsName, lvolName)}, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevLvolCreateRespJSON))
-
-	return nil
+	return util.PrintObject(map[string]string{"uuid": uuid, "alias": fmt.Sprintf("%s/%s", lvsName, lvolName)})
 }
 
 func BdevLvolDeleteCmd() cli.Command {
@@ -119,13 +113,7 @@ func bdevLvolDelete(c *cli.Context) error {
 		return err
 	}
 
-	bdevLvolDeleteRespJSON, err := json.Marshal(deleted)
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevLvolDeleteRespJSON))
-
-	return nil
+	return util.PrintObject(deleted)
 }
 
 func BdevLvolGetCmd() cli.Command {
@@ -171,13 +159,7 @@ func bdevLvolGet(c *cli.Context) error {
 		return err
 	}
 
-	bdevLvolGetRespJSON, err := json.MarshalIndent(bdevLvolGetResp, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevLvolGetRespJSON))
-
-	return nil
+	return util.PrintObject(bdevLvolGetResp)
 }
 
 func BdevLvolSnapshotCmd() cli.Command {
@@ -223,9 +205,7 @@ func bdevLvolSnapshot(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Println(uuid)
-
-	return nil
+	return util.PrintObject(uuid)
 }
 
 func BdevLvolCloneCmd() cli.Command {
@@ -271,9 +251,7 @@ func bdevLvolClone(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Println(uuid)
-
-	return nil
+	return util.PrintObject(uuid)
 }
 
 func BdevLvolDecoupleParentCmd() cli.Command {
@@ -314,13 +292,7 @@ func bdevLvolDecoupleParent(c *cli.Context) error {
 		return err
 	}
 
-	bdevLvolDecoupleParentRespJSON, err := json.Marshal(decoupled)
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevLvolDecoupleParentRespJSON))
-
-	return nil
+	return util.PrintObject(decoupled)
 }
 
 func BdevLvolResizeCmd() cli.Command {
@@ -365,11 +337,5 @@ func bdevLvolResize(c *cli.Context) error {
 		return err
 	}
 
-	bdevLvolResizeRespJSON, err := json.Marshal(resized)
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevLvolResizeRespJSON))
-
-	return nil
+	return util.PrintObject(resized)
 }

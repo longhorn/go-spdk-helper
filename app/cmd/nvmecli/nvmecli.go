@@ -2,7 +2,7 @@ package nvmecli
 
 import (
 	"encoding/json"
-	"fmt"
+
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
@@ -59,9 +59,8 @@ func discover(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(discoverRespJSON))
 
-	return nil
+	return util.PrintObject(discoverRespJSON)
 }
 
 func ConnectCmd() cli.Command {
@@ -104,9 +103,8 @@ func connect(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(connectRespJSON))
 
-	return nil
+	return util.PrintObject(connectRespJSON)
 }
 
 func DisconnectCmd() cli.Command {
@@ -165,9 +163,8 @@ func get(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(getRespJSON))
 
-	return nil
+	return util.PrintObject(getRespJSON)
 }
 
 func StartCmd() cli.Command {
@@ -220,18 +217,11 @@ func start(c *cli.Context) error {
 		return err
 	}
 
-	startRespJSON, err := json.MarshalIndent(
-		map[string]string{
-			"controller_name": initiator.GetControllerName(),
-			"namespace_name":  initiator.GetNamespaceName(),
-			"endpoint":        initiator.GetEndpoint(),
-		}, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(startRespJSON))
-
-	return nil
+	return util.PrintObject(map[string]string{
+		"controller_name": initiator.GetControllerName(),
+		"namespace_name":  initiator.GetNamespaceName(),
+		"endpoint":        initiator.GetEndpoint(),
+	})
 }
 
 func StopCmd() cli.Command {
