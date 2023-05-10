@@ -69,6 +69,8 @@ func NewInitiator(name, subsystemNQN, hostProc string) (*Initiator, error) {
 		Name:         name,
 		SubsystemNQN: subsystemNQN,
 
+		Endpoint: util.GetLonghornDevicePath(name),
+
 		hostProc: hostProc,
 		executor: executor,
 
@@ -93,10 +95,12 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 	}
 
 	// Check if the initiator/NVMe device is already launched and matches the params
-	if err := i.loadStartedDeviceInfoWithoutLock(); err == nil {
+	if err := i.loadNVMeDeviceInfoWithoutLock(); err == nil {
 		if i.TransportAddress == transportAddress && i.TransportServiceID == transportServiceID {
-			i.logger.Info("NVMe initiator is already launched with correct params")
-			return nil
+			if err := i.LoadEndpoint(); err == nil {
+				i.logger.Info("NVMe initiator is already launched with correct params")
+				return nil
+			}
 		}
 		i.logger.Warnf("NVMe initiator is launched but with incorrect address, the required one is %s:%s, will try to stop then relaunch it",
 			transportAddress, transportServiceID)
@@ -130,7 +134,7 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 		return fmt.Errorf("failed to start NVMe initiator %s within %d * %vsec retrys", i.Name, RetryCounts, RetryInterval.Seconds())
 	}
 
-	if err := i.loadStartedDeviceInfoWithoutLock(); err != nil {
+	if err := i.loadNVMeDeviceInfoWithoutLock(); err != nil {
 		return errors.Wrapf(err, "failed to load device info after starting NVMe initiator %s", i.Name)
 	}
 
@@ -138,7 +142,6 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 		return err
 	}
 
-	i.isUp = true
 	i.logger.Infof("Launched NVMe initiator")
 
 	return nil
@@ -189,10 +192,13 @@ func (i *Initiator) GetTransportServiceID() string {
 }
 
 func (i *Initiator) GetEndpoint() string {
-	return i.Endpoint
+	if i.isUp {
+		return i.Endpoint
+	}
+	return ""
 }
 
-func (i *Initiator) LoadStartedDeviceInfo() error {
+func (i *Initiator) LoadNVMeDeviceInfo() error {
 	if i.hostProc != "" {
 		lock := nsfilelock.NewLockWithTimeout(util.GetHostNamespacePath(i.hostProc), LockFile, LockTimeout)
 		if err := lock.Lock(); err != nil {
@@ -201,10 +207,10 @@ func (i *Initiator) LoadStartedDeviceInfo() error {
 		defer lock.Unlock()
 	}
 
-	return i.loadStartedDeviceInfoWithoutLock()
+	return i.loadNVMeDeviceInfoWithoutLock()
 }
 
-func (i *Initiator) loadStartedDeviceInfoWithoutLock() error {
+func (i *Initiator) loadNVMeDeviceInfoWithoutLock() error {
 	nvmeDevices, err := GetDevices(i.TransportAddress, i.TransportServiceID, i.SubsystemNQN, i.executor)
 	if err != nil {
 		return err
@@ -240,15 +246,25 @@ func (i *Initiator) loadStartedDeviceInfoWithoutLock() error {
 	return nil
 }
 
-func (i *Initiator) makeEndpoint() error {
-	endpoint := util.GetLonghornDevicePath(i.Name)
-	if i.Endpoint != "" && i.Endpoint != endpoint {
-		return fmt.Errorf("NVMe initiator %s already has an endpoint %s and it's different from the target endpoint %s", i.Name, i.Endpoint, endpoint)
-	}
-	if err := util.DuplicateDevice(i.dev, endpoint); err != nil {
+func (i *Initiator) LoadEndpoint() error {
+	dev, err := util.DetectDevice(i.Endpoint, i.executor)
+	if err != nil {
 		return err
 	}
-	i.Endpoint = endpoint
+	if i.NamespaceName != "" && i.NamespaceName != dev.Name {
+		return fmt.Errorf("detected device %s name mismatching from endpoint %v for NVMe initiator %s", dev.Name, i.Endpoint, i.Name)
+	}
+	i.dev = dev
+	i.isUp = true
+
+	return nil
+}
+
+func (i *Initiator) makeEndpoint() error {
+	if err := util.DuplicateDevice(i.dev, i.Endpoint); err != nil {
+		return err
+	}
+	i.isUp = true
 
 	return nil
 }
@@ -257,8 +273,8 @@ func (i *Initiator) removeEndpoint() error {
 	if err := util.RemoveDevice(i.Endpoint); err != nil {
 		return err
 	}
-	i.Endpoint = ""
 	i.dev = nil
+	i.isUp = false
 
 	return nil
 }

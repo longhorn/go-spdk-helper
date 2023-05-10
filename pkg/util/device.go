@@ -73,6 +73,43 @@ func GetKnownDevices(executor Executor) (map[string]*KernelDevice, error) {
 	return knownDevices, nil
 }
 
+func DetectDevice(path string, executor Executor) (*KernelDevice, error) {
+	/* Example command output
+	   $ lsblk -l -n <Device Path> -o NAME,MAJ:MIN
+	   nvme1n1     259:3
+	*/
+
+	opts := []string{
+		"-l", "-n", path, "-o", "NAME,MAJ:MIN",
+	}
+
+	output, err := executor.Execute(LSBLKBinary, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	var dev *KernelDevice
+	scanner := bufio.NewScanner(strings.NewReader(output))
+	for scanner.Scan() {
+		line := scanner.Text()
+		f := strings.Fields(line)
+		if len(f) == 2 {
+			dev = &KernelDevice{
+				Name: f[0],
+			}
+			if _, err := fmt.Sscanf(f[1], "%d:%d", &dev.Major, &dev.Minor); err != nil {
+				return nil, fmt.Errorf("invalid major:minor %s for device %s with path %s", dev.Name, f[1], path)
+			}
+		}
+		break
+	}
+	if dev == nil {
+		return nil, fmt.Errorf("failed to get device with path %s", path)
+	}
+
+	return dev, nil
+}
+
 func DuplicateDevice(dev *KernelDevice, dest string) error {
 	if dev == nil {
 		return fmt.Errorf("found nil device for device duplication")
