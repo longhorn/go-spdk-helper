@@ -1,14 +1,12 @@
 package basic
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
+	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
 func BdevRaidCmd() cli.Command {
@@ -68,13 +66,7 @@ func bdevRaidCreate(c *cli.Context) error {
 		return err
 	}
 
-	bdevRaidCreateRespJSON, err := json.Marshal(created)
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevRaidCreateRespJSON))
-
-	return nil
+	return util.PrintObject(created)
 }
 
 func BdevRaidDeleteCmd() cli.Command {
@@ -100,13 +92,7 @@ func bdevRaidDelete(c *cli.Context) error {
 		return err
 	}
 
-	bdevRaidDeleteRespJSON, err := json.Marshal(deleted)
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevRaidDeleteRespJSON))
-
-	return nil
+	return util.PrintObject(deleted)
 }
 
 func BdevRaidGetCmd() cli.Command {
@@ -152,11 +138,5 @@ func bdevRaidGet(c *cli.Context) error {
 		return err
 	}
 
-	bdevRaidGetRespJSON, err := json.MarshalIndent(bdevRaidGetResp, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevRaidGetRespJSON))
-
-	return nil
+	return util.PrintObject(bdevRaidGetResp)
 }

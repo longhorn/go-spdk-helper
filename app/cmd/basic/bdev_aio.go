@@ -1,13 +1,11 @@
 package basic
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
+	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
 func BdevAioCmd() cli.Command {
@@ -62,13 +60,7 @@ func bdevAioCreate(c *cli.Context) error {
 		return err
 	}
 
-	bdevAioCreateRespJSON, err := json.MarshalIndent(map[string]string{"bdev_name": bdevName}, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevAioCreateRespJSON))
-
-	return nil
+	return util.PrintObject(map[string]string{"bdev_name": bdevName})
 }
 
 func BdevAioDeleteCmd() cli.Command {
@@ -94,13 +86,7 @@ func bdevAioDelete(c *cli.Context) error {
 		return err
 	}
 
-	bdevAioDeleteRespJSON, err := json.MarshalIndent(deleted, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevAioDeleteRespJSON))
-
-	return nil
+	return util.PrintObject(deleted)
 }
 
 func BdevAioGetCmd() cli.Command {
@@ -133,11 +119,5 @@ func bdevAioGet(c *cli.Context) error {
 		return err
 	}
 
-	bdevAioGetRespJSON, err := json.MarshalIndent(bdevAioGetResp, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevAioGetRespJSON))
-
-	return nil
+	return util.PrintObject(bdevAioGetResp)
 }

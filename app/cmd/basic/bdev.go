@@ -1,12 +1,11 @@
 package basic
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
-
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+
+	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
+	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
 func BdevCmd() cli.Command {
@@ -48,11 +47,5 @@ func bdevGet(c *cli.Context) error {
 		return err
 	}
 
-	bdevGetRespJSON, err := json.MarshalIndent(bdevGetResp, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevGetRespJSON))
-
-	return nil
+	return util.PrintObject(bdevGetResp)
 }

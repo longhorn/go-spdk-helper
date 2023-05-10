@@ -1,8 +1,6 @@
 package advanced
 
 import (
-	"encoding/json"
-	"fmt"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
@@ -10,6 +8,7 @@ import (
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"github.com/longhorn/go-spdk-helper/pkg/types"
+	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
 func DeviceCmd() cli.Command {
@@ -54,18 +53,11 @@ func deviceAdd(c *cli.Context) error {
 		return err
 	}
 
-	deviceAddRespJSON, err := json.Marshal(
-		map[string]string{
-			"bdev_aio_name": bdevAioName,
-			"lvs_name":      lvsName,
-			"lvs_uuid":      lvsUUID,
-		})
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(deviceAddRespJSON))
-
-	return nil
+	return util.PrintObject(map[string]string{
+		"bdev_aio_name": bdevAioName,
+		"lvs_name":      lvsName,
+		"lvs_uuid":      lvsUUID,
+	})
 }
 
 func DeviceDeleteCmd() cli.Command {
@@ -93,7 +85,5 @@ func deviceDelete(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Println("true")
-
-	return nil
+	return util.PrintObject(true)
 }

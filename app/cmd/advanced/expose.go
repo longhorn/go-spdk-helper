@@ -1,25 +1,24 @@
 package advanced
 
 import (
-	"fmt"
-
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
+	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
 func ExposeCmd() cli.Command {
 	return cli.Command{
 		Name: "expose",
 		Subcommands: []cli.Command{
-			StarExposeCmd(),
+			StartExposeCmd(),
 			StopExposeCmd(),
 		},
 	}
 }
 
-func StarExposeCmd() cli.Command {
+func StartExposeCmd() cli.Command {
 	return cli.Command{
 		Name:  "start",
 		Usage: "Expose a bdev via nvmf: start --nqn <NVMF SUBSYSTEM NQN> --bdev-name <BDEV ALIAS or BDEV UUID> --ip <IP ADDRESS> --port <PORT NUMBER>",
@@ -63,9 +62,7 @@ func startExpose(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Println("true")
-
-	return nil
+	return util.PrintObject(true)
 }
 
 func StopExposeCmd() cli.Command {
@@ -97,7 +94,5 @@ func stopExpose(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Println("true")
-
-	return nil
+	return util.PrintObject(true)
 }

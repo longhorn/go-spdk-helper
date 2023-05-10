@@ -1,14 +1,12 @@
 package basic
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"github.com/longhorn/go-spdk-helper/pkg/types"
+	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
 func BdevLvstoreCmd() cli.Command {
@@ -64,13 +62,7 @@ func bdevLvstoreCreate(c *cli.Context) error {
 		return err
 	}
 
-	bdevLvstoreCreateRespJSON, err := json.Marshal(map[string]string{"uuid": uuid})
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevLvstoreCreateRespJSON))
-
-	return nil
+	return util.PrintObject(uuid)
 }
 
 func BdevLvstoreRenameCmd() cli.Command {
@@ -108,13 +100,7 @@ func bdevLvstoreRename(c *cli.Context) error {
 		return err
 	}
 
-	bdevLvstoreRenameRespJSON, err := json.Marshal(renamed)
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevLvstoreRenameRespJSON))
-
-	return nil
+	return util.PrintObject(renamed)
 }
 
 func BdevLvstoreDeleteCmd() cli.Command {
@@ -150,13 +136,7 @@ func bdevLvstoreDelete(c *cli.Context) error {
 		return err
 	}
 
-	bdevLvstoreDeleteRespJSON, err := json.Marshal(deleted)
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevLvstoreDeleteRespJSON))
-
-	return nil
+	return util.PrintObject(deleted)
 }
 
 func BdevLvstoreGetCmd() cli.Command {
@@ -192,11 +172,5 @@ func bdevLvstoreGet(c *cli.Context) error {
 		return err
 	}
 
-	bdevLvstoreGetRespJSON, err := json.MarshalIndent(bdevLvstoreGetResp, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevLvstoreGetRespJSON))
-
-	return nil
+	return util.PrintObject(bdevLvstoreGetResp)
 }

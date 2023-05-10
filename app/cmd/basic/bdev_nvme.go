@@ -1,14 +1,12 @@
 package basic
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
+	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
 func BdevNvmeCmd() cli.Command {
@@ -81,13 +79,7 @@ func bdevNvmeAttachController(c *cli.Context) error {
 		return err
 	}
 
-	bdevNvmeAttachControllerRespJSON, err := json.Marshal(bdevNameList)
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevNvmeAttachControllerRespJSON))
-
-	return nil
+	return util.PrintObject(bdevNameList)
 }
 
 func BdevNvmeDetachControllerCmd() cli.Command {
@@ -113,13 +105,7 @@ func bdevNvmeDetachController(c *cli.Context) error {
 		return err
 	}
 
-	bdevNvmeDetachControllerRespJSON, err := json.Marshal(detached)
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevNvmeDetachControllerRespJSON))
-
-	return nil
+	return util.PrintObject(detached)
 }
 
 func BdevNvmeGetControllersCmd() cli.Command {
@@ -145,13 +131,7 @@ func bdevNvmeGetControllers(c *cli.Context) error {
 		return err
 	}
 
-	bdevNvmeGetControllersRespJSON, err := json.MarshalIndent(bdevNvmeGetControllersResp, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevNvmeGetControllersRespJSON))
-
-	return nil
+	return util.PrintObject(bdevNvmeGetControllersResp)
 }
 
 func BdevNvmeGetCmd() cli.Command {
@@ -197,11 +177,5 @@ func bdevNvmeGet(c *cli.Context) error {
 		return err
 	}
 
-	bdevNvmeGetRespJSON, err := json.MarshalIndent(bdevNvmeGetResp, "", "\t")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(bdevNvmeGetRespJSON))
-
-	return nil
+	return util.PrintObject(bdevNvmeGetResp)
 }
