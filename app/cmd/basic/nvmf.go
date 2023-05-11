@@ -163,6 +163,16 @@ func NvmfGetSubsystemsCmd() cli.Command {
 	return cli.Command{
 		Name:  "subsystem-get",
 		Usage: "list all subsystem for the specified NVMe-oF target: subsystem-get <TGT NAME>",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "nqn",
+				Usage: "NVMe-oF target subsystem NQN",
+			},
+			cli.StringFlag{
+				Name:  "tgt-name",
+				Usage: "Parent NVMe-oF target name",
+			},
+		},
 		Action: func(c *cli.Context) {
 			if err := nvmfGetSubsystems(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run get nvmf subsystems command")
@@ -177,7 +187,7 @@ func nvmfGetSubsystems(c *cli.Context) error {
 		return err
 	}
 
-	subsystemList, err := spdkCli.NvmfGetSubsystems(c.String("tgt-name"))
+	subsystemList, err := spdkCli.NvmfGetSubsystems(c.String("nqn"), c.String("tgt-name"))
 	if err != nil {
 		return err
 	}
