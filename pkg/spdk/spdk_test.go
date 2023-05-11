@@ -2,11 +2,12 @@ package spdk
 
 import (
 	"fmt"
-	"github.com/longhorn/go-spdk-helper/pkg/types"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/longhorn/go-spdk-helper/pkg/types"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/target"
@@ -263,7 +264,7 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(transportList), Equals, 1)
 
-	subsystemList, err := spdkCli.NvmfGetSubsystems("")
+	subsystemList, err := spdkCli.NvmfGetSubsystems("", "")
 	c.Assert(err, IsNil)
 	c.Assert(len(transportList) >= 1, Equals, true)
 	found := false
