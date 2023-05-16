@@ -1,7 +1,6 @@
 package basic
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
@@ -63,12 +62,7 @@ func nvmfCreateTransport(c *cli.Context) error {
 		return err
 	}
 
-	bdevNvmfCreateTransportRespJSON, err := json.MarshalIndent(created, "", "\t")
-	if err != nil {
-		return err
-	}
-
-	return util.PrintObject(bdevNvmfCreateTransportRespJSON)
+	return util.PrintObject(created)
 }
 
 func NvmfGetTransportsCmd() cli.Command {

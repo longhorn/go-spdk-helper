@@ -1,8 +1,6 @@
 package nvmecli
 
 import (
-	"encoding/json"
-
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
@@ -55,12 +53,7 @@ func discover(c *cli.Context) error {
 		return err
 	}
 
-	discoverRespJSON, err := json.MarshalIndent(map[string]string{"subnqn": subnqn}, "", "\t")
-	if err != nil {
-		return err
-	}
-
-	return util.PrintObject(discoverRespJSON)
+	return util.PrintObject(map[string]string{"subnqn": subnqn})
 }
 
 func ConnectCmd() cli.Command {
@@ -99,12 +92,7 @@ func connect(c *cli.Context) error {
 		return err
 	}
 
-	connectRespJSON, err := json.MarshalIndent(map[string]string{"controllerName": controllerName}, "", "\t")
-	if err != nil {
-		return err
-	}
-
-	return util.PrintObject(connectRespJSON)
+	return util.PrintObject(map[string]string{"controllerName": controllerName})
 }
 
 func DisconnectCmd() cli.Command {
@@ -129,20 +117,17 @@ func GetCmd() cli.Command {
 		Usage: "Get all connected NVMe-oF devices/initiators if a subsystem nqn or address is not specified: \"get\" or \"get --traddr <IP> --trsvcid <PORT NUMBER> --nqn <SUBSYSTEM NQN>\"",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:     "traddr",
-				Usage:    "NVMe-oF target address: a ip or BDF",
-				Required: true,
-				Value:    types.LocalIP,
+				Name:  "traddr",
+				Usage: "NVMe-oF target address: a ip or BDF",
+				Value: types.LocalIP,
 			},
 			cli.StringFlag{
-				Name:     "trsvcid",
-				Usage:    "NVMe-oF target trsvcid: a port number",
-				Required: true,
+				Name:  "trsvcid",
+				Usage: "NVMe-oF target trsvcid: a port number",
 			},
 			cli.StringFlag{
-				Name:     "nqn",
-				Usage:    "NVMe-oF target subsystem nqn",
-				Required: true,
+				Name:  "nqn",
+				Usage: "NVMe-oF target subsystem nqn",
 			},
 		},
 		Action: func(c *cli.Context) {
@@ -159,12 +144,7 @@ func get(c *cli.Context) error {
 		return err
 	}
 
-	getRespJSON, err := json.MarshalIndent(getResp, "", "\t")
-	if err != nil {
-		return err
-	}
-
-	return util.PrintObject(getRespJSON)
+	return util.PrintObject(getResp)
 }
 
 func StartCmd() cli.Command {
