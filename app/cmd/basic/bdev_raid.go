@@ -99,21 +99,13 @@ func BdevRaidGetCmd() cli.Command {
 	return cli.Command{
 		Name: "get",
 		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:  "name",
-				Usage: "If you want to get one specific raid bdev info, please input this or uuid",
-			},
-			cli.StringFlag{
-				Name:  "uuid",
-				Usage: "If you want to get one specific raid bdev info, please input this or name",
-			},
 			cli.Uint64Flag{
 				Name:  "timeout, t",
-				Usage: "Optional. Determine the timeout of the execution",
+				Usage: "Determine the timeout of the execution",
 				Value: 0,
 			},
 		},
-		Usage: "get all raid bdevs if the info is not specified: \"get\", or \"get --name <RAID NAME>\", or \"get --uuid <UUID>\"",
+		Usage: "get all RAID bdevs if a RAID bdev name is not specified: \"get\", or \"get <RAID BDEV NAME>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevRaidGet(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run get bdev raid command")
@@ -128,12 +120,7 @@ func bdevRaidGet(c *cli.Context) error {
 		return err
 	}
 
-	name := c.String("name")
-	if name == "" {
-		name = c.String("uuid")
-	}
-
-	bdevRaidGetResp, err := spdkCli.BdevRaidGet(name, c.Uint64("timeout"))
+	bdevRaidGetResp, err := spdkCli.BdevRaidGet(c.Args().First(), c.Uint64("timeout"))
 	if err != nil {
 		return err
 	}

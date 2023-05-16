@@ -138,21 +138,13 @@ func BdevNvmeGetCmd() cli.Command {
 	return cli.Command{
 		Name: "get",
 		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:  "name",
-				Usage: "The name of a nvme bdev is typically \"<Nvme Controller NAME>n1\". If you want to get one specific Nvme info, please input this or uuid",
-			},
-			cli.StringFlag{
-				Name:  "uuid",
-				Usage: "If you want to get one specific Nvme info, please input this or name",
-			},
 			cli.Uint64Flag{
 				Name:  "timeout, t",
 				Usage: "Determine the timeout of the execution",
 				Value: 0,
 			},
 		},
-		Usage: "get all Nvme bdevs if the name is not specified: \"get\", or \"get --name <NVME CONTROLLER NAME>n1\", or \"get --uuid <UUID>\"",
+		Usage: "get all Nvme bdevs if the name is not specified: \"get\", or \"get <NVME NAMESPACE NAME>\", or \"get <UUID>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevNvmeGet(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run get nvme controller command")
@@ -167,12 +159,7 @@ func bdevNvmeGet(c *cli.Context) error {
 		return err
 	}
 
-	name := c.String("name")
-	if name == "" {
-		name = c.String("uuid")
-	}
-
-	bdevNvmeGetResp, err := spdkCli.BdevNvmeGet(name, c.Uint64("timeout"))
+	bdevNvmeGetResp, err := spdkCli.BdevNvmeGet(c.Args().First(), c.Uint64("timeout"))
 	if err != nil {
 		return err
 	}
