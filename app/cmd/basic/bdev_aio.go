@@ -99,7 +99,7 @@ func BdevAioGetCmd() cli.Command {
 				Value: 0,
 			},
 		},
-		Usage: "get all bdev aio if a bdev name is not specified: get <BDEV NAME>",
+		Usage: "get all AIO bdevs if a bdev name is not specified: \"get\", or \"get <AIO BDEV NAME>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevAioGet(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run get bdev aio command")

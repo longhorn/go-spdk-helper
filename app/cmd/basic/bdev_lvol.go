@@ -120,21 +120,13 @@ func BdevLvolGetCmd() cli.Command {
 	return cli.Command{
 		Name: "get",
 		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:  "alias",
-				Usage: "The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. If you want to get one specific Lvol info, please input this or uuid",
-			},
-			cli.StringFlag{
-				Name:  "uuid",
-				Usage: "If you want to get one specific Lvol info, please input this or alias",
-			},
 			cli.Uint64Flag{
 				Name:  "timeout, t",
 				Usage: "Determine the timeout of the execution",
 				Value: 0,
 			},
 		},
-		Usage: "get all bdev lvol if the info is not specified: \"get\", or \"get --alias <LVSTORE NAME>/<LVOL NAME>\", or \"get --uuid <UUID>\"",
+		Usage: "get all bdev lvol if the info is not specified: \"get\", or \"get <LVSTORE NAME>/<LVOL NAME>\", or \"get <UUID>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevLvolGet(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run get bdev lvol command")
@@ -149,12 +141,7 @@ func bdevLvolGet(c *cli.Context) error {
 		return err
 	}
 
-	name := c.String("alias")
-	if name == "" {
-		name = c.String("uuid")
-	}
-
-	bdevLvolGetResp, err := spdkCli.BdevLvolGet(name, c.Uint64("timeout"))
+	bdevLvolGetResp, err := spdkCli.BdevLvolGet(c.Args().First(), c.Uint64("timeout"))
 	if err != nil {
 		return err
 	}
