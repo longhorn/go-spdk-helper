@@ -18,6 +18,7 @@ func BdevLvstoreCmd() cli.Command {
 			BdevLvstoreDeleteCmd(),
 			BdevLvstoreGetCmd(),
 			BdevLvstoreRenameCmd(),
+			BdevLvstoreGetLvolsCmd(),
 		},
 	}
 }
@@ -168,6 +169,42 @@ func bdevLvstoreGet(c *cli.Context) error {
 	}
 
 	bdevLvstoreGetResp, err := spdkCli.BdevLvolGetLvstore(c.String("lvs-name"), c.String("uuid"))
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(bdevLvstoreGetResp)
+}
+
+func BdevLvstoreGetLvolsCmd() cli.Command {
+	return cli.Command{
+		Name: "list-lvols",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "lvs-name",
+				Usage: "If you want to get one specific Lvstore info, please input this or uuid",
+			},
+			cli.StringFlag{
+				Name:  "uuid",
+				Usage: "If you want to get one specific Lvstore info, please input this or lvs-name",
+			},
+		},
+		Usage: "list all logical volumes info: \"list\", or \"list --lvs-name <LVSTORE NAME>\", or \"list --uuid <LVSTORE UUID>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvolList(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run list lvol command")
+			}
+		},
+	}
+}
+
+func bdevLvolList(c *cli.Context) error {
+	spdkCli, err := client.NewClient()
+	if err != nil {
+		return err
+	}
+
+	bdevLvstoreGetResp, err := spdkCli.BdevLvolGetLvols(c.String("lvs-name"), c.String("uuid"))
 	if err != nil {
 		return err
 	}
