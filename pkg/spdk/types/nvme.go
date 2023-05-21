@@ -56,9 +56,9 @@ type NvmeTransportID struct {
 	Traddr               string            `json:"traddr,omitempty"`
 	Trsvcid              string            `json:"trsvcid,omitempty"`
 	Subnqn               string            `json:"subnqn,omitempty"`
-	CtrlrLossTimeoutSec  uint32            `json:"ctrlr_loss_timeout_sec"`
-	ReconnectDelaySec    uint32            `json:"reconnect_delay_sec"`
-	FastIOFailTimeoutSec uint32            `json:"fast_io_fail_timeout_sec"`
+	CtrlrLossTimeoutSec  int32             `json:"ctrlr_loss_timeout_sec"`
+	ReconnectDelaySec    int32             `json:"reconnect_delay_sec"`
+	FastIOFailTimeoutSec int32             `json:"fast_io_fail_timeout_sec"`
 }
 
 type NvmeVendorSpecific struct {

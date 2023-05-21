@@ -438,7 +438,7 @@ func (c *Client) BdevRaidGetInfoByCategory(category spdktypes.BdevRaidCategory) 
 // "reconnectDelaySec": Controller reconnect delay in seconds
 //
 // "fastIOFailTimeoutSec": Fast I/O failure timeout in seconds
-func (c *Client) BdevNvmeAttachController(name, subnqn, traddr, trsvcid string, trtype spdktypes.NvmeTransportType, adrfam spdktypes.NvmeAddressFamily, ctrlrLossTimeoutSec, reconnectDelaySec, fastIOFailTimeoutSec uint32) (bdevNameList []string, err error) {
+func (c *Client) BdevNvmeAttachController(name, subnqn, traddr, trsvcid string, trtype spdktypes.NvmeTransportType, adrfam spdktypes.NvmeAddressFamily, ctrlrLossTimeoutSec, reconnectDelaySec, fastIOFailTimeoutSec int32) (bdevNameList []string, err error) {
 	req := spdktypes.BdevNvmeAttachControllerRequest{
 		Name: name,
 		NvmeTransportID: spdktypes.NvmeTransportID{
