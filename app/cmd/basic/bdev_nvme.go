@@ -57,6 +57,21 @@ func BdevNvmeAttachControllerCmd() cli.Command {
 				Usage: "NVMe-oF target adrfam: \"ipv4\", \"ipv6\", \"ib\", \"fc\", \"intra_host\"",
 				Value: string(spdktypes.NvmeAddressFamilyIPv4),
 			},
+			cli.UintFlag{
+				Name:  "ctrlr-loss-timeout-sec",
+				Usage: "NVMe-oF controller loss timeout in seconds for error cases",
+				Value: 0,
+			},
+			cli.UintFlag{
+				Name:  "reconnect-delay-sec",
+				Usage: "NVMe-oF controller reconnect delay in seconds for error cases",
+				Value: 0,
+			},
+			cli.UintFlag{
+				Name:  "fast-io-fail-timeout-sec",
+				Usage: "NVMe-oF controller fast I/O fail timeout in seconds for error cases",
+				Value: 0,
+			},
 		},
 		Action: func(c *cli.Context) {
 			if err := bdevNvmeAttachController(c); err != nil {
@@ -74,7 +89,8 @@ func bdevNvmeAttachController(c *cli.Context) error {
 
 	bdevNameList, err := spdkCli.BdevNvmeAttachController(c.String("name"), c.String("subnqn"),
 		c.String("traddr"), c.String("trsvcid"),
-		spdktypes.NvmeTransportType(c.String("trtype")), spdktypes.NvmeAddressFamily(c.String("adrfam")))
+		spdktypes.NvmeTransportType(c.String("trtype")), spdktypes.NvmeAddressFamily(c.String("adrfam")),
+		uint32(c.Uint("ctrlr-loss-timeout-sec")), uint32(c.Uint("reconnect-delay-sec")), uint32(c.Uint("fast-io-fail-timeout-sec")))
 	if err != nil {
 		return err
 	}
