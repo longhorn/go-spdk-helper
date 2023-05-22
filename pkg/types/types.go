@@ -12,6 +12,10 @@ const (
 
 	FrontendSPDKTCPNvmf     = "spdk-tcp-nvmf"
 	FrontendSPDKTCPBlockdev = "spdk-tcp-blockdev"
+
+	DefaultCtrlrLossTimeoutSec  = 30
+	DefaultReconnectDelaySec    = 30
+	DefaultFastIoFailTimeoutSec = 15
 )
 
 func GetNQN(name string) string {

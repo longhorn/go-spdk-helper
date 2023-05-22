@@ -449,7 +449,7 @@ func (c *Client) BdevNvmeAttachController(name, subnqn, traddr, trsvcid string, 
 			Adrfam:               adrfam,
 			CtrlrLossTimeoutSec:  ctrlrLossTimeoutSec,
 			ReconnectDelaySec:    reconnectDelaySec,
-			FastIOFailTimeoutSec: reconnectDelaySec,
+			FastIOFailTimeoutSec: fastIOFailTimeoutSec,
 		},
 	}
 
