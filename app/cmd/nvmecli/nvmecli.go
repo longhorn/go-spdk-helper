@@ -12,6 +12,13 @@ import (
 func Cmd() cli.Command {
 	return cli.Command{
 		Name: "nvmecli",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "host-proc",
+				Usage: "The host proc path of namespace executor. Empty means not using a namespace executor. By default empty",
+				Value: "",
+			},
+		},
 		Subcommands: []cli.Command{
 			DiscoverCmd(),
 			ConnectCmd(),
@@ -48,7 +55,12 @@ func DiscoverCmd() cli.Command {
 }
 
 func discover(c *cli.Context) error {
-	subnqn, err := nvme.DiscoverTarget(c.String("traddr"), c.String("trsvcid"), util.NewTimeoutExecutor(util.CmdTimeout))
+	executor, err := util.GetExecutorByHostProc(c.String("host-proc"))
+	if err != nil {
+		return err
+	}
+
+	subnqn, err := nvme.DiscoverTarget(c.String("traddr"), c.String("trsvcid"), executor)
 	if err != nil {
 		return err
 	}
@@ -87,7 +99,12 @@ func ConnectCmd() cli.Command {
 }
 
 func connect(c *cli.Context) error {
-	controllerName, err := nvme.ConnectTarget(c.String("traddr"), c.String("trsvcid"), c.String("nqn"), util.NewTimeoutExecutor(util.CmdTimeout))
+	executor, err := util.GetExecutorByHostProc(c.String("host-proc"))
+	if err != nil {
+		return err
+	}
+
+	controllerName, err := nvme.ConnectTarget(c.String("traddr"), c.String("trsvcid"), c.String("nqn"), executor)
 	if err != nil {
 		return err
 	}
@@ -108,7 +125,12 @@ func DisconnectCmd() cli.Command {
 }
 
 func disconnect(c *cli.Context) error {
-	return nvme.DisconnectTarget(c.Args().First(), util.NewTimeoutExecutor(util.CmdTimeout))
+	executor, err := util.GetExecutorByHostProc(c.String("host-proc"))
+	if err != nil {
+		return err
+	}
+
+	return nvme.DisconnectTarget(c.Args().First(), executor)
 }
 
 func GetCmd() cli.Command {
@@ -139,7 +161,12 @@ func GetCmd() cli.Command {
 }
 
 func get(c *cli.Context) error {
-	getResp, err := nvme.GetDevices(c.String("traddr"), c.String("trsvcid"), c.String("nqn"), util.NewTimeoutExecutor(util.CmdTimeout))
+	executor, err := util.GetExecutorByHostProc(c.String("host-proc"))
+	if err != nil {
+		return err
+	}
+
+	getResp, err := nvme.GetDevices(c.String("traddr"), c.String("trsvcid"), c.String("nqn"), executor)
 	if err != nil {
 		return err
 	}
@@ -171,11 +198,6 @@ func StartCmd() cli.Command {
 				Name:     "nqn",
 				Usage:    "NVMe-oF target subsystem nqn",
 				Required: true,
-			},
-			cli.StringFlag{
-				Name:  "host-proc",
-				Usage: "The host proc path of namespace executor. Empty means not using a namespace executor. By default empty",
-				Value: "",
 			},
 		},
 		Usage: "Start a NVMe-oF initiator and make a device based on the name: start --name <NAME> --traddr <IP> --trsvcid <PORT NUMBER> --nqn <SUBSYSTEM NQN>",
@@ -217,11 +239,6 @@ func StopCmd() cli.Command {
 				Name:     "nqn",
 				Usage:    "NVMe-oF target subsystem nqn",
 				Required: true,
-			},
-			cli.StringFlag{
-				Name:  "host-proc",
-				Usage: "The host proc path of namespace executor. Empty means not using a namespace executor. By default empty",
-				Value: "",
 			},
 		},
 		Usage: "Stop a NVMe-oF initiator and remove the corresponding device: stop --name <NAME> --nqn <SUBSYSTEM NQN>",
