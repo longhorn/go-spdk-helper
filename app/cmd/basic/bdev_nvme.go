@@ -6,6 +6,7 @@ import (
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
+	"github.com/longhorn/go-spdk-helper/pkg/types"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
@@ -60,17 +61,17 @@ func BdevNvmeAttachControllerCmd() cli.Command {
 			cli.IntFlag{
 				Name:  "ctrlr-loss-timeout-sec",
 				Usage: "NVMe-oF controller loss timeout in seconds for error cases",
-				Value: 0,
+				Value: types.DefaultCtrlrLossTimeoutSec,
 			},
 			cli.IntFlag{
 				Name:  "reconnect-delay-sec",
 				Usage: "NVMe-oF controller reconnect delay in seconds for error cases",
-				Value: 0,
+				Value: types.DefaultReconnectDelaySec,
 			},
 			cli.IntFlag{
 				Name:  "fast-io-fail-timeout-sec",
 				Usage: "NVMe-oF controller fast I/O fail timeout in seconds for error cases",
-				Value: 0,
+				Value: types.DefaultFastIoFailTimeoutSec,
 			},
 		},
 		Action: func(c *cli.Context) {
