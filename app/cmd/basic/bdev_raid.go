@@ -17,6 +17,7 @@ func BdevRaidCmd() cli.Command {
 			BdevRaidCreateCmd(),
 			BdevRaidDeleteCmd(),
 			BdevRaidGetCmd(),
+			BdevRaidRemoveBaseBdevCmd(),
 		},
 	}
 }
@@ -126,4 +127,30 @@ func bdevRaidGet(c *cli.Context) error {
 	}
 
 	return util.PrintObject(bdevRaidGetResp)
+}
+
+func BdevRaidRemoveBaseBdevCmd() cli.Command {
+	return cli.Command{
+		Name:  "remove-base-bdev",
+		Usage: "remove base bdev from a raid bdev: remove-base-bdev <BASE BDEV NAME>",
+		Action: func(c *cli.Context) {
+			if err := bdevRaidRemoveBaseBdev(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run remove base bdev from raid command")
+			}
+		},
+	}
+}
+
+func bdevRaidRemoveBaseBdev(c *cli.Context) error {
+	spdkCli, err := client.NewClient()
+	if err != nil {
+		return err
+	}
+
+	deleted, err := spdkCli.BdevRaidRemoveBaseBdev(c.Args().First())
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(deleted)
 }
