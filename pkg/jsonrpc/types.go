@@ -22,10 +22,6 @@ func NewMessage(id uint32, method string, params interface{}) *Message {
 
 type RespErrorMsg string
 
-const (
-	RespErrorMsgNoSuchDevice = "No such device"
-)
-
 type RespErrorCode int32
 
 const (
@@ -53,5 +49,5 @@ func IsJSONRPCRespErrorNoSuchDevice(err error) bool {
 	if !ok {
 		return false
 	}
-	return jsonRPCError.Code == RespErrorCodeNoSuchDevice && jsonRPCError.Message == RespErrorMsgNoSuchDevice
+	return jsonRPCError.Code == RespErrorCodeNoSuchDevice
 }
