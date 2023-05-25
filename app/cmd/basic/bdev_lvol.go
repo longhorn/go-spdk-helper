@@ -32,8 +32,12 @@ func BdevLvolCreateCmd() cli.Command {
 		Name: "create",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:     "lvs-name",
-				Required: true,
+				Name:  "lvs-name",
+				Usage: "Specify this or lvs-uuid",
+			},
+			cli.StringFlag{
+				Name:  "lvs-uuid",
+				Usage: "Specify this or lvs-name",
 			},
 			cli.StringFlag{
 				Name:     "lvol-name",
@@ -43,9 +47,6 @@ func BdevLvolCreateCmd() cli.Command {
 				Name:     "size",
 				Usage:    "Specify bdev lvol size in MiB",
 				Required: true,
-			},
-			cli.StringFlag{
-				Name: "uuid",
 			},
 		},
 		Usage: "create a bdev lvol on a lvstore: \"create --lvs-name <LVSTORE NAME> --lvol-name <LVOL NAME> --size <LVOL SIZE in MIB>\"",
@@ -63,10 +64,11 @@ func bdevLvolCreate(c *cli.Context) error {
 		return err
 	}
 
-	lvsName := c.String("lvs-name")
+	lvsName, lvsUUID := c.String("lvs-name"), c.String("lvs-uuid")
 	lvolName := c.String("lvol-name")
+	size := c.Uint64("size")
 
-	uuid, err := spdkCli.BdevLvolCreate(lvsName, lvolName, c.String("uuid"), c.Uint64("size"),
+	uuid, err := spdkCli.BdevLvolCreate(lvsName, lvsUUID, lvolName, size,
 		spdktypes.BdevLvolClearMethodUnmap, true)
 	if err != nil {
 		return err
