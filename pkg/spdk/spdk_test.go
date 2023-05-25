@@ -51,7 +51,9 @@ func LaunchTestSPDKTarget(c *C, execute func(name string, args []string) (string
 
 	if !targetReady {
 		go func() {
-			err := target.StartTarget(GetSPDKDir(), execute)
+			err := target.Setup(GetSPDKDir(), execute)
+			c.Assert(err, IsNil)
+			err = target.StartTarget(GetSPDKDir(), execute)
 			c.Assert(err, IsNil)
 		}()
 
@@ -133,14 +135,14 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	c.Assert(lvs.ClusterSize*(lvs.TotalDataClusters+1), Equals, defaultDeviceSize)
 
 	lvolName1, lvolName2 := "test-lvol1", "test-lvol2"
-	lvolUUID1, err := spdkCli.BdevLvolCreate(lvsName, lvolName1, "", defaultLvolSizeInMiB, "", true)
+	lvolUUID1, err := spdkCli.BdevLvolCreate(lvsName, "", lvolName1, defaultLvolSizeInMiB, "", true)
 	c.Assert(err, IsNil)
 	defer func() {
 		deleted, err := spdkCli.BdevLvolDelete(lvolUUID1)
 		c.Assert(err, IsNil)
 		c.Assert(deleted, Equals, true)
 	}()
-	lvolUUID2, err := spdkCli.BdevLvolCreate(lvsName, lvolName2, "", defaultLvolSizeInMiB, "", true)
+	lvolUUID2, err := spdkCli.BdevLvolCreate("", lvsUUID, lvolName2, defaultLvolSizeInMiB, "", true)
 	c.Assert(err, IsNil)
 	defer func() {
 		deleted, err := spdkCli.BdevLvolDelete(lvolUUID2)
@@ -159,6 +161,7 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 		c.Assert(lvol.DriverSpecific.Lvol.BaseBdev, Equals, defaultDeviceName)
 		c.Assert(lvol.DriverSpecific.Lvol.Snapshot, Equals, false)
 		c.Assert(lvol.DriverSpecific.Lvol.Clone, Equals, false)
+		c.Assert(lvol.DriverSpecific.Lvol.LvolStoreUUID, Equals, lvsUUID)
 		if lvol.UUID == lvolUUID1 {
 			c.Assert(lvol.Aliases[0], Equals, fmt.Sprintf("%s/%s", lvsName, lvolName1))
 		}
