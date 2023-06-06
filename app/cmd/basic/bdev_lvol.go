@@ -23,6 +23,7 @@ func BdevLvolCmd() cli.Command {
 			BdevLvolCloneCmd(),
 			BdevLvolDecoupleParentCmd(),
 			BdevLvolResizeCmd(),
+			BdevLvolShallowCopyCmd(),
 		},
 	}
 }
@@ -327,4 +328,50 @@ func bdevLvolResize(c *cli.Context) error {
 	}
 
 	return util.PrintObject(resized)
+}
+
+func BdevLvolShallowCopyCmd() cli.Command {
+	return cli.Command{
+		Name: "shallow-copy",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "src-lvol-alias",
+				Usage: "The alias of a snapshot lvol to create a copy from, which is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
+			},
+			cli.StringFlag{
+				Name:  "src-lvol-uuid",
+				Usage: "Specify this or alias",
+			},
+			cli.StringFlag{
+				Name:     "dest-bdev-name",
+				Usage:    "Name of the bdev that acts as destination for the copy",
+				Required: true,
+			},
+		},
+		Usage: "copy active clusters/data from a read-only logical volume to a bdev: \"shallow-copy --src-lvol-alias <LVSTORE NAME>/<LVOL NAME> --dest-bdev-name <BDEV NAME>\", or \"shallow-copy --uuid <LVOL UUID> --dest-bdev-name <BDEV NAME>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvolShallowCopy(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run shallow copy bdev lvol command")
+			}
+		},
+	}
+}
+
+func bdevLvolShallowCopy(c *cli.Context) error {
+	spdkCli, err := client.NewClient()
+	if err != nil {
+		return err
+	}
+
+	srcLvolName := c.String("src-lvol-alias")
+	if srcLvolName == "" {
+		srcLvolName = c.String("src-lvol-uuid")
+	}
+
+	copied, err := spdkCli.BdevLvolShallowCopy(srcLvolName, c.String("dest-bdev-name"))
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(copied)
 }
