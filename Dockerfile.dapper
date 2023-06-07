@@ -71,7 +71,7 @@ RUN pip3 install grpcio grpcio_tools protobuf
 ENV SPDK_DIR /usr/src/spdk
 RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} && \
     cd $SPDK_DIR && \
-    git checkout 980f535d3876a5a6665486ad0cfaac5d584034aa && \
+    git checkout c22a9a76836ca43d6298a96340e70a83f089d5e0 && \
     ./scripts/pkgdep.sh && \
     git submodule update --init && \
     ./configure && \
