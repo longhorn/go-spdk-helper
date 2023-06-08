@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/longhorn/go-spdk-helper/app/cmd/spdktgt"
 	"os"
+
+	"github.com/longhorn/go-spdk-helper/app/cmd/spdktgt"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -43,6 +44,6 @@ func main() {
 		spdktgt.Cmd(),
 	}
 	if err := a.Run(os.Args); err != nil {
-		logrus.WithError(err).Fatal("Error when executing command")
+		logrus.WithError(err).Fatal("Failed to execute command")
 	}
 }
