@@ -343,12 +343,12 @@ func BdevLvolShallowCopyCmd() cli.Command {
 				Usage: "Specify this or alias",
 			},
 			cli.StringFlag{
-				Name:     "dest-bdev-name",
+				Name:     "dst-bdev-name",
 				Usage:    "Name of the bdev that acts as destination for the copy",
 				Required: true,
 			},
 		},
-		Usage: "copy active clusters/data from a read-only logical volume to a bdev: \"shallow-copy --src-lvol-alias <LVSTORE NAME>/<LVOL NAME> --dest-bdev-name <BDEV NAME>\", or \"shallow-copy --uuid <LVOL UUID> --dest-bdev-name <BDEV NAME>\"",
+		Usage: "copy active clusters/data from a read-only logical volume to a bdev: \"shallow-copy --src-lvol-alias <LVSTORE NAME>/<LVOL NAME> --dst-bdev-name <BDEV NAME>\", or \"shallow-copy --uuid <LVOL UUID> --dst-bdev-name <BDEV NAME>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevLvolShallowCopy(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run shallow copy bdev lvol command")
@@ -368,7 +368,7 @@ func bdevLvolShallowCopy(c *cli.Context) error {
 		srcLvolName = c.String("src-lvol-uuid")
 	}
 
-	copied, err := spdkCli.BdevLvolShallowCopy(srcLvolName, c.String("dest-bdev-name"))
+	copied, err := spdkCli.BdevLvolShallowCopy(srcLvolName, c.String("dst-bdev-name"))
 	if err != nil {
 		return err
 	}
