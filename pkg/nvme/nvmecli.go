@@ -125,9 +125,13 @@ func performNvmeListSubsystems(device string, executor util.Executor) ([]Subsyst
 
 	opts := []string{
 		"list-subsys",
-		device,
 		"-o", "json",
 	}
+
+	if device != "" {
+		opts = append(opts, device)
+	}
+
 	outputStr, err := executor.Execute(nvmeBinary, opts)
 	if err != nil {
 		return nil, err

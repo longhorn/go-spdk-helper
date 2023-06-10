@@ -48,6 +48,12 @@ func DisconnectTarget(nqn string, executor util.Executor) error {
 
 // GetDevices returns all devices
 func GetDevices(ip, port, nqn string, executor util.Executor) (devices []Device, err error) {
+	defer func() {
+		if err != nil {
+			logrus.WithError(err).Warnf("Failed to get devices for address %s:%s and nqn %s", ip, port, nqn)
+		}
+	}()
+
 	devices = []Device{}
 
 	nvmeDevices, err := performNvmeList(executor)
@@ -130,6 +136,20 @@ func GetDevices(ip, port, nqn string, executor util.Executor) (devices []Device,
 	}
 
 	if len(res) == 0 {
+		subsystems, err := performNvmeListSubsystems("", executor)
+		if err != nil {
+			return nil, err
+		}
+		for _, sys := range subsystems {
+			if sys.NQN != nqn {
+				continue
+			}
+			for _, path := range sys.Paths {
+				return nil, fmt.Errorf("subsystem NQN %s path %v address %v is in %s state",
+					nqn, path.Name, path.Address, path.State)
+			}
+		}
+
 		return nil, fmt.Errorf("cannot find a valid nvme device with subsystem NQN %s and address %s:%s", nqn, ip, port)
 	}
 	return res, nil
