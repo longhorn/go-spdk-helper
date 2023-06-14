@@ -1,6 +1,7 @@
 package target
 
 import (
+	"context"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
@@ -38,7 +39,7 @@ func SetupTarget(spdkDir string, execute func(name string, args []string) (strin
 }
 
 func StartTarget(spdkDir string, execute func(name string, args []string) (string, error)) (err error) {
-	if spdkCli, err := client.NewClient(); err == nil {
+	if spdkCli, err := client.NewClient(context.Background()); err == nil {
 		if _, err := spdkCli.BdevGetBdevs("", 0); err == nil {
 			logrus.Info("Detected running spdk_tgt, skipped the target starting")
 			return nil

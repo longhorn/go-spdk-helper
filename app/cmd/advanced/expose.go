@@ -1,6 +1,8 @@
 package advanced
 
 import (
+	"context"
+
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
@@ -53,7 +55,7 @@ func StartExposeCmd() cli.Command {
 }
 
 func startExpose(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -85,7 +87,7 @@ func StopExposeCmd() cli.Command {
 }
 
 func stopExpose(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}

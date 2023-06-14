@@ -1,6 +1,7 @@
 package spdk
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -43,7 +44,7 @@ func GetSPDKDir() string {
 
 func LaunchTestSPDKTarget(c *C, execute func(name string, args []string) (string, error)) {
 	targetReady := false
-	if spdkCli, err := client.NewClient(); err == nil {
+	if spdkCli, err := client.NewClient(context.Background()); err == nil {
 		if _, err := spdkCli.BdevGetBdevs("", 0); err == nil {
 			targetReady = true
 		}
@@ -56,7 +57,7 @@ func LaunchTestSPDKTarget(c *C, execute func(name string, args []string) (string
 		}()
 
 		for cnt := 0; cnt < 30; cnt++ {
-			if spdkCli, err := client.NewClient(); err == nil {
+			if spdkCli, err := client.NewClient(context.Background()); err == nil {
 				if _, err := spdkCli.BdevGetBdevs("", 0); err == nil {
 					targetReady = true
 					break
@@ -100,7 +101,7 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 		os.RemoveAll(defaultDevicePath)
 	}()
 
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	c.Assert(err, IsNil)
 
 	// Do blindly cleanup

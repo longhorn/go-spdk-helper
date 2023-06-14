@@ -1,6 +1,7 @@
 package basic
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
@@ -52,7 +53,7 @@ func NvmfCreateTransportCmd() cli.Command {
 }
 
 func nvmfCreateTransport(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -88,7 +89,7 @@ func NvmfGetTransportsCmd() cli.Command {
 }
 
 func nvmfGetTransports(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -114,7 +115,7 @@ func NvmfCreateSubsystemCmd() cli.Command {
 }
 
 func nvmfCreateSubsystem(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -140,7 +141,7 @@ func NvmfDeleteSubsystemCmd() cli.Command {
 }
 
 func nvmfDeleteSubsystem(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -176,7 +177,7 @@ func NvmfGetSubsystemsCmd() cli.Command {
 }
 
 func nvmfGetSubsystems(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -214,7 +215,7 @@ func NvmfSubsystemAddNsCmd() cli.Command {
 }
 
 func nvmfSubsystemAddNs(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -252,7 +253,7 @@ func NvmfSubsystemRemoveNsCmd() cli.Command {
 }
 
 func nvmfSubsystemRemoveNs(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -298,7 +299,7 @@ func nvmfSubsystemGetNss(c *cli.Context) error {
 		return fmt.Errorf("subsystem NQN is required")
 	}
 
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -351,7 +352,7 @@ func NvmfSubsystemAddListenerCmd() cli.Command {
 }
 
 func nvmfSubsystemAddListener(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -405,7 +406,7 @@ func NvmfSubsystemRemoveListenerCmd() cli.Command {
 }
 
 func nvmfSubsystemRemoveListener(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -432,7 +433,7 @@ func NvmfSubsystemGetListenersCmd() cli.Command {
 }
 
 func nvmfSubsystemGetListeners(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}

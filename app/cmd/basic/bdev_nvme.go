@@ -1,6 +1,8 @@
 package basic
 
 import (
+	"context"
+
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
@@ -84,7 +86,7 @@ func BdevNvmeAttachControllerCmd() cli.Command {
 }
 
 func bdevNvmeAttachController(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -113,7 +115,7 @@ func BdevNvmeDetachControllerCmd() cli.Command {
 }
 
 func bdevNvmeDetachController(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -139,7 +141,7 @@ func BdevNvmeGetControllersCmd() cli.Command {
 }
 
 func bdevNvmeGetControllers(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -172,7 +174,7 @@ func BdevNvmeGetCmd() cli.Command {
 }
 
 func bdevNvmeGet(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -220,7 +222,7 @@ func BdevNvmeSetOptionsCmd() cli.Command {
 }
 
 func bdevNvmeSetOptions(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}

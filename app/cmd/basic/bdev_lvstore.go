@@ -1,6 +1,8 @@
 package basic
 
 import (
+	"context"
+
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
@@ -53,7 +55,7 @@ func BdevLvstoreCreateCmd() cli.Command {
 }
 
 func bdevLvstoreCreate(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -91,7 +93,7 @@ func BdevLvstoreRenameCmd() cli.Command {
 }
 
 func bdevLvstoreRename(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -127,7 +129,7 @@ func BdevLvstoreDeleteCmd() cli.Command {
 }
 
 func bdevLvstoreDelete(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -163,7 +165,7 @@ func BdevLvstoreGetCmd() cli.Command {
 }
 
 func bdevLvstoreGet(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -199,7 +201,7 @@ func BdevLvstoreGetLvolsCmd() cli.Command {
 }
 
 func bdevLvolList(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}

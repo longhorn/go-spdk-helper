@@ -1,6 +1,7 @@
 package basic
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
@@ -62,7 +63,7 @@ func BdevLvolCreateCmd() cli.Command {
 }
 
 func bdevLvolCreate(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -103,7 +104,7 @@ func BdevLvolDeleteCmd() cli.Command {
 }
 
 func bdevLvolDelete(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -141,7 +142,7 @@ func BdevLvolGetCmd() cli.Command {
 }
 
 func bdevLvolGet(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -182,7 +183,7 @@ func BdevLvolSnapshotCmd() cli.Command {
 }
 
 func bdevLvolSnapshot(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -228,7 +229,7 @@ func BdevLvolCloneCmd() cli.Command {
 }
 
 func bdevLvolClone(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -269,7 +270,7 @@ func BdevLvolDecoupleParentCmd() cli.Command {
 }
 
 func bdevLvolDecoupleParent(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -314,7 +315,7 @@ func BdevLvolResizeCmd() cli.Command {
 }
 
 func bdevLvolResize(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -360,7 +361,7 @@ func BdevLvolShallowCopyCmd() cli.Command {
 }
 
 func bdevLvolShallowCopy(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
