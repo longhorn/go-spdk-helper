@@ -1,6 +1,7 @@
 package advanced
 
 import (
+	"context"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
@@ -43,7 +44,7 @@ func DeviceAddCmd() cli.Command {
 func deviceAdd(c *cli.Context) error {
 	devicePath := c.Args().First()
 
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -76,7 +77,7 @@ func deviceDelete(c *cli.Context) error {
 	devicePath := c.Args().First()
 	fileName := filepath.Base(devicePath)
 
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}

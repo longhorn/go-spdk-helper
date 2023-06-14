@@ -1,6 +1,8 @@
 package basic
 
 import (
+	"context"
+
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
@@ -50,7 +52,7 @@ func BdevAioCreateCmd() cli.Command {
 }
 
 func bdevAioCreate(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -76,7 +78,7 @@ func BdevAioDeleteCmd() cli.Command {
 }
 
 func bdevAioDelete(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -109,7 +111,7 @@ func BdevAioGetCmd() cli.Command {
 }
 
 func bdevAioGet(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}

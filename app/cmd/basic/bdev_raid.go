@@ -1,6 +1,8 @@
 package basic
 
 import (
+	"context"
+
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
@@ -57,7 +59,7 @@ func BdevRaidCreateCmd() cli.Command {
 }
 
 func bdevRaidCreate(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -83,7 +85,7 @@ func BdevRaidDeleteCmd() cli.Command {
 }
 
 func bdevRaidDelete(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -116,7 +118,7 @@ func BdevRaidGetCmd() cli.Command {
 }
 
 func bdevRaidGet(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -142,7 +144,7 @@ func BdevRaidRemoveBaseBdevCmd() cli.Command {
 }
 
 func bdevRaidRemoveBaseBdev(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}

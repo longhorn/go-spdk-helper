@@ -1,6 +1,8 @@
 package basic
 
 import (
+	"context"
+
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
@@ -37,7 +39,7 @@ func BdevGetCmd() cli.Command {
 }
 
 func bdevGet(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
