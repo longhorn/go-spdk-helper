@@ -19,6 +19,7 @@ func BdevNvmeCmd() cli.Command {
 			BdevNvmeDetachControllerCmd(),
 			BdevNvmeGetControllersCmd(),
 			BdevNvmeGetCmd(),
+			BdevNvmeSetOptionsCmd(),
 		},
 	}
 }
@@ -71,7 +72,7 @@ func BdevNvmeAttachControllerCmd() cli.Command {
 			cli.IntFlag{
 				Name:  "fast-io-fail-timeout-sec",
 				Usage: "NVMe-oF controller fast I/O fail timeout in seconds for error cases",
-				Value: types.DefaultFastIoFailTimeoutSec,
+				Value: types.DefaultFastIOFailTimeoutSec,
 			},
 		},
 		Action: func(c *cli.Context) {
@@ -182,4 +183,52 @@ func bdevNvmeGet(c *cli.Context) error {
 	}
 
 	return util.PrintObject(bdevNvmeGetResp)
+}
+
+func BdevNvmeSetOptionsCmd() cli.Command {
+	return cli.Command{
+		Name:  "option-set",
+		Usage: "set options for NVMe-oF controllers: option-set [options]",
+		Flags: []cli.Flag{
+			cli.IntFlag{
+				Name:  "ctrlr-loss-timeout-sec",
+				Usage: "NVMe-oF controller loss timeout in seconds for error cases",
+				Value: types.DefaultCtrlrLossTimeoutSec,
+			},
+			cli.IntFlag{
+				Name:  "reconnect-delay-sec",
+				Usage: "NVMe-oF controller reconnect delay in seconds for error cases",
+				Value: types.DefaultReconnectDelaySec,
+			},
+			cli.IntFlag{
+				Name:  "fast-io-fail-timeout-sec",
+				Usage: "NVMe-oF controller fast I/O fail timeout in seconds for error cases",
+				Value: types.DefaultFastIOFailTimeoutSec,
+			},
+			cli.IntFlag{
+				Name:  "transport-ack-timeout",
+				Usage: "Time to wait ack until retransmission for RDMA or connection close for TCP. Range 0-31 where 0 means use default.",
+				Value: types.DefaultTransportAckTimeout,
+			},
+		},
+		Action: func(c *cli.Context) {
+			if err := bdevNvmeSetOptions(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run set nvme options command")
+			}
+		},
+	}
+}
+
+func bdevNvmeSetOptions(c *cli.Context) error {
+	spdkCli, err := client.NewClient()
+	if err != nil {
+		return err
+	}
+
+	bdevNameList, err := spdkCli.BdevNvmeSetOptions(int32(c.Int("ctrlr-loss-timeout-sec")), int32(c.Int("reconnect-delay-sec")), int32(c.Int("fast-io-fail-timeout-sec")), int32(c.Int("transport-ack-timeout")))
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(bdevNameList)
 }
