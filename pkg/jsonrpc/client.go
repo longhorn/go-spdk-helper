@@ -16,6 +16,8 @@ import (
 const (
 	DefaultConcurrentLimit = 1024
 
+	DefaultResponseReadWaitPeriod = 10 * time.Millisecond
+
 	DefaultShortTimeout = 30 * time.Second
 	DefaultLongTimeout  = 24 * time.Hour
 )
@@ -186,16 +188,22 @@ func (c *Client) dispatcher() {
 
 func (c *Client) read(errChan chan error) {
 	decoder := json.NewDecoder(c.conn)
+	ticker := time.NewTicker(DefaultResponseReadWaitPeriod)
 
-	for decoder.More() {
-		var obj map[string]interface{}
+	for {
+		select {
+		case <-ticker.C:
+			if !decoder.More() {
+				continue
+			}
 
-		if err := decoder.Decode(&obj); err != nil {
-			logrus.WithError(err).Errorf("Failed to decoding during read")
-			errChan <- err
-			continue
+			var obj map[string]interface{}
+			if err := decoder.Decode(&obj); err != nil {
+				logrus.WithError(err).Errorf("Failed to decoding during read")
+				errChan <- err
+				continue
+			}
+			c.respReceiverQueue <- obj
 		}
-
-		c.respReceiverQueue <- obj
 	}
 }
