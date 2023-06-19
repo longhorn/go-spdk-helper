@@ -14,6 +14,8 @@ import (
 )
 
 const (
+	DefaultConcurrentLimit = 1024
+
 	DefaultShortTimeout = 30 * time.Second
 	DefaultLongTimeout  = 24 * time.Hour
 )
@@ -51,8 +53,8 @@ func NewClient(conn net.Conn) *Client {
 		encoder: e,
 		decoder: json.NewDecoder(bufio.NewReader(conn)),
 
-		msgWrapperQueue:   make(chan *messageWrapper, 1024),
-		respReceiverQueue: make(chan map[string]interface{}, 1024),
+		msgWrapperQueue:   make(chan *messageWrapper, DefaultConcurrentLimit),
+		respReceiverQueue: make(chan map[string]interface{}, DefaultConcurrentLimit),
 		responseChans:     make(map[uint32]chan []byte),
 	}
 }
