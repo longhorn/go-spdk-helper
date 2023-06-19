@@ -87,7 +87,9 @@ func (c *Client) SendMsgWithTimeout(method string, params interface{}, timeout t
 		msg.Params = nil
 	}
 
-	if err = c.encoder.Encode(msg); err != nil {
+	connEncoder := json.NewEncoder(c.conn)
+	connEncoder.SetIndent("", "\t")
+	if err = connEncoder.Encode(msg); err != nil {
 		return nil, err
 	}
 
@@ -109,8 +111,8 @@ func (c *Client) SendMsgWithTimeout(method string, params interface{}, timeout t
 	}
 
 	buf := bytes.Buffer{}
-	e := json.NewEncoder(&buf)
-	if err := e.Encode(resp.Result); err != nil {
+	jsonEncoder := json.NewEncoder(&buf)
+	if err := jsonEncoder.Encode(resp.Result); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
