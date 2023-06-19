@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net"
 	"os"
 	"sync/atomic"
@@ -49,8 +50,7 @@ func NewClient(conn net.Conn) *Client {
 	return &Client{
 		conn: conn,
 
-		// Get lower 5 digits of the current process ID as the prefix of the message ID
-		idCounter: uint32((os.Getpid() % (1 << 6)) * 10000),
+		idCounter: rand.Uint32() % 10000,
 
 		encoder: e,
 		decoder: json.NewDecoder(bufio.NewReader(conn)),
