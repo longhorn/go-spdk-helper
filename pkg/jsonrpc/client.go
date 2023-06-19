@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	DefaultTimeoutInSecond = 30
+	DefaultShortTimeout = 30 * time.Second
+	DefaultLongTimeout  = 24 * time.Hour
 )
 
 type Client struct {
@@ -56,7 +57,7 @@ func NewClient(conn net.Conn) *Client {
 	}
 }
 
-func (c *Client) SendMsgWithTimeout(method string, params interface{}, timeoutInSec int) (res []byte, err error) {
+func (c *Client) SendMsgWithTimeout(method string, params interface{}, timeout time.Duration) (res []byte, err error) {
 	id := atomic.AddUint32(&c.idCounter, 1)
 	msg := NewMessage(id, method, params)
 	var resp Response
@@ -90,7 +91,7 @@ func (c *Client) SendMsgWithTimeout(method string, params interface{}, timeoutIn
 		return nil, err
 	}
 
-	for count := 0; count <= timeoutInSec; count++ {
+	for count := 0; count <= int(timeout/time.Second); count++ {
 		if c.decoder.More() {
 			break
 		}
@@ -115,12 +116,12 @@ func (c *Client) SendMsgWithTimeout(method string, params interface{}, timeoutIn
 	return buf.Bytes(), nil
 }
 
-func (c *Client) SendMsg(method string, params interface{}) ([]byte, error) {
-	return c.SendMsgWithTimeout(method, params, DefaultTimeoutInSecond)
+func (c *Client) SendCommand(method string, params interface{}) ([]byte, error) {
+	return c.SendMsgWithTimeout(method, params, DefaultShortTimeout)
 }
 
-func (c *Client) SendCommand(method string, params interface{}) ([]byte, error) {
-	return c.SendMsg(method, params)
+func (c *Client) SendCommandWithLongTimeout(method string, params interface{}) ([]byte, error) {
+	return c.SendMsgWithTimeout(method, params, DefaultLongTimeout)
 }
 
 func (c *Client) InitAsync() chan error {
