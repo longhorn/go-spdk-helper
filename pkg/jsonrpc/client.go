@@ -103,6 +103,10 @@ func (c *Client) SendMsgWithTimeout(method string, params interface{}, timeout t
 		}
 		time.Sleep(1 * time.Second)
 	}
+	if !c.decoder.More() {
+		return nil, fmt.Errorf("timeout %v second waiting for the response from the SPDK JSON RPC server", timeout.Seconds())
+	}
+
 	if err = c.decoder.Decode(&resp); err != nil {
 		return nil, err
 	}
