@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -22,7 +23,7 @@ var (
 	defaultDeviceName = "test-device"
 	defaultDevicePath = filepath.Join("/tmp", defaultDeviceName)
 
-	defaultDeviceSize    = uint64(100 * types.MiB)
+	defaultDeviceSize    = uint64(1000 * types.MiB)
 	defaultLvolSizeInMiB = uint64(10)
 
 	defaultPort1 = "4421"
@@ -131,7 +132,8 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	c.Assert(lvs.UUID, Equals, lvsUUID)
 	c.Assert(lvs.BaseBdev, Equals, bdevAio.Name)
 	c.Assert(int(lvs.BlockSize), Equals, int(bdevAio.BlockSize))
-	c.Assert(lvs.ClusterSize*(lvs.TotalDataClusters+1), Equals, defaultDeviceSize)
+	// The meta info may take space
+	c.Assert(lvs.ClusterSize*(lvs.TotalDataClusters+4), Equals, defaultDeviceSize)
 
 	lvolName1, lvolName2 := "test-lvol1", "test-lvol2"
 	lvolUUID1, err := spdkCli.BdevLvolCreate(lvsName, "", lvolName1, defaultLvolSizeInMiB, "", true)
@@ -282,4 +284,86 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(nsList), Equals, 1)
 	c.Assert(nsList[0].BdevName, Equals, raidName)
+}
+
+func (s *TestSuite) TestSPDKClientMultiThread(c *C) {
+	fmt.Println("Testing SPDK Client Multi Thread")
+	LaunchTestSPDKTarget(c, util.Execute)
+	PrepareDeviceFile(c)
+	defer func() {
+		os.RemoveAll(defaultDevicePath)
+	}()
+
+	spdkCli, err := client.NewClient(context.Background())
+	c.Assert(err, IsNil)
+
+	// Do blindly cleanup
+	spdkCli.DeleteDevice(defaultDeviceName, defaultDeviceName)
+
+	bdevAioName, lvsName, lvsUUID, err := spdkCli.AddDevice(defaultDevicePath, defaultDeviceName, types.MiB)
+	c.Assert(err, IsNil)
+	defer func() {
+		err := spdkCli.DeleteDevice(bdevAioName, lvsName)
+		c.Assert(err, IsNil)
+	}()
+	c.Assert(bdevAioName, Equals, defaultDeviceName)
+	c.Assert(lvsName, Equals, defaultDeviceName)
+	c.Assert(lvsUUID, Not(Equals), "")
+
+	bdevAioInfoList, err := spdkCli.BdevAioGet(bdevAioName, 0)
+	c.Assert(err, IsNil)
+	c.Assert(len(bdevAioInfoList), Equals, 1)
+	bdevAio := bdevAioInfoList[0]
+	c.Assert(bdevAio.Name, Equals, bdevAioName)
+	c.Assert(uint64(bdevAio.BlockSize)*bdevAio.NumBlocks, Equals, defaultDeviceSize)
+
+	lvsList, err := spdkCli.BdevLvolGetLvstore(lvsName, "")
+	c.Assert(err, IsNil)
+	c.Assert(len(lvsList), Equals, 1)
+	lvs := lvsList[0]
+	c.Assert(lvs.UUID, Equals, lvsUUID)
+	c.Assert(lvs.BaseBdev, Equals, bdevAio.Name)
+	c.Assert(int(lvs.BlockSize), Equals, int(bdevAio.BlockSize))
+	// The meta info may take space
+	c.Assert(lvs.ClusterSize*(lvs.TotalDataClusters+4), Equals, defaultDeviceSize)
+
+	threadCount := 100
+	repeatCount := 10
+
+	wg := sync.WaitGroup{}
+	wg.Add(threadCount)
+	for i := 0; i < threadCount; i++ {
+		num := i
+		go func() {
+			defer func() {
+				wg.Done()
+			}()
+
+			lvolName := fmt.Sprintf("test-lvol-%d", num)
+			for j := 0; j < repeatCount; j++ {
+				lvolUUID, err := spdkCli.BdevLvolCreate(lvsName, "", lvolName, defaultLvolSizeInMiB, "", true)
+				c.Assert(err, IsNil)
+
+				lvolList, err := spdkCli.BdevLvolGet(lvolUUID, 0)
+				c.Assert(err, IsNil)
+				c.Assert(len(lvolList), Equals, 1)
+				lvol := lvolList[0]
+				c.Assert(len(lvol.Aliases), Equals, 1)
+				c.Assert(uint64(lvol.BlockSize)*lvol.NumBlocks, Equals, defaultLvolSizeInMiB*types.MiB)
+				c.Assert(lvol.DriverSpecific.Lvol, NotNil)
+				c.Assert(lvol.DriverSpecific.Lvol.ThinProvision, Equals, true)
+				c.Assert(lvol.DriverSpecific.Lvol.BaseBdev, Equals, defaultDeviceName)
+				c.Assert(lvol.DriverSpecific.Lvol.Snapshot, Equals, false)
+				c.Assert(lvol.DriverSpecific.Lvol.Clone, Equals, false)
+				c.Assert(lvol.DriverSpecific.Lvol.LvolStoreUUID, Equals, lvsUUID)
+				c.Assert(lvol.Aliases[0], Equals, fmt.Sprintf("%s/%s", lvsName, lvolName))
+
+				deleted, err := spdkCli.BdevLvolDelete(lvolUUID)
+				c.Assert(err, IsNil)
+				c.Assert(deleted, Equals, true)
+			}
+		}()
+	}
+
+	wg.Wait()
 }
