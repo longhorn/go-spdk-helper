@@ -141,14 +141,6 @@ func (c *Client) SendMsgWithTimeout(method string, params interface{}, timeout t
 	return buf.Bytes(), nil
 }
 
-func (c *Client) SendCommand(method string, params interface{}) ([]byte, error) {
-	return c.SendMsgWithTimeout(method, params, DefaultShortTimeout)
-}
-
-func (c *Client) SendCommandWithLongTimeout(method string, params interface{}) ([]byte, error) {
-	return c.SendMsgWithTimeout(method, params, DefaultLongTimeout)
-}
-
 func (c *Client) handleShutdown() {
 	for _, ch := range c.responseChans {
 		close(ch)
@@ -299,4 +291,12 @@ func (c *Client) SendMsgAsyncWithTimeout(method string, params interface{}, time
 	}
 
 	return buf.Bytes(), nil
+}
+
+func (c *Client) SendCommand(method string, params interface{}) ([]byte, error) {
+	return c.SendMsgAsyncWithTimeout(method, params, DefaultShortTimeout)
+}
+
+func (c *Client) SendCommandWithLongTimeout(method string, params interface{}) ([]byte, error) {
+	return c.SendMsgAsyncWithTimeout(method, params, DefaultLongTimeout)
 }
