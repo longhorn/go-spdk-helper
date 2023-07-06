@@ -14,7 +14,7 @@ const (
 	SPDKTGTBinary   = "build/bin/spdk_tgt"
 )
 
-func Setup(spdkDir string, execute func(name string, args []string) (string, error)) (err error) {
+func SetupTarget(spdkDir string, execute func(name string, args []string) (string, error)) (err error) {
 	setupScriptPath := filepath.Join(spdkDir, SPDKScriptsDir, SPDKSetupScript)
 	setupOpts := []string{
 		"-c",
@@ -43,10 +43,6 @@ func StartTarget(spdkDir string, execute func(name string, args []string) (strin
 			logrus.Info("Detected running spdk_tgt, skipped the target starting")
 			return nil
 		}
-	}
-
-	if err := Setup(spdkDir, execute); err != nil {
-		return err
 	}
 
 	tgtOpts := []string{
