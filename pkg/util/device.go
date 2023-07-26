@@ -2,9 +2,11 @@ package util
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,13 +16,18 @@ import (
 )
 
 const (
-	LSBLKBinary = "lsblk"
+	lsblkBinary    = "lsblk"
+	blockdevBinary = "blockdev"
 )
 
 type KernelDevice struct {
 	Name  string
 	Major int
 	Minor int
+
+	dmDeviceName  string
+	dmDeviceMajor int
+	dmDeviceMinor int
 }
 
 func RemoveDevice(dev string) error {
@@ -50,7 +57,7 @@ func GetKnownDevices(executor Executor) (map[string]*KernelDevice, error) {
 		"-l", "-n", "-o", "NAME,MAJ:MIN",
 	}
 
-	output, err := executor.Execute(LSBLKBinary, opts)
+	output, err := executor.Execute(lsblkBinary, opts)
 	if err != nil {
 		return knownDevices, err
 	}
@@ -83,7 +90,7 @@ func DetectDevice(path string, executor Executor) (*KernelDevice, error) {
 		"-l", "-n", path, "-o", "NAME,MAJ:MIN",
 	}
 
-	output, err := executor.Execute(LSBLKBinary, opts)
+	output, err := executor.Execute(lsblkBinary, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -110,6 +117,123 @@ func DetectDevice(path string, executor Executor) (*KernelDevice, error) {
 	return dev, nil
 }
 
+type BlockDevice struct {
+	MajMin string `json:"maj:min"`
+}
+
+type BlockDevices struct {
+	Devices []BlockDevice `json:"blockdevices"`
+}
+
+func parseMajorMinorFromJSON(jsonStr string) (int, int, error) {
+	var data BlockDevices
+	err := json.Unmarshal([]byte(jsonStr), &data)
+	if err != nil {
+		return 0, 0, errors.Wrap(err, "failed to parse JSON")
+	}
+
+	if len(data.Devices) != 1 {
+		return 0, 0, fmt.Errorf("number of devices is not 1")
+	}
+
+	majMinParts := splitMajMin(data.Devices[0].MajMin)
+
+	if len(majMinParts) != 2 {
+		return 0, 0, fmt.Errorf("invalid maj:min format: %s", data.Devices[0].MajMin)
+	}
+
+	major, err := parseNumber(majMinParts[0])
+	if err != nil {
+		return 0, 0, errors.Wrap(err, "failed to parse major number")
+	}
+
+	minor, err := parseNumber(majMinParts[1])
+	if err != nil {
+		return 0, 0, errors.Wrap(err, "failed to parse minor number")
+	}
+
+	return major, minor, nil
+}
+
+func splitMajMin(majMin string) []string {
+	return splitIgnoreEmpty(majMin, ":")
+}
+
+func splitIgnoreEmpty(str string, sep string) []string {
+	parts := []string{}
+	for _, part := range strings.Split(str, sep) {
+		if part != "" {
+			parts = append(parts, part)
+		}
+	}
+	return parts
+}
+
+func parseNumber(str string) (int, error) {
+	return strconv.Atoi(strings.TrimSpace(str))
+}
+
+func CreateDeviceMapperDevice(dmDeviceName string, dev *KernelDevice, executor Executor) error {
+	if dev == nil {
+		return fmt.Errorf("found nil device for device mapper device creation")
+	}
+
+	devPath := fmt.Sprintf("/dev/%s", dev.Name)
+
+	// Get the size of the device
+	opts := []string{
+		"--getsize", devPath,
+	}
+	output, err := executor.Execute(blockdevBinary, opts)
+	if err != nil {
+		return err
+	}
+	sectors, err := strconv.ParseInt(strings.TrimSpace(output), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	// Create a device mapper device with the same size as the original device
+	table := fmt.Sprintf("0 %v linear %v 0", sectors, devPath)
+
+	logrus.Infof("Creating device mapper device %s with table %s", dmDeviceName, table)
+	err = DmsetupCreate(dmDeviceName, table, executor)
+	if err != nil {
+		return err
+	}
+
+	// Get the major:minor of the device mapper device
+	opts = []string{
+		"-l", "-J", "-n", "-o", "MAJ:MIN", fmt.Sprintf("/dev/mapper/%s", dmDeviceName),
+	}
+	output, err = executor.Execute(lsblkBinary, opts)
+	if err != nil {
+		return err
+	}
+
+	major, minor, err := parseMajorMinorFromJSON(output)
+	if err != nil {
+		return err
+	}
+
+	dev.dmDeviceName = dmDeviceName
+	dev.dmDeviceMajor = major
+	dev.dmDeviceMinor = minor
+
+	return nil
+}
+
+func RemoveDeviceMapperDevice(dmDeviceName string, executor Executor) error {
+	devicePath := fmt.Sprintf("/dev/mapper/%s", dmDeviceName)
+	if _, err := os.Stat(devicePath); err != nil {
+		logrus.WithError(err).Warnf("Failed to stat device %s", devicePath)
+		return nil
+	}
+
+	logrus.Infof("Removing device mapper device %s", dmDeviceName)
+	return DmsetupRemove(dmDeviceName, executor)
+}
+
 func DuplicateDevice(dev *KernelDevice, dest string) error {
 	if dev == nil {
 		return fmt.Errorf("found nil device for device duplication")
@@ -123,7 +247,7 @@ func DuplicateDevice(dev *KernelDevice, dest string) error {
 			logrus.WithError(err).Fatalf("device %v: Failed to create directory for %v", dev.Name, dest)
 		}
 	}
-	if err := mknod(dest, dev.Major, dev.Minor); err != nil {
+	if err := mknod(dest, dev.dmDeviceMajor, dev.dmDeviceMinor); err != nil {
 		return errors.Wrapf(err, "cannot create device node %s for device %s", dest, dev.Name)
 	}
 	if err := os.Chmod(dest, 0660); err != nil {

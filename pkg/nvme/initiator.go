@@ -125,7 +125,7 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 	}
 
 	if i.ControllerName == "" {
-		return fmt.Errorf("failed to start NVMe initiator %s within %d * %vsec retrys", i.Name, RetryCounts, RetryInterval.Seconds())
+		return fmt.Errorf("failed to start NVMe initiator %s within %d * %v sec retries", i.Name, RetryCounts, RetryInterval.Seconds())
 	}
 
 	for t := 0; t < int(waitDeviceTimeout.Seconds()); t++ {
@@ -136,6 +136,10 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 	}
 	if err != nil {
 		return errors.Wrapf(err, "failed to load device info after starting NVMe initiator %s", i.Name)
+	}
+
+	if err := util.CreateDeviceMapperDevice(i.Name, i.dev, i.executor); err != nil {
+		return errors.Wrapf(err, "failed to create device mapper device for NVMe initiator %s", i.Name)
 	}
 
 	if err := i.makeEndpoint(); err != nil {
@@ -161,6 +165,11 @@ func (i *Initiator) Stop() error {
 
 func (i *Initiator) stopWithoutLock() error {
 	if err := i.removeEndpoint(); err != nil {
+		return err
+	}
+
+	if err := util.RemoveDeviceMapperDevice(i.Name, i.executor); err != nil {
+		logrus.WithError(err).Warn("Failed to remove dm device")
 		return err
 	}
 
@@ -244,12 +253,35 @@ func (i *Initiator) loadNVMeDeviceInfoWithoutLock() error {
 	return nil
 }
 
+func (i *Initiator) isNamespaceExist(devices []string) bool {
+	for _, device := range devices {
+		if device == i.NamespaceName {
+			return true
+		}
+	}
+	return false
+}
+
+func (i *Initiator) findDependentDevices(devName string) ([]string, error) {
+	depDevices, err := util.DmsetupDeps(devName, i.executor)
+	if err != nil {
+		return nil, err
+	}
+	return depDevices, nil
+}
+
 func (i *Initiator) LoadEndpoint() error {
 	dev, err := util.DetectDevice(i.Endpoint, i.executor)
 	if err != nil {
 		return err
 	}
-	if i.NamespaceName != "" && i.NamespaceName != dev.Name {
+
+	depDevices, err := i.findDependentDevices(dev.Name)
+	if err != nil {
+		return err
+	}
+
+	if i.NamespaceName != "" && !i.isNamespaceExist(depDevices) {
 		return fmt.Errorf("detected device %s name mismatching from endpoint %v for NVMe initiator %s", dev.Name, i.Endpoint, i.Name)
 	}
 	i.dev = dev
@@ -260,6 +292,10 @@ func (i *Initiator) LoadEndpoint() error {
 
 func (i *Initiator) makeEndpoint() error {
 	if err := util.DuplicateDevice(i.dev, i.Endpoint); err != nil {
+		logrus.WithError(err).Warn("Failed to duplicate device")
+		if err := util.RemoveDeviceMapperDevice(i.Name, i.executor); err != nil {
+			logrus.WithError(err).Warn("Failed to remove dm device after duplicating device failure")
+		}
 		return err
 	}
 	i.isUp = true
