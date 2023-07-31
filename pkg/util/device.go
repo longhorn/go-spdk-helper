@@ -173,6 +173,41 @@ func parseNumber(str string) (int, error) {
 	return strconv.Atoi(strings.TrimSpace(str))
 }
 
+func SuspendDeviceMapperDevice(dmDeviceName string, executor Executor) error {
+	logrus.Infof("Suspending device mapper device %s", dmDeviceName)
+
+	return DmsetupSuspend(dmDeviceName, executor)
+}
+
+func ResumeDeviceMapperDevice(dmDeviceName string, executor Executor) error {
+	logrus.Infof("Resuming device mapper device %s", dmDeviceName)
+
+	return DmsetupResume(dmDeviceName, executor)
+}
+
+func ReloadDeviceMapperDevice(dmDeviceName string, dev *KernelDevice, executor Executor) error {
+	devPath := fmt.Sprintf("/dev/%s", dev.Name)
+
+	// Get the size of the device
+	opts := []string{
+		"--getsize", devPath,
+	}
+	output, err := executor.Execute(blockdevBinary, opts)
+	if err != nil {
+		return err
+	}
+	sectors, err := strconv.ParseInt(strings.TrimSpace(output), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	table := fmt.Sprintf("0 %v linear %v 0", sectors, devPath)
+
+	logrus.Infof("Reloading device mapper device %s with table %s", dmDeviceName, table)
+
+	return DmsetupReload(dmDeviceName, table, executor)
+}
+
 func CreateDeviceMapperDevice(dmDeviceName string, dev *KernelDevice, executor Executor) error {
 	if dev == nil {
 		return fmt.Errorf("found nil device for device mapper device creation")

@@ -75,7 +75,23 @@ func NewInitiator(name, subsystemNQN, hostProc string) (*Initiator, error) {
 	}, nil
 }
 
-func (i *Initiator) Start(transportAddress, transportServiceID string) (err error) {
+func (i *Initiator) Suspend() error {
+	if i.hostProc != "" {
+		lock := nsfilelock.NewLockWithTimeout(util.GetHostNamespacePath(i.hostProc), LockFile, LockTimeout)
+		if err := lock.Lock(); err != nil {
+			return errors.Wrapf(err, "failed to get file lock for initiator %s", i.Name)
+		}
+		defer lock.Unlock()
+	}
+
+	if err := util.SuspendDeviceMapperDevice(i.Name, i.executor); err != nil {
+		return errors.Wrapf(err, "failed to suspend device mapper device for NVMe initiator %s", i.Name)
+	}
+
+	return nil
+}
+
+func (i *Initiator) Start(transportAddress, transportServiceID string, requestUpgrade bool) (err error) {
 	if transportAddress == "" || transportServiceID == "" {
 		return fmt.Errorf("empty TransportAddress %s and TransportServiceID %s for initiator %s start", transportAddress, transportServiceID, i.Name)
 	}
@@ -100,11 +116,12 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 			transportAddress, transportServiceID)
 	}
 
-	i.logger.Infof("Stopping NVMe initiator blindly before starting")
-	if err := i.stopWithoutLock(); err != nil {
-		return errors.Wrapf(err, "failed to stop the mismatching NVMe initiator %s before starting", i.Name)
+	if !requestUpgrade {
+		i.logger.Infof("Stopping NVMe initiator blindly before starting")
+		if err := i.stopWithoutLock(false); err != nil {
+			return errors.Wrapf(err, "failed to stop the mismatching NVMe initiator %s before starting", i.Name)
+		}
 	}
-
 	i.logger.Infof("Launching NVMe initiator")
 
 	// Setup initiator
@@ -138,20 +155,32 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 		return errors.Wrapf(err, "failed to load device info after starting NVMe initiator %s", i.Name)
 	}
 
-	if err := util.CreateDeviceMapperDevice(i.Name, i.dev, i.executor); err != nil {
-		return errors.Wrapf(err, "failed to create device mapper device for NVMe initiator %s", i.Name)
+	if requestUpgrade {
+		i.logger.Infof("Reloading device mapper device")
+		if err := util.ReloadDeviceMapperDevice(i.Name, i.dev, i.executor); err != nil {
+			return errors.Wrapf(err, "failed to reload device mapper device for NVMe initiator %s", i.Name)
+		}
+		if err := util.ResumeDeviceMapperDevice(i.Name, i.executor); err != nil {
+			return errors.Wrapf(err, "failed to resume device mapper device for NVMe initiator %s", i.Name)
+		}
+	} else {
+		i.logger.Infof("Creating device mapper device")
+		if err := util.CreateDeviceMapperDevice(i.Name, i.dev, i.executor); err != nil {
+			return errors.Wrapf(err, "failed to create device mapper device for NVMe initiator %s", i.Name)
+		}
+
+		i.logger.Infof("Create endpoint %v", i.Endpoint)
+		if err := i.makeEndpoint(); err != nil {
+			return err
+		}
 	}
 
-	if err := i.makeEndpoint(); err != nil {
-		return err
-	}
-
-	i.logger.Infof("Launched NVMe initiator")
+	i.logger.Infof("Launched NVMe initiator: %+v", i)
 
 	return nil
 }
 
-func (i *Initiator) Stop() error {
+func (i *Initiator) Stop(onlyDisconnectTarget bool) error {
 	if i.hostProc != "" {
 		lock := nsfilelock.NewLockWithTimeout(util.GetHostNamespacePath(i.hostProc), LockFile, LockTimeout)
 		if err := lock.Lock(); err != nil {
@@ -160,17 +189,19 @@ func (i *Initiator) Stop() error {
 		defer lock.Unlock()
 	}
 
-	return i.stopWithoutLock()
+	return i.stopWithoutLock(onlyDisconnectTarget)
 }
 
-func (i *Initiator) stopWithoutLock() error {
-	if err := i.removeEndpoint(); err != nil {
-		return err
-	}
+func (i *Initiator) stopWithoutLock(onlyDisconnectTarget bool) error {
+	if !onlyDisconnectTarget {
+		if err := i.removeEndpoint(); err != nil {
+			return err
+		}
 
-	if err := util.RemoveDeviceMapperDevice(i.Name, i.executor); err != nil {
-		logrus.WithError(err).Warn("Failed to remove dm device")
-		return err
+		if err := util.RemoveDeviceMapperDevice(i.Name, i.executor); err != nil {
+			logrus.WithError(err).Warn("Failed to remove dm device")
+			return err
+		}
 	}
 
 	if err := DisconnectTarget(i.SubsystemNQN, i.executor); err != nil {

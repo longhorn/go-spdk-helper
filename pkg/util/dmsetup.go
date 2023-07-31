@@ -16,6 +16,30 @@ func DmsetupCreate(dmDeviceName, table string, executor Executor) error {
 	return err
 }
 
+func DmsetupSuspend(dmDeviceName string, executor Executor) error {
+	opts := []string{
+		"suspend", dmDeviceName,
+	}
+	_, err := executor.Execute(dmsetupBinary, opts)
+	return err
+}
+
+func DmsetupResume(dmDeviceName string, executor Executor) error {
+	opts := []string{
+		"resume", dmDeviceName,
+	}
+	_, err := executor.Execute(dmsetupBinary, opts)
+	return err
+}
+
+func DmsetupReload(dmDeviceName, table string, executor Executor) error {
+	opts := []string{
+		"reload", dmDeviceName, "--table", table,
+	}
+	_, err := executor.Execute(dmsetupBinary, opts)
+	return err
+}
+
 func DmsetupRemove(dmDeviceName string, executor Executor) error {
 	opts := []string{
 		"remove", dmDeviceName,
