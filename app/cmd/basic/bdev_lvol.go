@@ -24,6 +24,7 @@ func BdevLvolCmd() cli.Command {
 			BdevLvolDecoupleParentCmd(),
 			BdevLvolResizeCmd(),
 			BdevLvolShallowCopyCmd(),
+			BdevLvolGetXattrCmd(),
 		},
 	}
 }
@@ -374,4 +375,49 @@ func bdevLvolShallowCopy(c *cli.Context) error {
 	}
 
 	return util.PrintObject(copied)
+}
+
+func BdevLvolGetXattrCmd() cli.Command {
+	return cli.Command{
+		Name: "get-xattr",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "alias",
+				Usage: "The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
+			},
+			cli.StringFlag{
+				Name:  "uuid",
+				Usage: "Specify this or alias",
+			},
+			cli.StringFlag{
+				Name:  "xattr-name",
+				Usage: "Specify the xattr name",
+			},
+		},
+		Usage: "get xattr value of a lvol: \"get-xattr --name <LVSTORE NAME>/<LVOL NAME> --xattr-name <XATTR NAME>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvolGetXattr(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run get bdev lvol xattr command")
+			}
+		},
+	}
+}
+
+func bdevLvolGetXattr(c *cli.Context) error {
+	spdkCli, err := client.NewClient()
+	if err != nil {
+		return err
+	}
+
+	name := c.String("alias")
+	if name == "" {
+		name = c.String("uuid")
+	}
+
+	bdevLvolGetResp, err := spdkCli.BdevLvolGetXattr(name, c.String("xattr-name"))
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(bdevLvolGetResp)
 }
