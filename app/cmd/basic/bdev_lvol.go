@@ -25,6 +25,7 @@ func BdevLvolCmd() cli.Command {
 			BdevLvolResizeCmd(),
 			BdevLvolShallowCopyCmd(),
 			BdevLvolGetXattrCmd(),
+			BdevLvolGetFragmapCmd(),
 		},
 	}
 }
@@ -420,4 +421,57 @@ func bdevLvolGetXattr(c *cli.Context) error {
 	}
 
 	return util.PrintObject(bdevLvolGetResp)
+}
+
+func BdevLvolGetFragmapCmd() cli.Command {
+	return cli.Command{
+		Name: "get-fragmap",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "alias",
+				Usage: "The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
+			},
+			cli.StringFlag{
+				Name:  "uuid",
+				Usage: "Specify this or alias",
+			},
+			cli.Uint64Flag{
+				Name:     "offset",
+				Usage:    "Offset in bytes of the specific segment of the logical volume (Default: 0)",
+				Required: false,
+			},
+			cli.Uint64Flag{
+				Name:     "size",
+				Usage:    "Size in bytes of the specific segment of the logical volume (Default: 0 for representing the entire file)",
+				Required: false,
+			},
+		},
+		Usage: "Get fragmap of the specific segment of the logical volume: \"get-fragmap --uuid <LVOL UUID> --offset <OFFSET> --size <SIZE>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvolGetFragmap(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run get lvol get fragmap command")
+			}
+		},
+	}
+}
+
+func bdevLvolGetFragmap(c *cli.Context) error {
+	spdkCli, err := client.NewClient()
+	if err != nil {
+		return err
+	}
+
+	name := c.String("alias")
+	if name == "" {
+		name = c.String("uuid")
+	}
+	offset := c.Uint64("offset")
+	size := c.Uint64("size")
+
+	output, err := spdkCli.BdevLvolGetFragmap(name, offset, size)
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(output)
 }
