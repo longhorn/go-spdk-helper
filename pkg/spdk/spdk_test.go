@@ -53,7 +53,7 @@ func LaunchTestSPDKTarget(c *C, execute func(name string, args []string) (string
 
 	if !targetReady {
 		go func() {
-			err := target.StartTarget(GetSPDKDir(), execute)
+			err := target.StartTarget(GetSPDKDir(), []string{"2>&1 | tee /tmp/spdk_tgt.log"}, execute)
 			c.Assert(err, IsNil)
 		}()
 

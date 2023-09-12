@@ -2,6 +2,7 @@ package target
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
@@ -15,11 +16,15 @@ const (
 	SPDKTGTBinary   = "build/bin/spdk_tgt"
 )
 
-func SetupTarget(spdkDir string, execute func(name string, args []string) (string, error)) (err error) {
+func SetupTarget(spdkDir string, setupArgs []string, execute func(name string, args []string) (string, error)) (err error) {
+	setupArgsInStr := ""
+	for _, arg := range setupArgs {
+		setupArgsInStr = fmt.Sprintf("%s %s", setupArgsInStr, arg)
+	}
 	setupScriptPath := filepath.Join(spdkDir, SPDKScriptsDir, SPDKSetupScript)
 	setupOpts := []string{
 		"-c",
-		setupScriptPath,
+		fmt.Sprintf("%s %s", setupScriptPath, setupArgsInStr),
 	}
 
 	resetOpts := []string{
@@ -38,7 +43,7 @@ func SetupTarget(spdkDir string, execute func(name string, args []string) (strin
 	return nil
 }
 
-func StartTarget(spdkDir string, execute func(name string, args []string) (string, error)) (err error) {
+func StartTarget(spdkDir string, args []string, execute func(name string, args []string) (string, error)) (err error) {
 	if spdkCli, err := client.NewClient(context.Background()); err == nil {
 		if _, err := spdkCli.BdevGetBdevs("", 0); err == nil {
 			logrus.Info("Detected running spdk_tgt, skipped the target starting")
@@ -46,9 +51,13 @@ func StartTarget(spdkDir string, execute func(name string, args []string) (strin
 		}
 	}
 
+	argsInStr := ""
+	for _, arg := range args {
+		argsInStr = fmt.Sprintf("%s %s", argsInStr, arg)
+	}
 	tgtOpts := []string{
 		"-c",
-		filepath.Join(spdkDir, SPDKTGTBinary),
+		fmt.Sprintf("%s %s", filepath.Join(spdkDir, SPDKTGTBinary), argsInStr),
 	}
 
 	_, err = execute("sh", tgtOpts)
