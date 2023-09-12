@@ -22,6 +22,10 @@ func Cmd() cli.Command {
 				Required: true,
 				Value:    os.Getenv("SPDK_DIR"),
 			},
+			cli.StringSliceFlag{
+				Name:  "opts",
+				Usage: "The spdk_tgt command line flags",
+			},
 		},
 		Action: func(c *cli.Context) {
 			if err := spdkTGT(c); err != nil {
@@ -32,5 +36,5 @@ func Cmd() cli.Command {
 }
 
 func spdkTGT(c *cli.Context) error {
-	return target.StartTarget(c.String("spdk-dir"), util.Execute)
+	return target.StartTarget(c.String("spdk-dir"), c.StringSlice("opts"), util.Execute)
 }
