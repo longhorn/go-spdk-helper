@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM registry.suse.com/bci/bci-base:15.4
 
 ARG DAPPER_HOST_ARCH=amd64
 ARG http_proxy
@@ -11,71 +11,44 @@ ENV DAPPER_DOCKER_SOCKET true
 ENV DAPPER_ENV TAG REPO
 ENV DAPPER_OUTPUT bin coverage.out
 ENV DAPPER_RUN_ARGS --privileged -v /dev:/host/dev -v /proc:/host/proc
-ENV DAPPER_SOURCE /go/src/github.com/shuo-wu/go-spdk-helper
+ENV DAPPER_SOURCE /go/src/github.com/longhorn/go-spdk-helper
 WORKDIR ${DAPPER_SOURCE}
 
-# Install packages
-RUN apt-get update && \
-    apt-get install -y cmake wget curl git bash-completion iproute2 iptables \
-    linux-libc-dev pkg-config devscripts libaio-dev libc6-dev gcc meson \
-    python3-pyelftools python3-pip uuid-dev libssl-dev libibverbs-dev libfuse-dev \
-    libiscsi-dev zlib1g-dev libfdt-dev libpcap0.8-dev libncurses-dev \
-    libcunit1-dev build-essential nasm autoconf libtool automake linux-image-extra-virtual
+RUN zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/SLE_15/system:snappy.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/network:/utilities/SLE_15_SP4/network:utilities.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:libraries:c_c++/15.4/devel:libraries:c_c++.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:Factory/15.4/devel:languages:python:Factory.repo && \
+    zypper -n addrepo --refresh https://download.opensuse.org/repositories/devel:languages:python:backports/SLE_15/devel:languages:python:backports.repo && \
+    zypper --gpg-auto-import-keys ref
 
-# needed for ${!var} substitution
-RUN rm -f /bin/sh && ln -s /bin/bash /bin/sh
+RUN zypper -n install kmod curl fuse wget tar gzip git awk \
+    nfs-client nfs4-acl-tools cifs-utils \
+    libibverbs librdmacm1 rdma-core-devel perl-Config-General libaio-devel sg3_utils uuid-devel \
+    iputils telnet iproute2 qemu-tools \
+    e2fsprogs e2fsprogs-devel xfsprogs xfsprogs-devel util-linux-systemd python3
+
 
 # Install Go & tools
-ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
+ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH_s390x=s390x GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
     GOPATH=/go PATH=/go/bin:/usr/local/go/bin:${PATH} SHELL=/bin/bash
-
-RUN wget -O - https://storage.googleapis.com/golang/go1.17.10.linux-${!GOLANG_ARCH}.tar.gz | tar -xzf - -C /usr/local && \
-    go get -u golang.org/x/lint/golint
-
-
-# Docker
-ENV DOCKER_URL_amd64=https://download.docker.com/linux/ubuntu/dists/xenial/pool/stable/amd64/docker-ce_17.03.3~ce-0~ubuntu-xenial_amd64.deb \
-    DOCKER_URL_arm=https://download.docker.com/linux/ubuntu/dists/xenial/pool/stable/arm64/docker-ce_18.06.1~ce~3-0~ubuntu_arm64.deb \
-    DOCKER_URL=DOCKER_URL_${ARCH}
-
-RUN wget ${!DOCKER_URL} -O docker_ce_${ARCH} && dpkg -i docker_ce_${ARCH}
-
-
-# protoc
-ENV PROTOBUF_VER=3.18.0
-ENV PROTOC_amd64=https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VER}/protoc-${PROTOBUF_VER}-linux-x86_64.zip \
-	PROTOC_arm64=https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VER}/protoc-${PROTOBUF_VER}-linux-aarch_64.zip \
-	PROTOC_s390x=https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VER}/protoc-${PROTOBUF_VER}-linux-s390_64.zip \
-	PROTOC=PROTOC_${ARCH}
-
-RUN cd /usr/src && \
-	wget ${!PROTOC} -O protoc_${ARCH}.zip && \
-    unzip protoc_${ARCH}.zip -d /usr/local/
-
-# protoc-gen-go
-RUN cd /go/src/github.com/ && \
-    mkdir golang/ && \
-    cd golang && \
-    git clone https://github.com/golang/protobuf.git && \
-    cd protobuf && \
-    git checkout v1.3.2 && \
-    cd protoc-gen-go && \
-    go build && \
-    cp protoc-gen-go /usr/local/bin
-
-# python grpc-tools
-RUN pip3 install grpcio grpcio_tools protobuf
+RUN wget -O - https://storage.googleapis.com/golang/go1.20.3.linux-${!GOLANG_ARCH}.tar.gz | tar -xzf - -C /usr/local && \
+    go install golang.org/x/lint/golint@latest
 
 
 # longhorn/spdk
 ENV SPDK_DIR /usr/src/spdk
-RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} && \
-    cd $SPDK_DIR && \
-    git checkout c22a9a76836ca43d6298a96340e70a83f089d5e0 && \
-    ./scripts/pkgdep.sh && \
-    git submodule update --init && \
-    ./configure && \
-    make
+ENV SPDK_COMMIT_ID 4542f9b14010fc7192d42e05adaafc2ae863bac5
+RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
+    if [ ${ARCH} == "amd64" ]; then \
+        cd ${SPDK_DIR} && \
+        git checkout ${SPDK_COMMIT_ID} && \
+        git submodule update --init && \
+        ./scripts/pkgdep.sh && \
+        ./configure --target-arch=nehalem --disable-tests --disable-unit-tests --disable-examples && \
+        make -j$(nproc) && \
+        make install; \
+    fi
+
 
 VOLUME /tmp
 ENV TMPDIR /tmp

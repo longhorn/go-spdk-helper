@@ -51,9 +51,7 @@ func LaunchTestSPDKTarget(c *C, execute func(name string, args []string) (string
 
 	if !targetReady {
 		go func() {
-			err := target.Setup(GetSPDKDir(), execute)
-			c.Assert(err, IsNil)
-			err = target.StartTarget(GetSPDKDir(), execute)
+			err := target.StartTarget(GetSPDKDir(), execute)
 			c.Assert(err, IsNil)
 		}()
 
