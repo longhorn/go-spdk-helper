@@ -9,16 +9,8 @@ import (
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
-func CheckForNVMeCliExistence(executor util.Executor) error {
-	opts := []string{
-		"--version",
-	}
-	_, err := executor.Execute(nvmeBinary, opts)
-	return err
-}
-
 func DiscoverTarget(ip, port string, executor util.Executor) (subnqn string, err error) {
-	entries, err := performNvmeDiscovery(ip, port, executor)
+	entries, err := NvmeDiscovery(ip, port, executor)
 	if err != nil {
 		return "", err
 	}
@@ -39,11 +31,11 @@ func ConnectTarget(ip, port, nqn string, executor util.Executor) (controllerName
 		return devices[0].Controllers[0].Controller, nil
 	}
 
-	return performNvmeConnect(ip, port, nqn, executor)
+	return NvmeConnect(ip, port, nqn, executor)
 }
 
 func DisconnectTarget(nqn string, executor util.Executor) error {
-	return performNvmeDisconnect(nqn, executor)
+	return NvmeDisconnect(nqn, executor)
 }
 
 // GetDevices returns all devices
@@ -56,13 +48,13 @@ func GetDevices(ip, port, nqn string, executor util.Executor) (devices []Device,
 
 	devices = []Device{}
 
-	nvmeDevices, err := performNvmeList(executor)
+	nvmeDevices, err := NvmeList(executor)
 	if err != nil {
 		return nil, err
 	}
 	for _, d := range nvmeDevices {
 		// Get subsystem
-		subsystems, err := performNvmeListSubsystems(d.DevicePath, executor)
+		subsystems, err := NvmeListSubsystems(d.DevicePath, executor)
 		if err != nil {
 			logrus.WithError(err).Warnf("failed to get subsystem for nvme device %s", d.DevicePath)
 			continue
@@ -136,7 +128,7 @@ func GetDevices(ip, port, nqn string, executor util.Executor) (devices []Device,
 	}
 
 	if len(res) == 0 {
-		subsystems, err := performNvmeListSubsystems("", executor)
+		subsystems, err := NvmeListSubsystems("", executor)
 		if err != nil {
 			return nil, err
 		}

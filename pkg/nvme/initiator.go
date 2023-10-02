@@ -54,10 +54,6 @@ func NewInitiator(name, subsystemNQN, hostProc string) (*Initiator, error) {
 		return nil, err
 	}
 
-	if err := CheckForNVMeCliExistence(executor); err != nil {
-		return nil, err
-	}
-
 	return &Initiator{
 		Name:         name,
 		SubsystemNQN: subsystemNQN,
