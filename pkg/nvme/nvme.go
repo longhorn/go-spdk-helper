@@ -10,7 +10,7 @@ import (
 )
 
 func DiscoverTarget(ip, port string, executor util.Executor) (subnqn string, err error) {
-	entries, err := NvmeDiscovery(ip, port, executor)
+	entries, err := discovery(ip, port, executor)
 	if err != nil {
 		return "", err
 	}
@@ -31,11 +31,11 @@ func ConnectTarget(ip, port, nqn string, executor util.Executor) (controllerName
 		return devices[0].Controllers[0].Controller, nil
 	}
 
-	return NvmeConnect(ip, port, nqn, executor)
+	return connect(ip, port, nqn, executor)
 }
 
 func DisconnectTarget(nqn string, executor util.Executor) error {
-	return NvmeDisconnect(nqn, executor)
+	return disconnect(nqn, executor)
 }
 
 // GetDevices returns all devices
@@ -48,13 +48,13 @@ func GetDevices(ip, port, nqn string, executor util.Executor) (devices []Device,
 
 	devices = []Device{}
 
-	nvmeDevices, err := NvmeList(executor)
+	nvmeDevices, err := listControllers(executor)
 	if err != nil {
 		return nil, err
 	}
 	for _, d := range nvmeDevices {
 		// Get subsystem
-		subsystems, err := NvmeListSubsystems(d.DevicePath, executor)
+		subsystems, err := listSubsystems(d.DevicePath, executor)
 		if err != nil {
 			logrus.WithError(err).Warnf("failed to get subsystem for nvme device %s", d.DevicePath)
 			continue
@@ -128,7 +128,7 @@ func GetDevices(ip, port, nqn string, executor util.Executor) (devices []Device,
 	}
 
 	if len(res) == 0 {
-		subsystems, err := NvmeListSubsystems("", executor)
+		subsystems, err := listSubsystems("", executor)
 		if err != nil {
 			return nil, err
 		}
