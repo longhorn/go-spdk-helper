@@ -19,6 +19,7 @@ const (
 	DefaultConcurrentLimit = 1024
 
 	DefaultResponseReadWaitPeriod = 10 * time.Millisecond
+	DefaultQueueBlockingTimeout   = 3 * time.Second
 
 	DefaultShortTimeout = 30 * time.Second
 	DefaultLongTimeout  = 24 * time.Hour
@@ -192,6 +193,9 @@ func (c *Client) read() {
 	ticker := time.NewTicker(DefaultResponseReadWaitPeriod)
 	defer ticker.Stop()
 
+	queueTimer := time.NewTimer(DefaultQueueBlockingTimeout)
+	defer queueTimer.Stop()
+
 	for {
 		select {
 		case <-c.ctx.Done():
@@ -209,7 +213,13 @@ func (c *Client) read() {
 				c.decoder = json.NewDecoder(c.conn)
 				continue
 			}
-			c.respReceiverQueue <- &resp
+
+			select {
+			case c.respReceiverQueue <- &resp:
+			case <-queueTimer.C:
+				logrus.Errorf("Response receiver queue is blocked for over %v second", DefaultQueueBlockingTimeout)
+			}
+			queueTimer.Reset(DefaultQueueBlockingTimeout)
 		}
 	}
 }
