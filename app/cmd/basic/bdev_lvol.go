@@ -406,7 +406,7 @@ func BdevLvolGetXattrCmd() cli.Command {
 }
 
 func bdevLvolGetXattr(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
@@ -457,7 +457,7 @@ func BdevLvolGetFragmapCmd() cli.Command {
 }
 
 func bdevLvolGetFragmap(c *cli.Context) error {
-	spdkCli, err := client.NewClient()
+	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
