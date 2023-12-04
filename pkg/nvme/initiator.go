@@ -131,8 +131,10 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 		}
 	}
 
+	exists, _ := i.linearDmDeviceExists()
+
 	i.logger.Infof("Stopping NVMe initiator blindly before starting")
-	if err := i.stopWithoutLock(); err != nil {
+	if err := i.stopWithoutLock(exists); err != nil {
 		return errors.Wrapf(err, "failed to stop the mismatching NVMe initiator %s before starting", i.Name)
 	}
 
@@ -173,14 +175,25 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 		return errors.Wrapf(err, "failed to load device info after starting NVMe initiator %s", i.Name)
 	}
 
-	i.logger.Infof("Creating linear dm device for NVMe initiator %s", i.Name)
-	if err := i.createLinearDmDevice(); err != nil {
-		return errors.Wrapf(err, "failed to create linear dm device for NVMe initiator %s", i.Name)
-	}
+	if exists {
+		i.logger.Infof("Reloading linear dm device for NVMe initiator %s", i.Name)
+		if err := i.reloadLinearDmDevice(); err != nil {
+			return errors.Wrapf(err, "failed to reload linear dm device for NVMe initiatorx %s", i.Name)
+		}
 
-	i.logger.Infof("Creating endpoint %v", i.Endpoint)
-	if err := i.makeEndpoint(); err != nil {
-		return err
+		if err := i.resumeLinearDmDevice(); err != nil {
+			return errors.Wrapf(err, "failed to resume linear dm device for NVMe initiator %s", i.Name)
+		}
+	} else {
+		i.logger.Infof("Creating linear dm device for NVMe initiator %s", i.Name)
+		if err := i.createLinearDmDevice(); err != nil {
+			return errors.Wrapf(err, "failed to create linear dm device for NVMe initiator %s", i.Name)
+		}
+
+		i.logger.Infof("Creating endpoint %v", i.Endpoint)
+		if err := i.makeEndpoint(); err != nil {
+			return err
+		}
 	}
 
 	i.logger.Infof("Launched NVMe initiator: %+v", i)
@@ -188,7 +201,7 @@ func (i *Initiator) Start(transportAddress, transportServiceID string) (err erro
 	return nil
 }
 
-func (i *Initiator) Stop() error {
+func (i *Initiator) Stop(engineUpgrade bool) error {
 	if i.hostProc != "" {
 		lock := nsfilelock.NewLockWithTimeout(util.GetHostNamespacePath(i.hostProc), LockFile, LockTimeout)
 		if err := lock.Lock(); err != nil {
@@ -197,16 +210,18 @@ func (i *Initiator) Stop() error {
 		defer lock.Unlock()
 	}
 
-	return i.stopWithoutLock()
+	return i.stopWithoutLock(engineUpgrade)
 }
 
-func (i *Initiator) stopWithoutLock() error {
-	if err := i.removeEndpoint(); err != nil {
-		return err
-	}
+func (i *Initiator) stopWithoutLock(engineUpgrade bool) error {
+	if !engineUpgrade {
+		if err := i.removeEndpoint(); err != nil {
+			return err
+		}
 
-	if err := i.removeLinearDmDevice(); err != nil {
-		return err
+		if err := i.removeLinearDmDevice(); err != nil {
+			return err
+		}
 	}
 
 	if err := DisconnectTarget(i.SubsystemNQN, i.executor); err != nil {
@@ -393,6 +408,18 @@ func (i *Initiator) createLinearDmDevice() error {
 	i.dev.Export.Minor = minor
 
 	return nil
+}
+
+func (i *Initiator) linearDmDeviceExists() (bool, error) {
+	dmDevPath := getDmDevicePath(i.Name)
+	if _, err := os.Stat(dmDevPath); err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
 }
 
 func validateDiskCreation(path string, timeout int) error {
