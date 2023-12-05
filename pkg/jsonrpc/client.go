@@ -193,9 +193,6 @@ func (c *Client) read() {
 	ticker := time.NewTicker(DefaultResponseReadWaitPeriod)
 	defer ticker.Stop()
 
-	queueTimer := time.NewTimer(DefaultQueueBlockingTimeout)
-	defer queueTimer.Stop()
-
 	for {
 		select {
 		case <-c.ctx.Done():
@@ -214,12 +211,13 @@ func (c *Client) read() {
 				continue
 			}
 
+			queueTimer := time.NewTimer(DefaultQueueBlockingTimeout)
 			select {
 			case c.respReceiverQueue <- &resp:
 			case <-queueTimer.C:
-				logrus.Errorf("Response receiver queue is blocked for over %v second", DefaultQueueBlockingTimeout)
+				logrus.Errorf("Response receiver queue is blocked for over %v second when sending response id %v", DefaultQueueBlockingTimeout, resp.ID)
 			}
-			queueTimer.Reset(DefaultQueueBlockingTimeout)
+			queueTimer.Stop()
 		}
 	}
 }
