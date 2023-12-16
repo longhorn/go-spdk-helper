@@ -10,6 +10,7 @@ import (
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
+// DiscoverTarget discovers a target
 func DiscoverTarget(ip, port string, executor util.Executor) (subnqn string, err error) {
 	entries, err := discovery(ip, port, executor)
 	if err != nil {
@@ -25,6 +26,7 @@ func DiscoverTarget(ip, port string, executor util.Executor) (subnqn string, err
 	return "", fmt.Errorf("found empty subnqn after nvme discover for %s:%s", ip, port)
 }
 
+// ConnectTarget connects to a target
 func ConnectTarget(ip, port, nqn string, executor util.Executor) (controllerName string, err error) {
 	// Trying to connect an existing subsystem will error out with exit code 114.
 	// Hence, it's better to check the existence first.
@@ -35,6 +37,7 @@ func ConnectTarget(ip, port, nqn string, executor util.Executor) (controllerName
 	return connect(ip, port, nqn, executor)
 }
 
+// DisconnectTarget disconnects a target
 func DisconnectTarget(nqn string, executor util.Executor) error {
 	return disconnect(nqn, executor)
 }
@@ -144,4 +147,9 @@ func GetDevices(ip, port, nqn string, executor util.Executor) (devices []Device,
 		return nil, fmt.Errorf("cannot find a valid nvme device with subsystem NQN %s and address %s:%s", nqn, ip, port)
 	}
 	return res, nil
+}
+
+// GetSubsystems returns all devices
+func GetSubsystems(executor util.Executor) (subsystems []Subsystem, err error) {
+	return listSubsystems("", executor)
 }
