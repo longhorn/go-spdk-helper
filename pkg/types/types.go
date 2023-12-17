@@ -3,6 +3,8 @@ package types
 import "fmt"
 
 const (
+	NQNPrefix = "nqn.2023-01.io.longhorn.spdk"
+
 	DefaultJSONServerNetwork    = "unix"
 	DefaultUnixDomainSocketPath = "/var/tmp/spdk.sock"
 
@@ -26,5 +28,5 @@ const (
 )
 
 func GetNQN(name string) string {
-	return fmt.Sprintf("nqn.2023-01.io.longhorn.spdk:%s", name)
+	return fmt.Sprintf("%s:%s", NQNPrefix, name)
 }
