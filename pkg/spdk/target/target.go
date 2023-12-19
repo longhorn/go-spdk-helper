@@ -16,6 +16,7 @@ const (
 	SPDKTGTBinary   = "build/bin/spdk_tgt"
 )
 
+// SetupTarget setups the spdk_tgt with the given args
 func SetupTarget(spdkDir string, setupArgs []string, execute func(name string, args []string) (string, error)) (err error) {
 	setupArgsInStr := ""
 	for _, arg := range setupArgs {
@@ -43,6 +44,7 @@ func SetupTarget(spdkDir string, setupArgs []string, execute func(name string, a
 	return nil
 }
 
+// StartTarget starts the spdk_tgt with the given args
 func StartTarget(spdkDir string, args []string, execute func(name string, args []string) (string, error)) (err error) {
 	if spdkCli, err := client.NewClient(context.Background()); err == nil {
 		if _, err := spdkCli.BdevGetBdevs("", 0); err == nil {

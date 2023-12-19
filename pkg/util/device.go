@@ -46,7 +46,7 @@ func RemoveDevice(dev string) error {
 	return nil
 }
 
-// GetDevicePath returns the path of the device with the given major and minor numbers
+// GetKnownDevices returns the path of the device with the given major and minor numbers
 func GetKnownDevices(executor Executor) (map[string]*KernelDevice, error) {
 	knownDevices := make(map[string]*KernelDevice)
 

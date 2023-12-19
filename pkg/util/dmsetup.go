@@ -8,6 +8,7 @@ const (
 	dmsetupBinary = "dmsetup"
 )
 
+// DmsetupCreate creates a device mapper device with the given name and table
 func DmsetupCreate(dmDeviceName, table string, executor Executor) error {
 	opts := []string{
 		"create", dmDeviceName, "--table", table,
@@ -16,6 +17,7 @@ func DmsetupCreate(dmDeviceName, table string, executor Executor) error {
 	return err
 }
 
+// DmsetupSuspend suspends the device mapper device with the given name
 func DmsetupSuspend(dmDeviceName string, executor Executor) error {
 	opts := []string{
 		"suspend", dmDeviceName,
@@ -24,6 +26,7 @@ func DmsetupSuspend(dmDeviceName string, executor Executor) error {
 	return err
 }
 
+// DmsetupResume removes the device mapper device with the given name
 func DmsetupResume(dmDeviceName string, executor Executor) error {
 	opts := []string{
 		"resume", dmDeviceName,
@@ -32,6 +35,7 @@ func DmsetupResume(dmDeviceName string, executor Executor) error {
 	return err
 }
 
+// DmsetupReload reloads the table of the device mapper device with the given name and table
 func DmsetupReload(dmDeviceName, table string, executor Executor) error {
 	opts := []string{
 		"reload", dmDeviceName, "--table", table,
@@ -40,6 +44,7 @@ func DmsetupReload(dmDeviceName, table string, executor Executor) error {
 	return err
 }
 
+// DmsetupRemove removes the device mapper device with the given name
 func DmsetupRemove(dmDeviceName string, force, deferred bool, executor Executor) error {
 	opts := []string{
 		"remove", dmDeviceName,
@@ -54,6 +59,7 @@ func DmsetupRemove(dmDeviceName string, force, deferred bool, executor Executor)
 	return err
 }
 
+// DmsetupDeps returns the dependent devices of the device mapper device with the given name
 func DmsetupDeps(dmDeviceName string, executor Executor) ([]string, error) {
 	opts := []string{
 		"deps", dmDeviceName, "-o", "devname",
