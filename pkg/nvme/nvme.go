@@ -7,11 +7,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/longhorn/go-spdk-helper/pkg/util"
+	nslib "github.com/longhorn/go-common-libs/ns"
 )
 
 // DiscoverTarget discovers a target
-func DiscoverTarget(ip, port string, executor util.Executor) (subnqn string, err error) {
+func DiscoverTarget(ip, port string, executor *nslib.Executor) (subnqn string, err error) {
 	entries, err := discovery(ip, port, executor)
 	if err != nil {
 		return "", err
@@ -27,23 +27,23 @@ func DiscoverTarget(ip, port string, executor util.Executor) (subnqn string, err
 }
 
 // ConnectTarget connects to a target
-func ConnectTarget(ip, port, nqn string, executor util.Executor) (controllerName string, err error) {
+func ConnectTarget(ip, port, nqn string, executor *nslib.Executor) (controllerName string, err error) {
 	// Trying to connect an existing subsystem will error out with exit code 114.
 	// Hence, it's better to check the existence first.
 	if devices, err := GetDevices(ip, port, nqn, executor); err == nil && len(devices) > 0 {
 		return devices[0].Controllers[0].Controller, nil
 	}
 
-	return connect(ip, port, nqn, executor)
+	return connect("", nqn, DefaultTransportType, ip, port, executor)
 }
 
 // DisconnectTarget disconnects a target
-func DisconnectTarget(nqn string, executor util.Executor) error {
+func DisconnectTarget(nqn string, executor *nslib.Executor) error {
 	return disconnect(nqn, executor)
 }
 
 // GetDevices returns all devices
-func GetDevices(ip, port, nqn string, executor util.Executor) (devices []Device, err error) {
+func GetDevices(ip, port, nqn string, executor *nslib.Executor) (devices []Device, err error) {
 	defer func() {
 		err = errors.Wrapf(err, "failed to get devices for address %s:%s and nqn %s", ip, port, nqn)
 	}()
@@ -150,6 +150,6 @@ func GetDevices(ip, port, nqn string, executor util.Executor) (devices []Device,
 }
 
 // GetSubsystems returns all devices
-func GetSubsystems(executor util.Executor) (subsystems []Subsystem, err error) {
+func GetSubsystems(executor *nslib.Executor) (subsystems []Subsystem, err error) {
 	return listSubsystems("", executor)
 }

@@ -1,8 +1,13 @@
 package nvmecli
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+
+	nslib "github.com/longhorn/go-common-libs/ns"
+	typeslib "github.com/longhorn/go-common-libs/types"
 
 	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 	"github.com/longhorn/go-spdk-helper/pkg/types"
@@ -15,8 +20,8 @@ func Cmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "host-proc",
-				Usage: "The host proc path of namespace executor. Empty means not using a namespace executor. By default empty",
-				Value: "",
+				Usage: fmt.Sprintf("The host proc path of namespace executor. By default %v", typeslib.ProcDirectory),
+				Value: typeslib.ProcDirectory,
 			},
 		},
 		Subcommands: []cli.Command{
@@ -29,6 +34,7 @@ func Cmd() cli.Command {
 		},
 	}
 }
+
 func DiscoverCmd() cli.Command {
 	return cli.Command{
 		Name: "discover",
@@ -55,7 +61,8 @@ func DiscoverCmd() cli.Command {
 }
 
 func discover(c *cli.Context) error {
-	executor, err := util.GetExecutorByHostProc(c.String("host-proc"))
+	namespaces := []typeslib.Namespace{typeslib.NamespaceMnt, typeslib.NamespaceIpc, typeslib.NamespaceNet}
+	executor, err := nslib.NewNamespaceExecutor(typeslib.ProcessNone, c.String("host-proc"), namespaces)
 	if err != nil {
 		return err
 	}
@@ -99,7 +106,8 @@ func ConnectCmd() cli.Command {
 }
 
 func connect(c *cli.Context) error {
-	executor, err := util.GetExecutorByHostProc(c.String("host-proc"))
+	namespaces := []typeslib.Namespace{typeslib.NamespaceMnt, typeslib.NamespaceIpc, typeslib.NamespaceNet}
+	executor, err := nslib.NewNamespaceExecutor(typeslib.ProcessNone, c.String("host-proc"), namespaces)
 	if err != nil {
 		return err
 	}
@@ -125,7 +133,8 @@ func DisconnectCmd() cli.Command {
 }
 
 func disconnect(c *cli.Context) error {
-	executor, err := util.GetExecutorByHostProc(c.String("host-proc"))
+	namespaces := []typeslib.Namespace{typeslib.NamespaceMnt, typeslib.NamespaceIpc, typeslib.NamespaceNet}
+	executor, err := nslib.NewNamespaceExecutor(typeslib.ProcessNone, c.String("host-proc"), namespaces)
 	if err != nil {
 		return err
 	}
@@ -161,7 +170,8 @@ func GetCmd() cli.Command {
 }
 
 func get(c *cli.Context) error {
-	executor, err := util.GetExecutorByHostProc(c.String("host-proc"))
+	namespaces := []typeslib.Namespace{typeslib.NamespaceMnt, typeslib.NamespaceIpc, typeslib.NamespaceNet}
+	executor, err := nslib.NewNamespaceExecutor(typeslib.ProcessNone, c.String("host-proc"), namespaces)
 	if err != nil {
 		return err
 	}

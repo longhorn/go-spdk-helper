@@ -2,6 +2,10 @@ package util
 
 import (
 	"regexp"
+
+	nslib "github.com/longhorn/go-common-libs/ns"
+
+	"github.com/longhorn/go-spdk-helper/pkg/types"
 )
 
 const (
@@ -9,43 +13,43 @@ const (
 )
 
 // DmsetupCreate creates a device mapper device with the given name and table
-func DmsetupCreate(dmDeviceName, table string, executor Executor) error {
+func DmsetupCreate(dmDeviceName, table string, executor *nslib.Executor) error {
 	opts := []string{
 		"create", dmDeviceName, "--table", table,
 	}
-	_, err := executor.Execute(dmsetupBinary, opts)
+	_, err := executor.Execute(dmsetupBinary, opts, types.ExecuteTimeout)
 	return err
 }
 
 // DmsetupSuspend suspends the device mapper device with the given name
-func DmsetupSuspend(dmDeviceName string, executor Executor) error {
+func DmsetupSuspend(dmDeviceName string, executor *nslib.Executor) error {
 	opts := []string{
 		"suspend", dmDeviceName,
 	}
-	_, err := executor.Execute(dmsetupBinary, opts)
+	_, err := executor.Execute(dmsetupBinary, opts, types.ExecuteTimeout)
 	return err
 }
 
 // DmsetupResume removes the device mapper device with the given name
-func DmsetupResume(dmDeviceName string, executor Executor) error {
+func DmsetupResume(dmDeviceName string, executor *nslib.Executor) error {
 	opts := []string{
 		"resume", dmDeviceName,
 	}
-	_, err := executor.Execute(dmsetupBinary, opts)
+	_, err := executor.Execute(dmsetupBinary, opts, types.ExecuteTimeout)
 	return err
 }
 
 // DmsetupReload reloads the table of the device mapper device with the given name and table
-func DmsetupReload(dmDeviceName, table string, executor Executor) error {
+func DmsetupReload(dmDeviceName, table string, executor *nslib.Executor) error {
 	opts := []string{
 		"reload", dmDeviceName, "--table", table,
 	}
-	_, err := executor.Execute(dmsetupBinary, opts)
+	_, err := executor.Execute(dmsetupBinary, opts, types.ExecuteTimeout)
 	return err
 }
 
 // DmsetupRemove removes the device mapper device with the given name
-func DmsetupRemove(dmDeviceName string, force, deferred bool, executor Executor) error {
+func DmsetupRemove(dmDeviceName string, force, deferred bool, executor *nslib.Executor) error {
 	opts := []string{
 		"remove", dmDeviceName,
 	}
@@ -55,17 +59,17 @@ func DmsetupRemove(dmDeviceName string, force, deferred bool, executor Executor)
 	if deferred {
 		opts = append(opts, "--deferred")
 	}
-	_, err := executor.Execute(dmsetupBinary, opts)
+	_, err := executor.Execute(dmsetupBinary, opts, types.ExecuteTimeout)
 	return err
 }
 
 // DmsetupDeps returns the dependent devices of the device mapper device with the given name
-func DmsetupDeps(dmDeviceName string, executor Executor) ([]string, error) {
+func DmsetupDeps(dmDeviceName string, executor *nslib.Executor) ([]string, error) {
 	opts := []string{
 		"deps", dmDeviceName, "-o", "devname",
 	}
 
-	outputStr, err := executor.Execute(dmsetupBinary, opts)
+	outputStr, err := executor.Execute(dmsetupBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return nil, err
 	}
