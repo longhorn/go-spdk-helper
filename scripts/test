@@ -7,4 +7,125 @@ echo Running tests
 
 PACKAGES="$(find -name '*.go' | xargs -I{} dirname {} |  cut -f2 -d/ | sort -u | grep -Ev '(^\.$|.git|.trash-cache|vendor|bin)' | sed -e 's!^!./!' -e 's!$!/...!')"
 
+function cleanup() {
+    echo "Cleaning up NVMe target configuration"
+    nvmetcli clear 
+
+    echo "Cleaning up loopback device $1"
+    local loop_device="$1"
+    losetup -d "$loop_device"
+}
+
+function create_nvme_target_config() {
+    if [ $# -ne 1 ]; then
+        echo "Usage: generate_nvme_target_config <loop device path>"
+        return 1
+    fi
+
+    local replacement="$1"
+    local file_content='
+    {
+      "hosts": [
+        {
+          "nqn": "hostnqn"
+        }
+      ],
+      "ports": [
+        {
+          "addr": {
+            "adrfam": "",
+            "traddr": "",
+            "treq": "not specified",
+            "trsvcid": "",
+            "trtype": "loop"
+          },
+          "portid": 1,
+          "referrals": [],
+          "subsystems": [
+            "testnqn"
+          ]
+        }
+      ],
+      "subsystems": [
+        {
+          "allowed_hosts": [
+            "hostnqn"
+          ],
+          "attr": {
+            "allow_any_host": "0"
+          },
+          "namespaces": [
+            {
+              "device": {
+                "nguid": "ef90689c-6c46-d44c-89c1-4067801309a8",
+                "path": "unknown"                                                                                                                                                                                                                                                                                  
+              },
+              "enable": 1,
+              "nsid": 1
+            }
+          ],
+          "nqn": "testnqn"
+        }
+      ]
+    }'
+
+    # Perform the replacement
+    updated_content="${file_content//\"unknown\"/\"$replacement\"}"
+
+    # Output the updated content to a file
+    echo "$updated_content" > /tmp/loop.json
+}
+
+function create_loop_device() {
+    if [ $# -ne 1 ]; then
+        echo "Usage: create_loop_device <file path>"
+        return 1
+    fi
+
+    local file_path="$1"
+    local loop_device=$(losetup -f --show "$file_path")
+    if [ -z "$loop_device" ]; then
+        echo "Failed to create loopback device"
+        return 1
+    fi
+
+    echo "$loop_device"
+}
+
+function create_nvme_device() {
+    local loop_device="$1"
+    if [ -z "$loop_device" ]; then
+        echo "Usage: create_nvme_device <loop device path>"
+        return 1
+    fi
+    # Generate NVMe target configuration file
+    create_nvme_target_config "$loop_device" || return 1
+
+    # Create an emulated NVMe device
+    nvmetcli restore /tmp/loop.json || return 1
+}
+
+# Mount necessary directories
+mount --rbind /host/dev /dev
+mount --rbind /host/sys /sys
+
+# Create a test file and loop device
+dd if=/dev/zero of=testfile bs=1M count=100 || exit 1
+loop_device=$(create_loop_device testfile)
+if [ $? -ne 0 ]; then
+    echo "Failed to create loopback device"
+    exit 1
+fi
+
+echo "Created loopback device $loop_device"
+
+# Create NVMe device and handle cleanup
+create_nvme_device "$loop_device"
+if [ $? -ne 0 ]; then
+    echo "Failed to create NVMe device"
+    exit 1
+fi
+
+trap "cleanup $loop_device" EXIT
+
 go test -v -race -cover ${PACKAGES}

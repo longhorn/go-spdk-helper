@@ -10,7 +10,7 @@ ENV PATH /go/bin:$PATH
 ENV DAPPER_DOCKER_SOCKET true
 ENV DAPPER_ENV TAG REPO
 ENV DAPPER_OUTPUT bin coverage.out
-ENV DAPPER_RUN_ARGS --privileged -v /dev:/host/dev -v /proc:/host/proc
+ENV DAPPER_RUN_ARGS --privileged -v /dev:/host/dev -v /proc:/host/proc -v /sys:/host/sys
 ENV DAPPER_SOURCE /go/src/github.com/longhorn/go-spdk-helper
 WORKDIR ${DAPPER_SOURCE}
 
@@ -25,7 +25,7 @@ RUN zypper -n install kmod curl fuse wget tar gzip git awk \
     nfs-client nfs4-acl-tools cifs-utils \
     libibverbs librdmacm1 rdma-core-devel perl-Config-General libaio-devel sg3_utils uuid-devel \
     iputils telnet iproute2 qemu-tools \
-    e2fsprogs e2fsprogs-devel xfsprogs xfsprogs-devel util-linux-systemd python3
+    e2fsprogs e2fsprogs-devel xfsprogs xfsprogs-devel util-linux-systemd python3 python3-devel meson ninja nvmetcli
 
 
 # Install Go & tools
@@ -49,6 +49,16 @@ RUN git clone https://github.com/longhorn/spdk.git ${SPDK_DIR} --recursive && \
         make install; \
     fi
 
+# nvme-cli 2.5
+ENV NVME_CLI_DIR /usr/src/nvme-cli
+ENV NVME_CLI_COMMIT_ID d6c07e0de9be777009ebb9ab7475bee1ae3e0e95
+RUN git clone https://github.com/linux-nvme/nvme-cli.git ${NVME_CLI_DIR} && \
+    cd ${NVME_CLI_DIR} && \
+    git checkout ${NVME_CLI_COMMIT_ID} && \
+    meson setup --force-fallback-for=libnvme .build && \
+    meson compile -C .build && \
+    meson install -C .build && \
+    ldconfig
 
 VOLUME /tmp
 ENV TMPDIR /tmp
