@@ -9,12 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/longhorn/go-spdk-helper/pkg/types"
+	nslib "github.com/longhorn/go-common-libs/ns"
+	typeslib "github.com/longhorn/go-common-libs/types"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/target"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
-	"github.com/longhorn/go-spdk-helper/pkg/util"
+	"github.com/longhorn/go-spdk-helper/pkg/types"
 
 	. "gopkg.in/check.v1"
 )
@@ -43,7 +44,7 @@ func GetSPDKDir() string {
 	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/longhorn/spdk")
 }
 
-func LaunchTestSPDKTarget(c *C, execute func(name string, args []string) (string, error)) {
+func LaunchTestSPDKTarget(c *C, execute func(binary string, args []string, timeout time.Duration) (string, error)) {
 	targetReady := false
 	if spdkCli, err := client.NewClient(context.Background()); err == nil {
 		if _, err := spdkCli.BdevGetBdevs("", 0); err == nil {
@@ -87,8 +88,8 @@ func PrepareDeviceFile(c *C) {
 func (s *TestSuite) TestSPDKTargetWithHostNamespace(c *C) {
 	fmt.Println("Testing SPDK Target With Host Namespace")
 
-	hostProcPath := "/host/proc"
-	ne, err := util.NewNamespaceExecutor(util.GetHostNamespacePath(hostProcPath))
+	namespaces := []typeslib.Namespace{typeslib.NamespaceMnt, typeslib.NamespaceIpc, typeslib.NamespaceNet}
+	ne, err := nslib.NewNamespaceExecutor(typeslib.ProcessNone, typeslib.HostProcDirectory, namespaces)
 	c.Assert(err, IsNil)
 
 	LaunchTestSPDKTarget(c, ne.Execute)
@@ -96,7 +97,12 @@ func (s *TestSuite) TestSPDKTargetWithHostNamespace(c *C) {
 
 func (s *TestSuite) TestSPDKBasic(c *C) {
 	fmt.Println("Testing SPDK Basic")
-	LaunchTestSPDKTarget(c, util.Execute)
+
+	namespaces := []typeslib.Namespace{typeslib.NamespaceMnt, typeslib.NamespaceIpc, typeslib.NamespaceNet}
+	ne, err := nslib.NewNamespaceExecutor(typeslib.ProcessNone, typeslib.ProcDirectory, namespaces)
+	c.Assert(err, IsNil)
+
+	LaunchTestSPDKTarget(c, ne.Execute)
 	PrepareDeviceFile(c)
 	defer func() {
 		os.RemoveAll(defaultDevicePath)
@@ -288,7 +294,12 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 
 func (s *TestSuite) TestSPDKClientMultiThread(c *C) {
 	fmt.Println("Testing SPDK Client Multi Thread")
-	LaunchTestSPDKTarget(c, util.Execute)
+
+	namespaces := []typeslib.Namespace{typeslib.NamespaceMnt, typeslib.NamespaceIpc, typeslib.NamespaceNet}
+	ne, err := nslib.NewNamespaceExecutor(typeslib.ProcessNone, typeslib.ProcDirectory, namespaces)
+	c.Assert(err, IsNil)
+
+	LaunchTestSPDKTarget(c, ne.Execute)
 	PrepareDeviceFile(c)
 	defer func() {
 		os.RemoveAll(defaultDevicePath)

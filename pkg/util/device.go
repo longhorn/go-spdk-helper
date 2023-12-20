@@ -13,6 +13,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
+
+	nslib "github.com/longhorn/go-common-libs/ns"
+	"github.com/longhorn/go-spdk-helper/pkg/types"
 )
 
 const (
@@ -47,7 +50,7 @@ func RemoveDevice(dev string) error {
 }
 
 // GetKnownDevices returns the path of the device with the given major and minor numbers
-func GetKnownDevices(executor Executor) (map[string]*KernelDevice, error) {
+func GetKnownDevices(executor *nslib.Executor) (map[string]*KernelDevice, error) {
 	knownDevices := make(map[string]*KernelDevice)
 
 	/* Example command output
@@ -65,7 +68,7 @@ func GetKnownDevices(executor Executor) (map[string]*KernelDevice, error) {
 		"-l", "-n", "-o", "NAME,MAJ:MIN",
 	}
 
-	output, err := executor.Execute(lsblkBinary, opts)
+	output, err := executor.Execute(lsblkBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return knownDevices, err
 	}
@@ -91,7 +94,7 @@ func GetKnownDevices(executor Executor) (map[string]*KernelDevice, error) {
 }
 
 // DetectDevice detects the device with the given path
-func DetectDevice(path string, executor Executor) (*KernelDevice, error) {
+func DetectDevice(path string, executor *nslib.Executor) (*KernelDevice, error) {
 	/* Example command output
 	   $ lsblk -l -n <Device Path> -o NAME,MAJ:MIN
 	   nvme1n1     259:3
@@ -101,7 +104,7 @@ func DetectDevice(path string, executor Executor) (*KernelDevice, error) {
 		"-l", "-n", path, "-o", "NAME,MAJ:MIN",
 	}
 
-	output, err := executor.Execute(lsblkBinary, opts)
+	output, err := executor.Execute(lsblkBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -179,12 +182,12 @@ func parseNumber(str string) (int, error) {
 }
 
 // GetDeviceSectorSize returns the sector size of the given device
-func GetDeviceSectorSize(devPath string, executor Executor) (int64, error) {
+func GetDeviceSectorSize(devPath string, executor *nslib.Executor) (int64, error) {
 	opts := []string{
 		"--getsize", devPath,
 	}
 
-	output, err := executor.Execute(BlockdevBinary, opts)
+	output, err := executor.Execute(BlockdevBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return -1, err
 	}
@@ -193,11 +196,11 @@ func GetDeviceSectorSize(devPath string, executor Executor) (int64, error) {
 }
 
 // GetDeviceNumbers returns the major and minor numbers of the given device
-func GetDeviceNumbers(devPath string, executor Executor) (int, int, error) {
+func GetDeviceNumbers(devPath string, executor *nslib.Executor) (int, int, error) {
 	opts := []string{
 		"-l", "-J", "-n", "-o", "MAJ:MIN", devPath,
 	}
-	output, err := executor.Execute(lsblkBinary, opts)
+	output, err := executor.Execute(lsblkBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return -1, -1, err
 	}
