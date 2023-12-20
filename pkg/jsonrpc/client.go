@@ -171,7 +171,11 @@ func (c *Client) handleRecv(resp *Response) {
 	}
 	delete(c.responseChans, resp.ID)
 
-	ch <- resp
+	select {
+	case ch <- resp:
+	default:
+		logrus.Error("Response receiver queue is full when sending response id %v", resp.ID)
+	}
 	close(ch)
 }
 
