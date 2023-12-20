@@ -1,6 +1,9 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 const (
 	NQNPrefix = "nqn.2023-01.io.longhorn.spdk"
@@ -25,6 +28,8 @@ const (
 	// By default, error detection on a qpair is very slow for TCP transports. For fast error
 	// detection, transport_ack_timeout should be set.
 	DefaultTransportAckTimeout = 14
+
+	ExecuteTimeout = 60 * time.Second
 )
 
 func GetNQN(name string) string {
