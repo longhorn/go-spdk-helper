@@ -21,7 +21,7 @@ const (
 	DefaultResponseReadWaitPeriod = 10 * time.Millisecond
 	DefaultQueueBlockingTimeout   = 3 * time.Second
 
-	DefaultShortTimeout = 30 * time.Second
+	DefaultShortTimeout = 60 * time.Second
 	DefaultLongTimeout  = 24 * time.Hour
 )
 
