@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
+	"github.com/longhorn/go-spdk-helper/pkg/types"
 )
 
 const (
@@ -17,7 +19,7 @@ const (
 )
 
 // SetupTarget setups the spdk_tgt with the given args
-func SetupTarget(spdkDir string, setupArgs []string, execute func(name string, args []string) (string, error)) (err error) {
+func SetupTarget(spdkDir string, setupArgs []string, execute func(name string, args []string, timeout time.Duration) (string, error)) (err error) {
 	setupArgsInStr := ""
 	for _, arg := range setupArgs {
 		setupArgsInStr = fmt.Sprintf("%s %s", setupArgsInStr, arg)
@@ -34,10 +36,10 @@ func SetupTarget(spdkDir string, setupArgs []string, execute func(name string, a
 		"reset",
 	}
 
-	if _, err := execute("sh", resetOpts); err != nil {
+	if _, err := execute("sh", resetOpts, types.ExecuteTimeout); err != nil {
 		return err
 	}
-	if _, err := execute("sh", setupOpts); err != nil {
+	if _, err := execute("sh", setupOpts, types.ExecuteTimeout); err != nil {
 		return err
 	}
 
@@ -45,7 +47,7 @@ func SetupTarget(spdkDir string, setupArgs []string, execute func(name string, a
 }
 
 // StartTarget starts the spdk_tgt with the given args
-func StartTarget(spdkDir string, args []string, execute func(name string, args []string) (string, error)) (err error) {
+func StartTarget(spdkDir string, args []string, execute func(binary string, args []string, timeout time.Duration) (string, error)) (err error) {
 	if spdkCli, err := client.NewClient(context.Background()); err == nil {
 		if _, err := spdkCli.BdevGetBdevs("", 0); err == nil {
 			logrus.Info("Detected running spdk_tgt, skipped the target starting")
@@ -62,6 +64,6 @@ func StartTarget(spdkDir string, args []string, execute func(name string, args [
 		fmt.Sprintf("%s %s", filepath.Join(spdkDir, SPDKTGTBinary), argsInStr),
 	}
 
-	_, err = execute("sh", tgtOpts)
+	_, err = execute("sh", tgtOpts, types.ExecuteTimeout)
 	return err
 }
