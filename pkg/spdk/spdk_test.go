@@ -163,6 +163,7 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 		c.Assert(uint64(lvol.BlockSize)*lvol.NumBlocks, Equals, defaultLvolSizeInMiB*types.MiB)
 		c.Assert(lvol.DriverSpecific.Lvol, NotNil)
 		c.Assert(lvol.DriverSpecific.Lvol.ThinProvision, Equals, true)
+		c.Assert(lvol.DriverSpecific.Lvol.NumAllocatedClusters, Not(Equals), uint64(0))
 		c.Assert(lvol.DriverSpecific.Lvol.BaseBdev, Equals, defaultDeviceName)
 		c.Assert(lvol.DriverSpecific.Lvol.Snapshot, Equals, false)
 		c.Assert(lvol.DriverSpecific.Lvol.Clone, Equals, false)
@@ -244,6 +245,7 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	c.Assert(raidInfoList[0].BaseBdevsList[0].IsConfigured, Equals, true)
 	c.Assert(raidInfoList[0].BaseBdevsList[1].IsConfigured, Equals, true)
 	raidBdevList, err := spdkCli.BdevRaidGet(raidName, 0)
+	c.Assert(err, IsNil)
 	c.Assert(len(raidBdevList), Equals, 1)
 	raidBdev := raidBdevList[0]
 	c.Assert(int(raidBdev.DriverSpecific.Raid.NumBaseBdevs), Equals, 2)
@@ -360,6 +362,7 @@ func (s *TestSuite) TestSPDKClientMultiThread(c *C) {
 				c.Assert(uint64(lvol.BlockSize)*lvol.NumBlocks, Equals, defaultLvolSizeInMiB*types.MiB)
 				c.Assert(lvol.DriverSpecific.Lvol, NotNil)
 				c.Assert(lvol.DriverSpecific.Lvol.ThinProvision, Equals, true)
+				c.Assert(lvol.DriverSpecific.Lvol.NumAllocatedClusters, Not(Equals), uint64(0))
 				c.Assert(lvol.DriverSpecific.Lvol.BaseBdev, Equals, defaultDeviceName)
 				c.Assert(lvol.DriverSpecific.Lvol.Snapshot, Equals, false)
 				c.Assert(lvol.DriverSpecific.Lvol.Clone, Equals, false)
