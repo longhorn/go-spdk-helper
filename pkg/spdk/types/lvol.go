@@ -10,7 +10,7 @@ type BdevDriverSpecificLvol struct {
 	BaseBdev             string   `json:"base_bdev"`
 	BaseSnapshot         string   `json:"base_snapshot,omitempty"`
 	ThinProvision        bool     `json:"thin_provision"`
-	NumAllocatedClusters int64    `json:"num_allocated_clusters"`
+	NumAllocatedClusters uint64   `json:"num_allocated_clusters"`
 	Snapshot             bool     `json:"snapshot"`
 	Clone                bool     `json:"clone"`
 	Clones               []string `json:"clones,omitempty"`
