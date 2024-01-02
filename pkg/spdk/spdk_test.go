@@ -13,6 +13,7 @@ import (
 
 	commonTypes "github.com/longhorn/go-common-libs/types"
 
+	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/target"
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
@@ -163,7 +164,7 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 		c.Assert(uint64(lvol.BlockSize)*lvol.NumBlocks, Equals, defaultLvolSizeInMiB*types.MiB)
 		c.Assert(lvol.DriverSpecific.Lvol, NotNil)
 		c.Assert(lvol.DriverSpecific.Lvol.ThinProvision, Equals, true)
-		c.Assert(lvol.DriverSpecific.Lvol.NumAllocatedClusters, Not(Equals), uint64(0))
+		c.Assert(lvol.DriverSpecific.Lvol.NumAllocatedClusters, Equals, uint64(0))
 		c.Assert(lvol.DriverSpecific.Lvol.BaseBdev, Equals, defaultDeviceName)
 		c.Assert(lvol.DriverSpecific.Lvol.Snapshot, Equals, false)
 		c.Assert(lvol.DriverSpecific.Lvol.Clone, Equals, false)
@@ -270,6 +271,34 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 		c.Assert(err, IsNil)
 	}()
 
+	initiator, err := nvme.NewInitiator(raidName, nqn, nvme.HostProc)
+	c.Assert(err, IsNil)
+
+	err = initiator.Start(types.LocalIP, defaultPort1, true)
+	c.Assert(err, IsNil)
+	defer func() {
+		err = initiator.Stop(true)
+		c.Assert(err, IsNil)
+	}()
+
+	// Use Linux nvme driver to attach to our RAID1 exported via NVMe-oF and create a filesystem on it
+	// The creation of a filesystem will write some data on the lvol
+	executor, err := util.NewExecutor(commonTypes.ProcDirectory)
+	c.Assert(err, IsNil)
+	_, err = executor.Execute("ls", []string{"/dev/longhorn/"}, types.ExecuteTimeout)
+	c.Assert(err, IsNil)
+
+	_, err = executor.Execute("mkfs.ext4", []string{"/dev/longhorn/" + raidName}, types.ExecuteTimeout)
+	c.Assert(err, IsNil)
+
+	for _, uuid := range []string{lvolUUID1, lvolUUID2} {
+		lvols, err := spdkCli.BdevLvolGet(uuid, 0)
+		c.Assert(err, IsNil)
+		c.Assert(len(lvols), Equals, 1)
+		lvol := lvols[0]
+		c.Assert(lvol.DriverSpecific.Lvol.NumAllocatedClusters, Not(Equals), uint64(0))
+	}
+
 	transportList, err := spdkCli.NvmfGetTransports(spdktypes.NvmeTransportTypeTCP, "")
 	c.Assert(err, IsNil)
 	c.Assert(len(transportList), Equals, 1)
@@ -308,7 +337,7 @@ func (s *TestSuite) TestSPDKClientMultiThread(c *C) {
 	c.Assert(err, IsNil)
 
 	// Do blindly cleanup
-	spdkCli.DeleteDevice(defaultDeviceName, defaultDeviceName)
+	_ = spdkCli.DeleteDevice(defaultDeviceName, defaultDeviceName)
 
 	bdevAioName, lvsName, lvsUUID, err := spdkCli.AddDevice(defaultDevicePath, defaultDeviceName, types.MiB)
 	c.Assert(err, IsNil)
@@ -362,7 +391,7 @@ func (s *TestSuite) TestSPDKClientMultiThread(c *C) {
 				c.Assert(uint64(lvol.BlockSize)*lvol.NumBlocks, Equals, defaultLvolSizeInMiB*types.MiB)
 				c.Assert(lvol.DriverSpecific.Lvol, NotNil)
 				c.Assert(lvol.DriverSpecific.Lvol.ThinProvision, Equals, true)
-				c.Assert(lvol.DriverSpecific.Lvol.NumAllocatedClusters, Not(Equals), uint64(0))
+				c.Assert(lvol.DriverSpecific.Lvol.NumAllocatedClusters, Equals, uint64(0))
 				c.Assert(lvol.DriverSpecific.Lvol.BaseBdev, Equals, defaultDeviceName)
 				c.Assert(lvol.DriverSpecific.Lvol.Snapshot, Equals, false)
 				c.Assert(lvol.DriverSpecific.Lvol.Clone, Equals, false)
