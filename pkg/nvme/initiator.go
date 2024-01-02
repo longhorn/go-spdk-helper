@@ -421,12 +421,14 @@ func (i *Initiator) suspendLinearDmDevice() error {
 	return util.DmsetupSuspend(i.Name, i.executor)
 }
 
+// nolint:unused
 func (i *Initiator) resumeLinearDmDevice() error {
 	logrus.Infof("Resuming linear dm device %s", i.Name)
 
 	return util.DmsetupResume(i.Name, i.executor)
 }
 
+// nolint:unused
 func (i *Initiator) reloadLinearDmDevice() error {
 	devPath := fmt.Sprintf("/dev/%s", i.dev.Nvme.Name)
 
