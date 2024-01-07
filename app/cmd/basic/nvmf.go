@@ -27,7 +27,6 @@ func NvmfCmd() cli.Command {
 			NvmfSubsystemGetNssCmd(),
 			NvmfSubsystemAddListenerCmd(),
 			NvmfSubsystemRemoveListenerCmd(),
-			NvmfSubsystemRemoveListenerCmd(),
 			NvmfSubsystemGetListenersCmd(),
 		},
 	}
