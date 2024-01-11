@@ -79,7 +79,7 @@ func NewInitiator(name, subsystemNQN, hostProc string) (*Initiator, error) {
 }
 
 // Suspend suspends the device mapper device for the NVMe initiator
-func (i *Initiator) Suspend() error {
+func (i *Initiator) Suspend(noflush, nolockfs bool) error {
 	if i.hostProc != "" {
 		lock := nsfilelock.NewLockWithTimeout(util.GetHostNamespacePath(i.hostProc), LockFile, LockTimeout)
 		if err := lock.Lock(); err != nil {
@@ -88,7 +88,7 @@ func (i *Initiator) Suspend() error {
 		defer lock.Unlock()
 	}
 
-	if err := i.suspendLinearDmDevice(); err != nil {
+	if err := i.suspendLinearDmDevice(noflush, nolockfs); err != nil {
 		return errors.Wrapf(err, "failed to suspend device mapper device for NVMe initiator %s", i.Name)
 	}
 
@@ -428,7 +428,6 @@ func (i *Initiator) resumeLinearDmDevice() error {
 	return util.DmsetupResume(i.Name, i.executor)
 }
 
-// nolint:unused
 func (i *Initiator) reloadLinearDmDevice() error {
 	devPath := fmt.Sprintf("/dev/%s", i.dev.Nvme.Name)
 
