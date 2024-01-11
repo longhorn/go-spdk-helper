@@ -220,7 +220,7 @@ func start(c *cli.Context) error {
 		return err
 	}
 
-	if err := initiator.Start(c.String("traddr"), c.String("trsvcid"), true); err != nil {
+	if _, err := initiator.Start(c.String("traddr"), c.String("trsvcid"), true); err != nil {
 		return err
 	}
 
@@ -261,7 +261,7 @@ func stop(c *cli.Context) error {
 		return err
 	}
 
-	if err := initiator.Stop(true); err != nil {
+	if _, err := initiator.Stop(true, true); err != nil {
 		return err
 	}
 
