@@ -274,10 +274,12 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	initiator, err := nvme.NewInitiator(raidName, nqn, nvme.HostProc)
 	c.Assert(err, IsNil)
 
-	err = initiator.Start(types.LocalIP, defaultPort1, true)
+	dmDeviceBusy, err := initiator.Start(types.LocalIP, defaultPort1, true)
+	c.Assert(dmDeviceBusy, Equals, false)
 	c.Assert(err, IsNil)
 	defer func() {
-		err = initiator.Stop(true)
+		dmDeviceBusy, err = initiator.Stop(true, true)
+		c.Assert(dmDeviceBusy, Equals, false)
 		c.Assert(err, IsNil)
 	}()
 
