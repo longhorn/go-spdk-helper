@@ -76,6 +76,11 @@ func BdevNvmeAttachControllerCmd() cli.Command {
 				Usage: "NVMe-oF controller fast I/O fail timeout in seconds for error cases",
 				Value: types.DefaultFastIOFailTimeoutSec,
 			},
+			cli.IntFlag{
+				Name:  "keep_alive_timeout_ms",
+				Usage: "NVMe-oF keep alive timeout in milliseconds",
+				Value: types.DefaultKeepAliveTimeoutMs,
+			},
 		},
 		Action: func(c *cli.Context) {
 			if err := bdevNvmeAttachController(c); err != nil {
@@ -227,7 +232,9 @@ func bdevNvmeSetOptions(c *cli.Context) error {
 		return err
 	}
 
-	bdevNameList, err := spdkCli.BdevNvmeSetOptions(int32(c.Int("ctrlr-loss-timeout-sec")), int32(c.Int("reconnect-delay-sec")), int32(c.Int("fast-io-fail-timeout-sec")), int32(c.Int("transport-ack-timeout")))
+	bdevNameList, err := spdkCli.BdevNvmeSetOptions(int32(c.Int("ctrlr-loss-timeout-sec")),
+		int32(c.Int("reconnect-delay-sec")), int32(c.Int("fast-io-fail-timeout-sec")),
+		int32(c.Int("transport-ack-timeout")), int32(c.Int("keep_alive_timeout_ms")))
 	if err != nil {
 		return err
 	}
