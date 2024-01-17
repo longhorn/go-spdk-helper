@@ -261,7 +261,7 @@ func stop(c *cli.Context) error {
 		return err
 	}
 
-	if _, err := initiator.Stop(true, true); err != nil {
+	if _, err := initiator.Stop(true, false, true); err != nil {
 		return err
 	}
 
