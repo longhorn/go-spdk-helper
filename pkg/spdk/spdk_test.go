@@ -278,7 +278,7 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	c.Assert(dmDeviceBusy, Equals, false)
 	c.Assert(err, IsNil)
 	defer func() {
-		dmDeviceBusy, err = initiator.Stop(true, true)
+		dmDeviceBusy, err = initiator.Stop(true, true, true)
 		c.Assert(dmDeviceBusy, Equals, false)
 		c.Assert(err, IsNil)
 	}()
