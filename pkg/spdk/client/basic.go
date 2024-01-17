@@ -846,7 +846,7 @@ func (c *Client) NvmfSubsystemsGetNss(nqn, bdevName string, nsid uint32) (nsList
 //
 //		"trtype": Required. NVMe-oF target trtype: "tcp", "rdma" or "pcie". "tcp" by default.
 //
-//	 	"adrfam": Required. Address family ("IPv4", "IPv6", "IB", or "FC"). "IPv4" by default.
+//	 	"adrfam": Required. Address family ("ipv4", "ipv6", "ib", or "fc"). "ipv4" by default.
 func (c *Client) NvmfSubsystemAddListener(nqn, traddr, trsvcid string, trtype spdktypes.NvmeTransportType, adrfam spdktypes.NvmeAddressFamily) (created bool, err error) {
 	req := spdktypes.NvmfSubsystemAddListenerRequest{
 		Nqn: nqn,
