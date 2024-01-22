@@ -177,8 +177,13 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 		}
 	}
 
-	snapLvolUUID1, err := spdkCli.BdevLvolSnapshot(lvolUUID1, "snap11")
+	var xattrs []client.Xattr
+	xattrs = append(xattrs, client.Xattr{Name: "par", Value: "val"})
+	snapLvolUUID1, err := spdkCli.BdevLvolSnapshot(lvolUUID1, "snap11", xattrs)
 	c.Assert(err, IsNil)
+	xattr, err := spdkCli.BdevLvolGetXattr(snapLvolUUID1, "par")
+	c.Assert(err, IsNil)
+	c.Assert(xattr, Equals, "val")
 	defer func() {
 		deleted, err := spdkCli.BdevLvolDelete(snapLvolUUID1)
 		c.Assert(err, IsNil)
