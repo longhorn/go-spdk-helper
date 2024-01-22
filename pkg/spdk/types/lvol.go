@@ -92,8 +92,9 @@ type BdevLvolDeleteRequest struct {
 }
 
 type BdevLvolSnapshotRequest struct {
-	LvolName     string `json:"lvol_name"`
-	SnapshotName string `json:"snapshot_name"`
+	LvolName     string            `json:"lvol_name"`
+	SnapshotName string            `json:"snapshot_name"`
+	Xattrs       map[string]string `json:"xattrs,omitempty"`
 }
 
 type BdevLvolCloneRequest struct {

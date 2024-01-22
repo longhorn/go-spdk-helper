@@ -3,7 +3,9 @@ package basic
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
@@ -167,6 +169,10 @@ func BdevLvolSnapshotCmd() cli.Command {
 				Name:  "uuid",
 				Usage: "Specify this or alias",
 			},
+			cli.StringSliceFlag{
+				Name:  "xattr",
+				Usage: "Xattr for the snapshot in the format name=value. Optional",
+			},
 			cli.StringFlag{
 				Name:     "snapshot-name",
 				Usage:    "The snapshot lvol name",
@@ -193,7 +199,22 @@ func bdevLvolSnapshot(c *cli.Context) error {
 		name = c.String("uuid")
 	}
 
-	uuid, err := spdkCli.BdevLvolSnapshot(name, c.String("snapshot-name"))
+	var xattrs []client.Xattr
+	xattrs_args := c.StringSlice("xattr")
+	for _, s := range xattrs_args {
+		parts := strings.Split(s, "=")
+		if len(parts) != 2 {
+			return errors.Errorf("xattr %q not in name=value format", s)
+		}
+
+		xattr := client.Xattr{
+			Name:  parts[0],
+			Value: parts[1],
+		}
+		xattrs = append(xattrs, xattr)
+	}
+
+	uuid, err := spdkCli.BdevLvolSnapshot(name, c.String("snapshot-name"), xattrs)
 	if err != nil {
 		return err
 	}
