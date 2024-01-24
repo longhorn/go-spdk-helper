@@ -30,6 +30,7 @@ func main() {
 	a.Commands = []cli.Command{
 		basic.BdevCmd(),
 		basic.BdevAioCmd(),
+		basic.BdevVirtioCmd(),
 		basic.BdevLvstoreCmd(),
 		basic.BdevLvolCmd(),
 		basic.BdevNvmeCmd(),
