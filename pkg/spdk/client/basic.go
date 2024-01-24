@@ -1045,3 +1045,44 @@ func (c *Client) LogGetPrintLevel() (string, error) {
 
 	return strings.Trim(string(level), "\"\n"), nil
 }
+
+// BdevVirtioAttachController creates new initiator Virtio SCSI or Virtio Block and expose all found bdevs.
+//
+// "name": Required. Use this name as base for new created bdevs.
+//
+// "trtype": Required. Transport type, "user" or "pci".
+//
+// "traddr": Required. Transport type specific target address: e.g. UNIX domain socket path or BDF.
+//
+// "devType": Required. Device type, "scsi" or "blk".
+func (c *Client) BdevVirtioAttachController(name, trtype, traddr, devType string) (bdevName string, err error) {
+	req := spdktypes.BdevVirtioAttachControllerRequest{
+		Name:    name,
+		Trtype:  trtype,
+		Traddr:  traddr,
+		DevType: devType,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_virtio_attach_controller", req)
+	if err != nil {
+		return "", err
+	}
+
+	return bdevName, json.Unmarshal(cmdOutput, &bdevName)
+}
+
+// BdevVirtioDetachController removes a Virtio device.
+//
+// "name": Required. Use this name as base for new created bdevs.
+func (c *Client) BdevVirtioDetachController(name string) (deleted bool, err error) {
+	req := spdktypes.BdevVirtioDetachControllerRequest{
+		Name: name,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_virtio_detach_controller", req)
+	if err != nil {
+		return false, err
+	}
+
+	return deleted, json.Unmarshal(cmdOutput, &deleted)
+}
