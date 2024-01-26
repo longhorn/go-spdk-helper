@@ -162,6 +162,7 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	for _, lvol := range lvolList {
 		c.Assert(len(lvol.Aliases), Equals, 1)
 		c.Assert(uint64(lvol.BlockSize)*lvol.NumBlocks, Equals, defaultLvolSizeInMiB*types.MiB)
+		c.Assert(lvol.CreationTime, Not(Equals), "")
 		c.Assert(lvol.DriverSpecific.Lvol, NotNil)
 		c.Assert(lvol.DriverSpecific.Lvol.ThinProvision, Equals, true)
 		c.Assert(lvol.DriverSpecific.Lvol.NumAllocatedClusters, Equals, uint64(0))
@@ -175,15 +176,20 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 		if lvol.UUID == lvolUUID2 {
 			c.Assert(lvol.Aliases[0], Equals, fmt.Sprintf("%s/%s", lvsName, lvolName2))
 		}
+		c.Assert(lvol.DriverSpecific.Lvol.Xattrs[client.UserCreated], Equals, "")
+		c.Assert(lvol.DriverSpecific.Lvol.Xattrs[client.SnapshotTimestamp], Equals, "")
 	}
 
 	var xattrs []client.Xattr
-	xattrs = append(xattrs, client.Xattr{Name: "par", Value: "val"})
+	snapshotTimestamp := time.Now().UTC().Format(time.RFC3339)
+	xattrs = append(xattrs,
+		client.Xattr{Name: client.UserCreated, Value: "true"},
+		client.Xattr{Name: client.SnapshotTimestamp, Value: snapshotTimestamp})
 	snapLvolUUID1, err := spdkCli.BdevLvolSnapshot(lvolUUID1, "snap11", xattrs)
 	c.Assert(err, IsNil)
-	xattr, err := spdkCli.BdevLvolGetXattr(snapLvolUUID1, "par")
+	xattr, err := spdkCli.BdevLvolGetXattr(snapLvolUUID1, client.UserCreated)
 	c.Assert(err, IsNil)
-	c.Assert(xattr, Equals, "val")
+	c.Assert(xattr, Equals, "true")
 	defer func() {
 		deleted, err := spdkCli.BdevLvolDelete(snapLvolUUID1)
 		c.Assert(err, IsNil)
@@ -193,9 +199,12 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(lvolList), Equals, 1)
 	snapLvol1 := lvolList[0]
+	c.Assert(snapLvol1.CreationTime, Not(Equals), "")
 	c.Assert(snapLvol1.DriverSpecific.Lvol, NotNil)
 	c.Assert(snapLvol1.DriverSpecific.Lvol.Snapshot, Equals, true)
 	c.Assert(snapLvol1.DriverSpecific.Lvol.Clone, Equals, false)
+	c.Assert(snapLvol1.DriverSpecific.Lvol.Xattrs[client.UserCreated], Equals, "true")
+	c.Assert(snapLvol1.DriverSpecific.Lvol.Xattrs[client.SnapshotTimestamp], Equals, snapshotTimestamp)
 
 	cloneLvolUUID1, err := spdkCli.BdevLvolClone(snapLvolUUID1, "clone111")
 	c.Assert(err, IsNil)
@@ -208,9 +217,12 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(lvolList), Equals, 1)
 	cloneLvol1 := lvolList[0]
+	c.Assert(cloneLvol1.CreationTime, Not(Equals), "")
 	c.Assert(cloneLvol1.DriverSpecific.Lvol, NotNil)
 	c.Assert(cloneLvol1.DriverSpecific.Lvol.Snapshot, Equals, false)
 	c.Assert(cloneLvol1.DriverSpecific.Lvol.Clone, Equals, true)
+	c.Assert(cloneLvol1.DriverSpecific.Lvol.Xattrs[client.UserCreated], Equals, "")
+	c.Assert(cloneLvol1.DriverSpecific.Lvol.Xattrs[client.SnapshotTimestamp], Equals, "")
 
 	decoupled, err := spdkCli.BdevLvolDecoupleParent(cloneLvolUUID1)
 	c.Assert(err, IsNil)
