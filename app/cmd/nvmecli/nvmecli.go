@@ -60,7 +60,7 @@ func DiscoverCmd() cli.Command {
 }
 
 func discover(c *cli.Context) error {
-	executor, err := util.NewExecutor(c.String("host-proc"))
+	executor, err := util.NewExecutor(c.GlobalString("host-proc"))
 	if err != nil {
 		return err
 	}
