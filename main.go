@@ -3,14 +3,14 @@ package main
 import (
 	"os"
 
-	"github.com/longhorn/go-spdk-helper/app/cmd/spdktgt"
-
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
 	"github.com/longhorn/go-spdk-helper/app/cmd/advanced"
 	"github.com/longhorn/go-spdk-helper/app/cmd/basic"
 	"github.com/longhorn/go-spdk-helper/app/cmd/nvmecli"
+	"github.com/longhorn/go-spdk-helper/app/cmd/spdksetup"
+	"github.com/longhorn/go-spdk-helper/app/cmd/spdktgt"
 )
 
 func main() {
@@ -44,6 +44,7 @@ func main() {
 		nvmecli.Cmd(),
 
 		spdktgt.Cmd(),
+		spdksetup.Cmd(),
 	}
 	if err := a.Run(os.Args); err != nil {
 		logrus.WithError(err).Fatal("Failed to execute command")
