@@ -20,6 +20,7 @@ func BdevRaidCmd() cli.Command {
 			BdevRaidDeleteCmd(),
 			BdevRaidGetCmd(),
 			BdevRaidRemoveBaseBdevCmd(),
+			BdevRaidGrowBaseBdevCmd(),
 		},
 	}
 }
@@ -155,4 +156,40 @@ func bdevRaidRemoveBaseBdev(c *cli.Context) error {
 	}
 
 	return util.PrintObject(deleted)
+}
+
+func BdevRaidGrowBaseBdevCmd() cli.Command {
+	return cli.Command{
+		Name:  "grow-base-bdev",
+		Usage: "add a bdev to the base bdev list of an existing raid bdev, grow the raid's size if there isn't an empty base bdev slot: grow-base-bdev --raid-name <RAID BDEV NAME> --base-name <BASE BDEV NAME>",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:     "raid-name",
+				Required: true,
+			},
+			cli.StringFlag{
+				Name:     "base-name",
+				Required: true,
+			},
+		},
+		Action: func(c *cli.Context) {
+			if err := bdevRaidGrowBaseBdev(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run grow base bdev to raid command")
+			}
+		},
+	}
+}
+
+func bdevRaidGrowBaseBdev(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	growed, err := spdkCli.BdevRaidGrowBaseBdev(c.String("raid-name"), c.String("base-name"))
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(growed)
 }
