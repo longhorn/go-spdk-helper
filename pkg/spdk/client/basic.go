@@ -328,6 +328,29 @@ func (c *Client) BdevLvolClone(snapshot, cloneName string) (uuid string, err err
 	return uuid, json.Unmarshal(cmdOutput, &uuid)
 }
 
+// BdevLvolCloneBdev creates a logical volume based on an external snapshot bdev.
+// The external snapshot bdev is a bdev that will not be written to by any consumer and must not be an lvol in the lvstore as the clone.
+//
+//	"bdev": Required. UUID or name for bdev that acts as the external snapshot.
+//
+//	"lvsName": Required. logical volume store name of the newly created lvol.
+//
+//	"cloneName": Required. name for the newly created lvol.
+func (c *Client) BdevLvolCloneBdev(bdev, lvsName, cloneName string) (uuid string, err error) {
+	req := spdktypes.BdevLvolCloneBdevRequest{
+		Bdev:      bdev,
+		LvsName:   lvsName,
+		CloneName: cloneName,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_lvol_clone_bdev", req)
+	if err != nil {
+		return "", err
+	}
+
+	return uuid, json.Unmarshal(cmdOutput, &uuid)
+}
+
 // BdevLvolDecoupleParent decouples the parent of a logical volume.
 // For unallocated clusters which is allocated in the parent, they are allocated and copied from the parent,
 // but for unallocated clusters which is thin provisioned in the parent, they are kept thin provisioned. Then all dependencies on the parent are removed.
