@@ -24,6 +24,7 @@ func BdevLvolCmd() cli.Command {
 			BdevLvolGetCmd(),
 			BdevLvolSnapshotCmd(),
 			BdevLvolCloneCmd(),
+			BdevLvolCloneBdevCmd(),
 			BdevLvolDecoupleParentCmd(),
 			BdevLvolResizeCmd(),
 			BdevLvolStartShallowCopyCmd(),
@@ -254,6 +255,46 @@ func bdevLvolClone(c *cli.Context) error {
 	}
 
 	uuid, err := spdkCli.BdevLvolClone(c.String("snapshot"), c.String("clone-name"))
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(uuid)
+}
+
+func BdevLvolCloneBdevCmd() cli.Command {
+	return cli.Command{
+		Name: "clone-bdev",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "bdev",
+				Usage: "Name or UUID for bdev that acts as the external snapshot",
+			},
+			cli.StringFlag{
+				Name: "lvs-name",
+			},
+			cli.StringFlag{
+				Name:     "clone-name",
+				Usage:    "Name for the logical volume to create",
+				Required: true,
+			},
+		},
+		Usage: "create a lvol based on an external snapshot bdev: \"clone-bdev --bdev <BDEV NAME or UUID> --lvs-name <LVSTORE NAME> --clone-name <CLONE NAME>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvolCloneBdev(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run clone bdev command")
+			}
+		},
+	}
+}
+
+func bdevLvolCloneBdev(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	uuid, err := spdkCli.BdevLvolCloneBdev(c.String("bdev"), c.String("lvs-name"), c.String("clone-name"))
 	if err != nil {
 		return err
 	}
