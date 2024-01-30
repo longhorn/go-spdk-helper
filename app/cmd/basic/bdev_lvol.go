@@ -228,20 +228,17 @@ func BdevLvolCloneCmd() cli.Command {
 		Name: "clone",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "alias",
-				Usage: "The alias of a snapshot lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
-			},
-			cli.StringFlag{
-				Name:  "uuid",
-				Usage: "Specify this or alias",
+				Name:     "snapshot",
+				Usage:    "UUID or alias of the snapshot lvol to clone. Alias is <LVSTORE NAME>/<LVOL NAME>",
+				Required: true,
 			},
 			cli.StringFlag{
 				Name:     "clone-name",
-				Usage:    "The cloned lvol name",
+				Usage:    "Name for the logical volume to create",
 				Required: true,
 			},
 		},
-		Usage: "create a clone lvol based on an existing snapshot lvol: \"clone --alias <LVSTORE NAME>/<SNAPSHOT LVOL NAME> --clone-name <CLONE NAME>\", or \"clone --uuid <SNAPSHOT LVOL UUID> --clone-name <CLONE NAME>\"",
+		Usage: "create a lvol based on an existing snapshot lvol: \"clone --snapshot <LVSTORE NAME>/<SNAPSHOT LVOL NAME> --clone-name <CLONE NAME>\", or \"clone --snapshot <SNAPSHOT LVOL UUID> --clone-name <CLONE NAME>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevLvolClone(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run clone bdev lvol command")
@@ -256,12 +253,7 @@ func bdevLvolClone(c *cli.Context) error {
 		return err
 	}
 
-	name := c.String("alias")
-	if name == "" {
-		name = c.String("uuid")
-	}
-
-	uuid, err := spdkCli.BdevLvolClone(name, c.String("clone-name"))
+	uuid, err := spdkCli.BdevLvolClone(c.String("snapshot"), c.String("clone-name"))
 	if err != nil {
 		return err
 	}
