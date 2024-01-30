@@ -369,6 +369,27 @@ func (c *Client) BdevLvolDecoupleParent(name string) (decoupled bool, err error)
 	return decoupled, json.Unmarshal(cmdOutput, &decoupled)
 }
 
+// BdevLvolSetParent sets a snapshot as the parent of a lvol, making the lvol a clone/child of this snapshot.
+// The previous parent of the lvol can be another snapshot or an external snapshot, if the lvol is not a clone must be thin-provisioned.
+// Lvol and parent snapshot must have the same size and must belong to the same lvol store.
+//
+//	"lvol": Required. Alias or UUID for the lvol to set parent of. The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>.
+//
+//	"parent": Required. Alias or UUID for the snapshot lvol to become the parent.
+func (c *Client) BdevLvolSetParent(lvol, parent string) (set bool, err error) {
+	req := spdktypes.BdevLvolSetParentRequest{
+		LvolName:   lvol,
+		ParentName: parent,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_set_parent", req)
+	if err != nil {
+		return false, err
+	}
+
+	return set, json.Unmarshal(cmdOutput, &set)
+}
+
 // BdevLvolResize resizes a logical volume.
 //
 //	"name": Required. UUID or alias of the logical volume to resize.
