@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 )
 
@@ -1055,7 +1057,7 @@ func (c *Client) LogGetPrintLevel() (string, error) {
 // "traddr": Required. Transport type specific target address: e.g. UNIX domain socket path or BDF.
 //
 // "devType": Required. Device type, "scsi" or "blk".
-func (c *Client) BdevVirtioAttachController(name, trtype, traddr, devType string) (bdevName string, err error) {
+func (c *Client) BdevVirtioAttachController(name, trtype, traddr, devType string) ([]string, error) {
 	req := spdktypes.BdevVirtioAttachControllerRequest{
 		Name:    name,
 		Trtype:  trtype,
@@ -1065,10 +1067,16 @@ func (c *Client) BdevVirtioAttachController(name, trtype, traddr, devType string
 
 	cmdOutput, err := c.jsonCli.SendCommand("bdev_virtio_attach_controller", req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return bdevName, json.Unmarshal(cmdOutput, &bdevName)
+	var disks []string
+	err = json.Unmarshal([]byte(cmdOutput), &disks)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal disks: %s", cmdOutput)
+	}
+
+	return disks, nil
 }
 
 // BdevVirtioDetachController removes a Virtio device.
