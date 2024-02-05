@@ -37,9 +37,8 @@ func BdevNvmeAttachControllerCmd() cli.Command {
 				Required: true,
 			},
 			cli.StringFlag{
-				Name:     "subnqn",
-				Usage:    "NVMe-oF target subnqn. It can be the nvmf subsystem nqn",
-				Required: true,
+				Name:  "subnqn",
+				Usage: "NVMe-oF target subnqn. It can be the nvmf subsystem nqn",
 			},
 			cli.StringFlag{
 				Name:     "traddr",
@@ -47,9 +46,8 @@ func BdevNvmeAttachControllerCmd() cli.Command {
 				Required: true,
 			},
 			cli.StringFlag{
-				Name:     "trsvcid",
-				Usage:    "NVMe-oF target trsvcid: a port number",
-				Required: true,
+				Name:  "trsvcid",
+				Usage: "NVMe-oF target trsvcid: a port number",
 			},
 			cli.StringFlag{
 				Name:  "trtype",
