@@ -994,7 +994,7 @@ func (c *Client) LogGetLevel() (string, error) {
 
 // LogSetPrintLevel sets the log print level. The log print level is the level at which log messages are printed to the console.
 //
-// "level": Required. Log print level to set. Supported values are "disabled", "error", "warn", "notice", "info", "debug". Default is "notice".
+// "level": Required. Supported values are "disabled", "error", "warn", "notice", "info", "debug". Default is "notice".
 func (c *Client) LogSetPrintLevel(level string) (result bool, err error) {
 	req := spdktypes.LogSetPrintLevelRequest{
 		Level: level,
