@@ -966,7 +966,7 @@ func (c *Client) LogGetFlags() (flags map[string]bool, err error) {
 
 // LogSetLevel sets the log level.
 //
-// "level": Required. Log print level to set. Supported values are "disabled", "error", "warn", "notice", "info", "debug". Default is "notice".
+// "level": Required. Supported values are "disabled", "error", "warn", "notice", "info", "debug". Default is "notice".
 func (c *Client) LogSetLevel(level string) (result bool, err error) {
 	req := spdktypes.LogSetLevelRequest{
 		Level: level,
