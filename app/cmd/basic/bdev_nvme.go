@@ -232,12 +232,12 @@ func bdevNvmeSetOptions(c *cli.Context) error {
 		return err
 	}
 
-	bdevNameList, err := spdkCli.BdevNvmeSetOptions(int32(c.Int("ctrlr-loss-timeout-sec")),
+	result, err := spdkCli.BdevNvmeSetOptions(int32(c.Int("ctrlr-loss-timeout-sec")),
 		int32(c.Int("reconnect-delay-sec")), int32(c.Int("fast-io-fail-timeout-sec")),
 		int32(c.Int("transport-ack-timeout")), int32(c.Int("keep_alive_timeout_ms")))
 	if err != nil {
 		return err
 	}
 
-	return util.PrintObject(bdevNameList)
+	return util.PrintObject(result)
 }

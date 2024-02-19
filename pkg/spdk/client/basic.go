@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"strings"
 
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 )
@@ -917,4 +918,104 @@ func (c *Client) NvmfSubsystemGetListeners(nqn, tgtName string) (listenerList []
 	}
 
 	return listenerList, json.Unmarshal(cmdOutput, &listenerList)
+}
+
+// LogSetFlag sets the log flag.
+//
+// "flag": Required. Log flag to set.
+func (c *Client) LogSetFlag(flag string) (result bool, err error) {
+	req := spdktypes.LogSetFlagRequest{
+		Flag: flag,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("log_set_flag", req)
+	if err != nil {
+		return false, err
+	}
+
+	return result, json.Unmarshal(cmdOutput, &result)
+}
+
+// LogClearFlag clears the log flag.
+//
+// "flag": Required. Log flag to clear.
+func (c *Client) LogClearFlag(flag string) (result bool, err error) {
+	req := spdktypes.LogClearFlagRequest{
+		Flag: flag,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("log_clear_flag", req)
+	if err != nil {
+		return false, err
+	}
+
+	return result, json.Unmarshal(cmdOutput, &result)
+}
+
+// LogGetFlags gets the log flags.
+func (c *Client) LogGetFlags() (flags map[string]bool, err error) {
+	req := spdktypes.LogGetFlagsRequest{}
+
+	cmdOutput, err := c.jsonCli.SendCommand("log_get_flags", req)
+	if err != nil {
+		return nil, err
+	}
+
+	return flags, json.Unmarshal(cmdOutput, &flags)
+}
+
+// LogSetLevel sets the log level.
+//
+// "level": Required. Log print level to set. Supported values are "disabled", "error", "warn", "notice", "info", "debug". Default is "notice".
+func (c *Client) LogSetLevel(level string) (result bool, err error) {
+	req := spdktypes.LogSetLevelRequest{
+		Level: level,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("log_set_level", req)
+	if err != nil {
+		return false, err
+	}
+
+	return result, json.Unmarshal(cmdOutput, &result)
+}
+
+// LogGetLevel gets the log level.
+func (c *Client) LogGetLevel() (string, error) {
+	req := spdktypes.LogGetLevelRequest{}
+
+	level, err := c.jsonCli.SendCommand("log_get_level", req)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.Trim(string(level), "\"\n"), nil
+}
+
+// LogSetPrintLevel sets the log print level. The log print level is the level at which log messages are printed to the console.
+//
+// "level": Required. Log print level to set. Supported values are "disabled", "error", "warn", "notice", "info", "debug". Default is "notice".
+func (c *Client) LogSetPrintLevel(level string) (result bool, err error) {
+	req := spdktypes.LogSetPrintLevelRequest{
+		Level: level,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("log_set_print_level", req)
+	if err != nil {
+		return false, err
+	}
+
+	return result, json.Unmarshal(cmdOutput, &result)
+}
+
+// LogGetPrintLevel gets the log print level. The log print level is the level at which log messages are printed to the console.
+func (c *Client) LogGetPrintLevel() (string, error) {
+	req := spdktypes.LogGetPrintLevelRequest{}
+
+	level, err := c.jsonCli.SendCommand("log_get_print_level", req)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.Trim(string(level), "\"\n"), nil
 }

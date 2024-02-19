@@ -35,6 +35,7 @@ func main() {
 		basic.BdevNvmeCmd(),
 		basic.BdevRaidCmd(),
 		basic.NvmfCmd(),
+		basic.LogCmd(),
 
 		advanced.DeviceCmd(),
 		advanced.ExposeCmd(),
