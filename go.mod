@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8
-	github.com/longhorn/go-common-libs v0.0.0-20240103081802-3993c5908447
+	github.com/longhorn/go-common-libs v0.0.0-20240219094750-e7176c332156
 	github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
