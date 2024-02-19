@@ -45,7 +45,7 @@ func GetSPDKDir() string {
 	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/longhorn/spdk")
 }
 
-func LaunchTestSPDKTarget(c *C, execute func(binary string, args []string, timeout time.Duration) (string, error)) {
+func LaunchTestSPDKTarget(c *C, execute func(envs []string, binary string, args []string, timeout time.Duration) (string, error)) {
 	targetReady := false
 	if spdkCli, err := client.NewClient(context.Background()); err == nil {
 		if _, err := spdkCli.BdevGetBdevs("", 0); err == nil {
@@ -304,10 +304,10 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	// The creation of a filesystem will write some data on the lvol
 	executor, err := util.NewExecutor(commonTypes.ProcDirectory)
 	c.Assert(err, IsNil)
-	_, err = executor.Execute("ls", []string{"/dev/longhorn/"}, types.ExecuteTimeout)
+	_, err = executor.Execute(nil, "ls", []string{"/dev/longhorn/"}, types.ExecuteTimeout)
 	c.Assert(err, IsNil)
 
-	_, err = executor.Execute("mkfs.ext4", []string{"/dev/longhorn/" + raidName}, types.ExecuteTimeout)
+	_, err = executor.Execute(nil, "mkfs.ext4", []string{"/dev/longhorn/" + raidName}, types.ExecuteTimeout)
 	c.Assert(err, IsNil)
 
 	for _, uuid := range []string{lvolUUID1, lvolUUID2} {
