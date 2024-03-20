@@ -26,7 +26,6 @@ require (
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.2 // indirect
-	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	k8s.io/klog/v2 v2.110.1 // indirect
 	k8s.io/mount-utils v0.29.3 // indirect
