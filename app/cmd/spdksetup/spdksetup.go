@@ -1,6 +1,7 @@
 package spdksetup
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
@@ -139,7 +140,12 @@ func diskStatusCmd(c *cli.Context) error {
 
 	deviceAddr := c.Args().First()
 
-	output, err := spdksetup.GetDiskStatus(deviceAddr, executor)
+	status, err := spdksetup.GetDiskStatus(deviceAddr, executor)
+	if err != nil {
+		return err
+	}
+
+	output, err := json.Marshal(status)
 	if err != nil {
 		return err
 	}
