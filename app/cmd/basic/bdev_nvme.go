@@ -79,6 +79,11 @@ func BdevNvmeAttachControllerCmd() cli.Command {
 				Usage: "NVMe-oF keep alive timeout in milliseconds",
 				Value: types.DefaultKeepAliveTimeoutMs,
 			},
+			cli.StringFlag{
+				Name:  "multipath",
+				Usage: "Multipathing behavior: disable, failover, multipath. Default is failover",
+				Value: string(spdktypes.NvmeMultipathBehaviorFailover),
+			},
 		},
 		Action: func(c *cli.Context) {
 			if err := bdevNvmeAttachController(c); err != nil {
@@ -97,7 +102,8 @@ func bdevNvmeAttachController(c *cli.Context) error {
 	bdevNameList, err := spdkCli.BdevNvmeAttachController(c.String("name"), c.String("subnqn"),
 		c.String("traddr"), c.String("trsvcid"),
 		spdktypes.NvmeTransportType(c.String("trtype")), spdktypes.NvmeAddressFamily(c.String("adrfam")),
-		int32(c.Int("ctrlr-loss-timeout-sec")), int32(c.Int("reconnect-delay-sec")), int32(c.Int("fast-io-fail-timeout-sec")))
+		int32(c.Int("ctrlr-loss-timeout-sec")), int32(c.Int("reconnect-delay-sec")), int32(c.Int("fast-io-fail-timeout-sec")),
+		c.String("multipath"))
 	if err != nil {
 		return err
 	}
