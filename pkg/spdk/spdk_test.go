@@ -13,12 +13,14 @@ import (
 
 	commonTypes "github.com/longhorn/go-common-libs/types"
 
+	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/target"
-	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	"github.com/longhorn/go-spdk-helper/pkg/types"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
+
+	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 )
 
 var (
@@ -112,7 +114,9 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 
 	// Do blindly cleanup
 	err = spdkCli.DeleteDevice(defaultDeviceName, defaultDeviceName)
-	c.Assert(err, IsNil)
+	if err != nil {
+		c.Assert(jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err), Equals, true)
+	}
 
 	bdevAioName, lvsName, lvsUUID, err := spdkCli.AddDevice(defaultDevicePath, defaultDeviceName, types.MiB)
 	c.Assert(err, IsNil)
