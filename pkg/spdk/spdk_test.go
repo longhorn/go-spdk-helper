@@ -111,7 +111,8 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	c.Assert(err, IsNil)
 
 	// Do blindly cleanup
-	spdkCli.DeleteDevice(defaultDeviceName, defaultDeviceName)
+	err = spdkCli.DeleteDevice(defaultDeviceName, defaultDeviceName)
+	c.Assert(err, IsNil)
 
 	bdevAioName, lvsName, lvsUUID, err := spdkCli.AddDevice(defaultDevicePath, defaultDeviceName, types.MiB)
 	c.Assert(err, IsNil)
