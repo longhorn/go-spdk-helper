@@ -2,6 +2,7 @@ package spdktgt
 
 import (
 	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -28,6 +29,11 @@ func Cmd() cli.Command {
 				Name:  "opts",
 				Usage: "The spdk_tgt command line flags",
 			},
+			cli.Int64Flag{
+				Name:  "timeout",
+				Usage: "The timeout in second for the command",
+				Value: 3600,
+			},
 		},
 		Action: func(c *cli.Context) {
 			if err := spdkTGT(c); err != nil {
@@ -42,5 +48,5 @@ func spdkTGT(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	return target.StartTarget(c.String("spdk-dir"), c.StringSlice("opts"), ne.Execute)
+	return target.StartTarget(c.String("spdk-dir"), c.StringSlice("opts"), time.Duration(c.Int64("timeout"))*time.Second, ne.Execute)
 }
