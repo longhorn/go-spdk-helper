@@ -286,7 +286,7 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	c.Assert(raidBdev.DriverSpecific.Raid.BaseBdevsList[1].IsConfigured, Equals, true)
 
 	nqn := types.GetNQN(raidName)
-	err = spdkCli.StartExposeBdev(nqn, raidName, types.LocalIP, defaultPort1)
+	err = spdkCli.StartExposeBdev(nqn, raidName, "ABCDEF0123456789ABCDEF0123456789", types.LocalIP, defaultPort1)
 	c.Assert(err, IsNil)
 	defer func() {
 		err = spdkCli.StopExposeBdev(nqn)

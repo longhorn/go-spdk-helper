@@ -203,6 +203,11 @@ func NvmfSubsystemAddNsCmd() cli.Command {
 				Usage:    "Name of bdev to expose as a namespace",
 				Required: true,
 			},
+			cli.StringFlag{
+				Name:     "nguid",
+				Usage:    "Namespace globally unique identifier",
+				Required: false,
+			},
 		},
 		Usage: "add a bdev as a namespace for subsystem of nvmf: ns-add <SUBSYSTEM NQN>",
 		Action: func(c *cli.Context) {
@@ -219,7 +224,7 @@ func nvmfSubsystemAddNs(c *cli.Context) error {
 		return err
 	}
 
-	added, err := spdkCli.NvmfSubsystemAddNs(c.String("nqn"), c.String("bdev-name"))
+	added, err := spdkCli.NvmfSubsystemAddNs(c.String("nqn"), c.String("bdev-name"), c.String("nguid"))
 	if err != nil {
 		return err
 	}
