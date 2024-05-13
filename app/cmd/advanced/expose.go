@@ -36,6 +36,11 @@ func StartExposeCmd() cli.Command {
 				Required: true,
 			},
 			cli.StringFlag{
+				Name:     "nguid",
+				Usage:    "Namespace globally unique identifier",
+				Required: false,
+			},
+			cli.StringFlag{
 				Name:     "ip",
 				Usage:    "This can be host IP or localhost IP",
 				Required: true,
@@ -60,7 +65,7 @@ func startExpose(c *cli.Context) error {
 		return err
 	}
 
-	if err := spdkCli.StartExposeBdev(c.String("nqn"), c.String("bdev-name"), c.String("ip"), c.String("port")); err != nil {
+	if err := spdkCli.StartExposeBdev(c.String("nqn"), c.String("bdev-name"), c.String("nguid"), c.String("ip"), c.String("port")); err != nil {
 		return err
 	}
 
