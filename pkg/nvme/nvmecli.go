@@ -413,3 +413,18 @@ func GetIPAndPortFromControllerAddress(address string) (string, string) {
 
 	return traddr, trsvcid
 }
+
+func flush(devicePath, namespaceID string, executor *commonNs.Executor) (string, error) {
+
+	opts := []string{
+		"flush",
+		devicePath,
+		"-o", "json",
+	}
+
+	if namespaceID != "" {
+		opts = append(opts, "-n", namespaceID)
+	}
+
+	return executor.Execute(nil, nvmeBinary, opts, types.ExecuteTimeout)
+}
