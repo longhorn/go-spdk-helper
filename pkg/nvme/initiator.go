@@ -42,7 +42,7 @@ type Initiator struct {
 	Endpoint       string
 	ControllerName string
 	NamespaceName  string
-	dev            *util.KernelDevice
+	dev            *util.LonghornBlockDevice
 	isUp           bool
 
 	hostProc string
@@ -341,7 +341,9 @@ func (i *Initiator) loadNVMeDeviceInfoWithoutLock() error {
 		return errors.Wrapf(err, "cannot find the device for NVMe initiator %s with namespace name %s", i.Name, i.NamespaceName)
 	}
 
-	i.dev = dev
+	i.dev = &util.LonghornBlockDevice{
+		Nvme: *dev,
+	}
 	return nil
 }
 
@@ -368,7 +370,7 @@ func (i *Initiator) LoadEndpoint(dmDeviceBusy bool) error {
 		return err
 	}
 
-	depDevices, err := i.findDependentDevices(dev.Nvme.Name)
+	depDevices, err := i.findDependentDevices(dev.Name)
 	if err != nil {
 		return err
 	}
@@ -381,7 +383,9 @@ func (i *Initiator) LoadEndpoint(dmDeviceBusy bool) error {
 		}
 	}
 
-	i.dev = dev
+	i.dev = &util.LonghornBlockDevice{
+		Export: *dev,
+	}
 	i.isUp = true
 
 	return nil
