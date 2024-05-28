@@ -30,6 +30,7 @@ func Cmd() cli.Command {
 			GetCmd(),
 			StartCmd(),
 			StopCmd(),
+			FlushCmd(),
 		},
 	}
 }
@@ -220,7 +221,7 @@ func start(c *cli.Context) error {
 		return err
 	}
 
-	if _, err := initiator.Start(c.String("traddr"), c.String("trsvcid"), true); err != nil {
+	if _, err := initiator.Start(c.String("traddr"), c.String("trsvcid"), true, false); err != nil {
 		return err
 	}
 
@@ -266,4 +267,42 @@ func stop(c *cli.Context) error {
 	}
 
 	return nil
+}
+
+func FlushCmd() cli.Command {
+	return cli.Command{
+		Name: "flush",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:     "namespace-id",
+				Usage:    "Specify the optional namespace id for this command. Defaults to 0xffffffff, indicating flush for all namespaces.",
+				Required: false,
+			},
+		},
+		Usage: "Commit data and metadata associated with the specified namespace(s) to nonvolatile media.",
+		Action: func(c *cli.Context) {
+			if err := flush(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run nvme-cli flush command")
+			}
+		},
+	}
+}
+
+func flush(c *cli.Context) error {
+	executor, err := util.NewExecutor(c.String("host-proc"))
+	if err != nil {
+		return err
+	}
+
+	devicePath := c.Args().First()
+	if devicePath == "" {
+		return fmt.Errorf("device path is required")
+	}
+
+	resp, err := nvme.Flush(devicePath, c.String("namespace-id"), executor)
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(resp)
 }
