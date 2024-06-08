@@ -20,7 +20,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/go-common-libs v0.0.0-20240514074907-351459694cbf
+# github.com/longhorn/go-common-libs v0.0.0-20240608152738-1a76fc3def09
 ## explicit; go 1.22.0
 github.com/longhorn/go-common-libs/exec
 github.com/longhorn/go-common-libs/io
@@ -51,8 +51,8 @@ github.com/rogpeppe/go-internal/fmtsort
 # github.com/russross/blackfriday/v2 v2.1.0
 ## explicit
 github.com/russross/blackfriday/v2
-# github.com/shirou/gopsutil/v3 v3.24.4
-## explicit; go 1.15
+# github.com/shirou/gopsutil/v3 v3.24.5
+## explicit; go 1.18
 github.com/shirou/gopsutil/v3/common
 github.com/shirou/gopsutil/v3/disk
 github.com/shirou/gopsutil/v3/internal/common
@@ -82,7 +82,7 @@ k8s.io/klog/v2/internal/dbg
 k8s.io/klog/v2/internal/serialize
 k8s.io/klog/v2/internal/severity
 k8s.io/klog/v2/internal/sloghandler
-# k8s.io/mount-utils v0.30.0
+# k8s.io/mount-utils v0.30.1
 ## explicit; go 1.22.0
 k8s.io/mount-utils
 # k8s.io/utils v0.0.0-20230726121419-3b25d923346b
