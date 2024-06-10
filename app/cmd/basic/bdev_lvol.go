@@ -26,7 +26,8 @@ func BdevLvolCmd() cli.Command {
 			BdevLvolCloneCmd(),
 			BdevLvolDecoupleParentCmd(),
 			BdevLvolResizeCmd(),
-			BdevLvolShallowCopyCmd(),
+			BdevLvolStartShallowCopyCmd(),
+			BdevLvolCheckShallowCopyCmd(),
 			BdevLvolGetXattrCmd(),
 			BdevLvolGetFragmapCmd(),
 		},
@@ -354,9 +355,9 @@ func bdevLvolResize(c *cli.Context) error {
 	return util.PrintObject(resized)
 }
 
-func BdevLvolShallowCopyCmd() cli.Command {
+func BdevLvolStartShallowCopyCmd() cli.Command {
 	return cli.Command{
-		Name: "shallow-copy",
+		Name: "shallow-copy-start",
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "src-lvol-alias",
@@ -372,16 +373,16 @@ func BdevLvolShallowCopyCmd() cli.Command {
 				Required: true,
 			},
 		},
-		Usage: "copy active clusters/data from a read-only logical volume to a bdev: \"shallow-copy --src-lvol-alias <LVSTORE NAME>/<LVOL NAME> --dst-bdev-name <BDEV NAME>\", or \"shallow-copy --uuid <LVOL UUID> --dst-bdev-name <BDEV NAME>\"",
+		Usage: "start a copy of active clusters/data from a read-only logical volume to a bdev: \"shallow-copy-start --src-lvol-alias <LVSTORE NAME>/<LVOL NAME> --dst-bdev-name <BDEV NAME>\", or \"shallow-copy --uuid <LVOL UUID> --dst-bdev-name <BDEV NAME>\"",
 		Action: func(c *cli.Context) {
-			if err := bdevLvolShallowCopy(c); err != nil {
-				logrus.WithError(err).Fatalf("Failed to run shallow copy bdev lvol command")
+			if err := bdevLvolStartShallowCopy(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run start shallow copy bdev lvol command")
 			}
 		},
 	}
 }
 
-func bdevLvolShallowCopy(c *cli.Context) error {
+func bdevLvolStartShallowCopy(c *cli.Context) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -392,7 +393,42 @@ func bdevLvolShallowCopy(c *cli.Context) error {
 		srcLvolName = c.String("src-lvol-uuid")
 	}
 
-	copied, err := spdkCli.BdevLvolShallowCopy(srcLvolName, c.String("dst-bdev-name"))
+	operationId, err := spdkCli.BdevLvolStartShallowCopy(srcLvolName, c.String("dst-bdev-name"))
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(operationId)
+}
+
+func BdevLvolCheckShallowCopyCmd() cli.Command {
+	return cli.Command{
+		Name: "shallow-copy-check",
+		Flags: []cli.Flag{
+			cli.UintFlag{
+				Name:     "operation-id",
+				Usage:    "The operation ID returned by the command shallow-copy-start",
+				Required: true,
+			},
+		},
+		Usage: "check the status of a previously started shallow copy: \"shallow-copy-check --operation-id <OPERATION ID>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvolCheckShallowCopy(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run check shallow copy bdev lvol command")
+			}
+		},
+	}
+}
+
+func bdevLvolCheckShallowCopy(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	operationId := c.Uint("operation-id")
+
+	copied, err := spdkCli.BdevLvolCheckShallowCopy(uint32(operationId))
 	if err != nil {
 		return err
 	}
