@@ -240,6 +240,45 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	c.Assert(decoupledCloneLvol1.DriverSpecific.Lvol.Snapshot, Equals, false)
 	c.Assert(decoupledCloneLvol1.DriverSpecific.Lvol.Clone, Equals, false)
 
+	lvolName3, lvolName4 := "test-lvol3", "test-lvol4"
+	lvolUUID3, err := spdkCli.BdevLvolCreate("", lvsUUID, lvolName3, 40, "", false)
+	c.Assert(err, IsNil)
+	defer func() {
+		deleted, err := spdkCli.BdevLvolDelete(lvolUUID3)
+		c.Assert(err, IsNil)
+		c.Assert(deleted, Equals, true)
+	}()
+	snapLvolUUID3, err := spdkCli.BdevLvolSnapshot(lvolUUID3, "snap3", []client.Xattr{})
+	c.Assert(err, IsNil)
+	defer func() {
+		deleted, err := spdkCli.BdevLvolDelete(snapLvolUUID3)
+		c.Assert(err, IsNil)
+		c.Assert(deleted, Equals, true)
+	}()
+	lvolUUID4, err := spdkCli.BdevLvolCreate("", lvsUUID, lvolName4, 40, "", false)
+	c.Assert(err, IsNil)
+	defer func() {
+		deleted, err := spdkCli.BdevLvolDelete(lvolUUID4)
+		c.Assert(err, IsNil)
+		c.Assert(deleted, Equals, true)
+	}()
+	operationId, err := spdkCli.BdevLvolStartShallowCopy(snapLvolUUID3, lvolUUID4)
+	c.Assert(err, IsNil)
+	c.Assert(operationId, Not(Equals), 0)
+	var start time.Time
+	for start = time.Now(); time.Since(start) < time.Minute; {
+		shallowCopyStatus, err := spdkCli.BdevLvolCheckShallowCopy(operationId)
+		c.Assert(err, IsNil)
+		c.Assert(shallowCopyStatus.State, Not(Equals), "error")
+		c.Assert(shallowCopyStatus.Error, Equals, "")
+		if shallowCopyStatus.State == "complete" {
+			c.Assert(shallowCopyStatus.CopiedClusters, Equals, shallowCopyStatus.TotalClusters)
+			c.Assert(shallowCopyStatus.TotalClusters, Equals, uint64(40))
+			break
+		}
+	}
+	c.Assert(time.Since(start) < time.Minute, Equals, true)
+
 	raidName := "test-raid"
 	created, err := spdkCli.BdevRaidCreate(raidName, spdktypes.BdevRaidLevelRaid1, 0, []string{lvolUUID1, lvolUUID2})
 	c.Assert(err, IsNil)
