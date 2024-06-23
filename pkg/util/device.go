@@ -115,7 +115,7 @@ func DetectDevice(path string, executor *commonNs.Executor) (*BlockDevice, error
 		f := strings.Fields(line)
 		if len(f) == 2 {
 			dev = &BlockDevice{
-					Name: f[0],
+				Name: f[0],
 			}
 			_, err = fmt.Sscanf(f[1], "%d:%d", &dev.Major, &dev.Minor)
 			if err != nil {

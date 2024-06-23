@@ -221,7 +221,7 @@ func start(c *cli.Context) error {
 		return err
 	}
 
-	if _, err := initiator.Start(c.String("traddr"), c.String("trsvcid"), true, false); err != nil {
+	if _, err := initiator.Start(c.String("traddr"), c.String("trsvcid"), true); err != nil {
 		return err
 	}
 
