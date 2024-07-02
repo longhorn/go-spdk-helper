@@ -8,6 +8,7 @@ import (
 
 	"github.com/longhorn/go-spdk-helper/app/cmd/advanced"
 	"github.com/longhorn/go-spdk-helper/app/cmd/basic"
+	"github.com/longhorn/go-spdk-helper/app/cmd/dmsetup"
 	"github.com/longhorn/go-spdk-helper/app/cmd/nvmecli"
 	"github.com/longhorn/go-spdk-helper/app/cmd/spdksetup"
 	"github.com/longhorn/go-spdk-helper/app/cmd/spdktgt"
@@ -42,6 +43,8 @@ func main() {
 		advanced.ExposeCmd(),
 
 		nvmecli.Cmd(),
+
+		dmsetup.Cmd(),
 
 		spdktgt.Cmd(),
 		spdksetup.Cmd(),

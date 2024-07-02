@@ -470,3 +470,116 @@ func (s *TestSuite) TestSPDKClientMultiThread(c *C) {
 
 	wg.Wait()
 }
+
+func (s *TestSuite) TestSPDKEngineSuspend(c *C) {
+	fmt.Println("Testing Engine Suspend")
+
+	ne, err := util.NewExecutor(commonTypes.ProcDirectory)
+	c.Assert(err, IsNil)
+
+	LaunchTestSPDKTarget(c, ne.Execute)
+	PrepareDeviceFile(c)
+	defer func() {
+		os.RemoveAll(defaultDevicePath)
+	}()
+
+	spdkCli, err := client.NewClient(context.Background())
+	c.Assert(err, IsNil)
+
+	// Do blindly cleanup
+	err = spdkCli.DeleteDevice(defaultDeviceName, defaultDeviceName)
+	if err != nil {
+		c.Assert(jsonrpc.IsJSONRPCRespErrorNoSuchDevice(err), Equals, true)
+	}
+
+	bdevAioName, lvsName, lvsUUID, err := spdkCli.AddDevice(defaultDevicePath, defaultDeviceName, types.MiB)
+	c.Assert(err, IsNil)
+	defer func() {
+		err := spdkCli.DeleteDevice(bdevAioName, lvsName)
+		c.Assert(err, IsNil)
+	}()
+	c.Assert(bdevAioName, Equals, defaultDeviceName)
+	c.Assert(lvsName, Equals, defaultDeviceName)
+	c.Assert(lvsUUID, Not(Equals), "")
+
+	bdevAioInfoList, err := spdkCli.BdevAioGet(bdevAioName, 0)
+	c.Assert(err, IsNil)
+	c.Assert(len(bdevAioInfoList), Equals, 1)
+	bdevAio := bdevAioInfoList[0]
+	c.Assert(bdevAio.Name, Equals, bdevAioName)
+	c.Assert(uint64(bdevAio.BlockSize)*bdevAio.NumBlocks, Equals, defaultDeviceSize)
+
+	lvsList, err := spdkCli.BdevLvolGetLvstore(lvsName, "")
+	c.Assert(err, IsNil)
+	c.Assert(len(lvsList), Equals, 1)
+	lvs := lvsList[0]
+	c.Assert(lvs.UUID, Equals, lvsUUID)
+	c.Assert(lvs.BaseBdev, Equals, bdevAio.Name)
+	c.Assert(int(lvs.BlockSize), Equals, int(bdevAio.BlockSize))
+	// The meta info may take space
+	c.Assert(lvs.ClusterSize*(lvs.TotalDataClusters+4), Equals, defaultDeviceSize)
+
+	lvolName1, lvolName2 := "test-lvol1", "test-lvol2"
+	lvolUUID1, err := spdkCli.BdevLvolCreate(lvsName, "", lvolName1, defaultLvolSizeInMiB, "", true)
+	c.Assert(err, IsNil)
+	defer func() {
+		deleted, err := spdkCli.BdevLvolDelete(lvolUUID1)
+		c.Assert(err, IsNil)
+		c.Assert(deleted, Equals, true)
+	}()
+	lvolUUID2, err := spdkCli.BdevLvolCreate("", lvsUUID, lvolName2, defaultLvolSizeInMiB, "", true)
+	c.Assert(err, IsNil)
+	defer func() {
+		deleted, err := spdkCli.BdevLvolDelete(lvolUUID2)
+		c.Assert(err, IsNil)
+		c.Assert(deleted, Equals, true)
+	}()
+
+	lvolList, err := spdkCli.BdevLvolGet("", 0)
+	c.Assert(err, IsNil)
+	c.Assert(len(lvolList), Equals, 2)
+
+	raidName := "test-raid"
+	created, err := spdkCli.BdevRaidCreate(raidName, spdktypes.BdevRaidLevelRaid1, 0, []string{lvolUUID1, lvolUUID2})
+	c.Assert(err, IsNil)
+	c.Assert(created, Equals, true)
+	defer func() {
+		deleted, err := spdkCli.BdevRaidDelete(raidName)
+		c.Assert(err, IsNil)
+		c.Assert(deleted, Equals, true)
+	}()
+
+	nqn := types.GetNQN(raidName)
+	err = spdkCli.StartExposeBdev(nqn, raidName, "ABCDEF0123456789ABCDEF0123456789", types.LocalIP, defaultPort1)
+	c.Assert(err, IsNil)
+	defer func() {
+		err = spdkCli.StopExposeBdev(nqn)
+		c.Assert(err, IsNil)
+	}()
+
+	initiator, err := nvme.NewInitiator(raidName, nqn, nvme.HostProc)
+	c.Assert(err, IsNil)
+
+	dmDeviceBusy, err := initiator.Start(types.LocalIP, defaultPort1, true)
+	c.Assert(dmDeviceBusy, Equals, false)
+	c.Assert(err, IsNil)
+	defer func() {
+		dmDeviceBusy, err = initiator.Stop(true, true, true)
+		c.Assert(dmDeviceBusy, Equals, false)
+		c.Assert(err, IsNil)
+	}()
+
+	err = initiator.Suspend(true, true)
+	c.Assert(err, IsNil)
+
+	suspended, err := initiator.IsSuspended()
+	c.Assert(err, IsNil)
+	c.Assert(suspended, Equals, true)
+
+	err = initiator.LoadEndpoint(dmDeviceBusy)
+	c.Assert(err, IsNil)
+	c.Assert(initiator.GetEndpoint(), Equals, "/dev/longhorn/test-raid")
+
+	err = initiator.Resume()
+	c.Assert(err, IsNil)
+}
