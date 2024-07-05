@@ -10,6 +10,10 @@ import (
 	commonNs "github.com/longhorn/go-common-libs/ns"
 )
 
+const (
+	ErrorMessageCannotFindValidNvmeDevice = "cannot find a valid nvme device"
+)
+
 // DiscoverTarget discovers a target
 func DiscoverTarget(ip, port string, executor *commonNs.Executor) (subnqn string, err error) {
 	hostID, err := getHostID(executor)
@@ -162,7 +166,7 @@ func GetDevices(ip, port, nqn string, executor *commonNs.Executor) (devices []De
 			}
 		}
 
-		return nil, fmt.Errorf("cannot find a valid nvme device with subsystem NQN %s and address %s:%s", nqn, ip, port)
+		return nil, fmt.Errorf(ErrorMessageCannotFindValidNvmeDevice+" with subsystem NQN %s and address %s:%s", nqn, ip, port)
 	}
 	return res, nil
 }

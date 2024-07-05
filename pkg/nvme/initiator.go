@@ -152,7 +152,7 @@ func (i *Initiator) WaitForDisconnect(maxNumRetries int, retryInterval time.Dura
 
 	for r := 0; r < maxNumRetries; r++ {
 		err = i.loadNVMeDeviceInfoWithoutLock()
-		if strings.Contains(err.Error(), "cannot find a valid nvme device") {
+		if IsValidNvmeDeviceNotFound(err) {
 			return nil
 		}
 		time.Sleep(retryInterval)
@@ -659,4 +659,8 @@ func (i *Initiator) reloadLinearDmDevice() error {
 
 func getDmDevicePath(name string) string {
 	return fmt.Sprintf("/dev/mapper/%s", name)
+}
+
+func IsValidNvmeDeviceNotFound(err error) bool {
+	return strings.Contains(err.Error(), ErrorMessageCannotFindValidNvmeDevice)
 }
