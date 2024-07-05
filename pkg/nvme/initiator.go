@@ -130,7 +130,7 @@ func (i *Initiator) WaitForConnect(maxNumRetries int, retryInterval time.Duratio
 	}
 
 	for r := 0; r < maxNumRetries; r++ {
-		err = i.loadNVMeDeviceInfoWithoutLock()
+		err = i.loadNVMeDeviceInfoWithoutLock(i.TransportAddress, i.TransportServiceID, i.SubsystemNQN)
 		if err == nil {
 			return nil
 		}
@@ -151,7 +151,7 @@ func (i *Initiator) WaitForDisconnect(maxNumRetries int, retryInterval time.Dura
 	}
 
 	for r := 0; r < maxNumRetries; r++ {
-		err = i.loadNVMeDeviceInfoWithoutLock()
+		err = i.loadNVMeDeviceInfoWithoutLock(i.TransportAddress, i.TransportServiceID, i.SubsystemNQN)
 		if IsValidNvmeDeviceNotFound(err) {
 			return nil
 		}
@@ -259,7 +259,7 @@ func (i *Initiator) Start(transportAddress, transportServiceID string, dmDeviceC
 	}
 
 	// Check if the initiator/NVMe device is already launched and matches the params
-	if err := i.loadNVMeDeviceInfoWithoutLock(); err == nil {
+	if err := i.loadNVMeDeviceInfoWithoutLock(i.TransportAddress, i.TransportServiceID, i.SubsystemNQN); err == nil {
 		if i.TransportAddress == transportAddress && i.TransportServiceID == transportServiceID {
 			if err = i.LoadEndpoint(false); err == nil {
 				i.logger.Info("NVMe initiator is already launched with correct params")
@@ -311,7 +311,7 @@ func (i *Initiator) Start(transportAddress, transportServiceID string, dmDeviceC
 	}
 
 	for r := 0; r < maxNumWaitDeviceRetries; r++ {
-		err = i.loadNVMeDeviceInfoWithoutLock()
+		err = i.loadNVMeDeviceInfoWithoutLock(i.TransportAddress, i.TransportServiceID, i.SubsystemNQN)
 		if err == nil {
 			break
 		}
@@ -429,7 +429,7 @@ func (i *Initiator) GetEndpoint() string {
 	return ""
 }
 
-func (i *Initiator) LoadNVMeDeviceInfo() (err error) {
+func (i *Initiator) LoadNVMeDeviceInfo(transportAddress, transportServiceID, subsystemNQN string) (err error) {
 	if i.hostProc != "" {
 		lock := nsfilelock.NewLockWithTimeout(util.GetHostNamespacePath(i.hostProc), LockFile, LockTimeout)
 		if err := lock.Lock(); err != nil {
@@ -438,11 +438,11 @@ func (i *Initiator) LoadNVMeDeviceInfo() (err error) {
 		defer lock.Unlock()
 	}
 
-	return i.loadNVMeDeviceInfoWithoutLock()
+	return i.loadNVMeDeviceInfoWithoutLock(transportAddress, transportServiceID, subsystemNQN)
 }
 
-func (i *Initiator) loadNVMeDeviceInfoWithoutLock() error {
-	nvmeDevices, err := GetDevices(i.TransportAddress, i.TransportServiceID, i.SubsystemNQN, i.executor)
+func (i *Initiator) loadNVMeDeviceInfoWithoutLock(transportAddress, transportServiceID, subsystemNQN string) error {
+	nvmeDevices, err := GetDevices(transportAddress, transportServiceID, subsystemNQN, i.executor)
 	if err != nil {
 		return err
 	}
