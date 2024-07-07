@@ -6,7 +6,7 @@ toolchain go1.22.5
 
 require (
 	github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8
-	github.com/longhorn/go-common-libs v0.0.0-20240702014532-ad3e7f0caf5c
+	github.com/longhorn/go-common-libs v0.0.0-20240707062002-b9354601827e
 	github.com/longhorn/nsfilelock v0.0.0-20200723175406-fa7c83ad0003
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
