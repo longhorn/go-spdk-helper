@@ -181,7 +181,7 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 		if lvol.UUID == lvolUUID2 {
 			c.Assert(lvol.Aliases[0], Equals, fmt.Sprintf("%s/%s", lvsName, lvolName2))
 		}
-		c.Assert(lvol.DriverSpecific.Lvol.Xattrs[client.UserCreated], Equals, "")
+		c.Assert(lvol.DriverSpecific.Lvol.Xattrs[client.UserCreated], Equals, "true")
 		c.Assert(lvol.DriverSpecific.Lvol.Xattrs[client.SnapshotTimestamp], Equals, "")
 	}
 
@@ -226,7 +226,7 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	c.Assert(cloneLvol1.DriverSpecific.Lvol, NotNil)
 	c.Assert(cloneLvol1.DriverSpecific.Lvol.Snapshot, Equals, false)
 	c.Assert(cloneLvol1.DriverSpecific.Lvol.Clone, Equals, true)
-	c.Assert(cloneLvol1.DriverSpecific.Lvol.Xattrs[client.UserCreated], Equals, "")
+	c.Assert(cloneLvol1.DriverSpecific.Lvol.Xattrs[client.UserCreated], Equals, "true")
 	c.Assert(cloneLvol1.DriverSpecific.Lvol.Xattrs[client.SnapshotTimestamp], Equals, "")
 
 	decoupled, err := spdkCli.BdevLvolDecoupleParent(cloneLvolUUID1)
