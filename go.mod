@@ -28,3 +28,5 @@ require (
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 )
+
+replace github.com/longhorn/go-common-libs v0.0.0-20240720044518-32fc527fe868 => github.com/derekbit/go-common-libs v0.0.0-20240726044555-d6c576d61bf3
