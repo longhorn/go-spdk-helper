@@ -150,7 +150,7 @@ func diskStatusCmd(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Println(output)
+	fmt.Println(string(output))
 
 	return nil
 }
