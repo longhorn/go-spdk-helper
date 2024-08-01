@@ -261,7 +261,7 @@ func (i *Initiator) Start(transportAddress, transportServiceID string, dmDeviceA
 	// Check if the initiator/NVMe device is already launched and matches the params
 	if err := i.loadNVMeDeviceInfoWithoutLock(i.TransportAddress, i.TransportServiceID, i.SubsystemNQN); err == nil {
 		if i.TransportAddress == transportAddress && i.TransportServiceID == transportServiceID {
-			if err = i.LoadEndpoint(false); err == nil {
+			if err = i.LoadEndpoint(dmDeviceAndEndpointCleanupRequired); err == nil {
 				i.logger.Info("NVMe initiator is already launched with correct params")
 				return false, nil
 			}
