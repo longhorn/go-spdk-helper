@@ -2,7 +2,7 @@ module github.com/longhorn/go-spdk-helper
 
 go 1.22.0
 
-toolchain go1.22.5
+toolchain go1.22.6
 
 require (
 	github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8
