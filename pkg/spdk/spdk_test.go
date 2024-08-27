@@ -11,7 +11,7 @@ import (
 
 	. "gopkg.in/check.v1"
 
-	commonTypes "github.com/longhorn/go-common-libs/types"
+	commontypes "github.com/longhorn/go-common-libs/types"
 
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	"github.com/longhorn/go-spdk-helper/pkg/nvme"
@@ -91,7 +91,7 @@ func PrepareDeviceFile(c *C) {
 func (s *TestSuite) TestSPDKTargetWithHostNamespace(c *C) {
 	fmt.Println("Testing SPDK Target With Host Namespace")
 
-	ne, err := util.NewExecutor(commonTypes.HostProcDirectory)
+	ne, err := util.NewExecutor(commontypes.HostProcDirectory)
 	c.Assert(err, IsNil)
 
 	LaunchTestSPDKTarget(c, ne.Execute)
@@ -100,7 +100,7 @@ func (s *TestSuite) TestSPDKTargetWithHostNamespace(c *C) {
 func (s *TestSuite) TestSPDKBasic(c *C) {
 	fmt.Println("Testing SPDK Basic")
 
-	ne, err := util.NewExecutor(commonTypes.ProcDirectory)
+	ne, err := util.NewExecutor(commontypes.ProcDirectory)
 	c.Assert(err, IsNil)
 
 	LaunchTestSPDKTarget(c, ne.Execute)
@@ -346,7 +346,7 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 
 	// Use Linux nvme driver to attach to our RAID1 exported via NVMe-oF and create a filesystem on it
 	// The creation of a filesystem will write some data on the lvol
-	executor, err := util.NewExecutor(commonTypes.ProcDirectory)
+	executor, err := util.NewExecutor(commontypes.ProcDirectory)
 	c.Assert(err, IsNil)
 	_, err = executor.Execute(nil, "ls", []string{"/dev/longhorn/"}, types.ExecuteTimeout)
 	c.Assert(err, IsNil)
@@ -387,7 +387,7 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 func (s *TestSuite) TestSPDKClientMultiThread(c *C) {
 	fmt.Println("Testing SPDK Client Multi Thread")
 
-	ne, err := util.NewExecutor(commonTypes.ProcDirectory)
+	ne, err := util.NewExecutor(commontypes.ProcDirectory)
 	c.Assert(err, IsNil)
 
 	LaunchTestSPDKTarget(c, ne.Execute)
@@ -474,7 +474,7 @@ func (s *TestSuite) TestSPDKClientMultiThread(c *C) {
 func (s *TestSuite) TestSPDKEngineSuspend(c *C) {
 	fmt.Println("Testing Engine Suspend")
 
-	ne, err := util.NewExecutor(commonTypes.ProcDirectory)
+	ne, err := util.NewExecutor(commontypes.ProcDirectory)
 	c.Assert(err, IsNil)
 
 	LaunchTestSPDKTarget(c, ne.Execute)

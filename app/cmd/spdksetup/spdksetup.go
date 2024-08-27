@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
-	commonTypes "github.com/longhorn/go-common-libs/types"
+	commontypes "github.com/longhorn/go-common-libs/types"
 	spdksetup "github.com/longhorn/go-spdk-helper/pkg/spdk/setup"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
@@ -19,8 +19,8 @@ func Cmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "host-proc",
-				Usage: fmt.Sprintf("The host proc path of namespace executor. By default %v", commonTypes.ProcDirectory),
-				Value: commonTypes.ProcDirectory,
+				Usage: fmt.Sprintf("The host proc path of namespace executor. By default %v", commontypes.ProcDirectory),
+				Value: commontypes.ProcDirectory,
 			},
 		},
 		Subcommands: []cli.Command{
