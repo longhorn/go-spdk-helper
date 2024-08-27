@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
-	commonTypes "github.com/longhorn/go-common-libs/types"
+	commontypes "github.com/longhorn/go-common-libs/types"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/target"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
@@ -44,7 +44,7 @@ func Cmd() cli.Command {
 }
 
 func spdkTGT(c *cli.Context) error {
-	ne, err := util.NewExecutor(commonTypes.ProcDirectory)
+	ne, err := util.NewExecutor(commontypes.ProcDirectory)
 	if err != nil {
 		return err
 	}
