@@ -79,7 +79,7 @@ func NewInitiator(name, subsystemNQN, hostProc string) (*Initiator, error) {
 	}, nil
 }
 
-func (i *Initiator) getNewLock() (*commonns.FileLock, error) {
+func (i *Initiator) newLock() (*commonns.FileLock, error) {
 	if i.hostProc != commontypes.HostProcDirectory {
 		return nil, fmt.Errorf("invalid host proc path %s for initiator %s, supported path is %s", i.hostProc, i.Name, commontypes.HostProcDirectory)
 	}
@@ -95,7 +95,7 @@ func (i *Initiator) getNewLock() (*commonns.FileLock, error) {
 // DiscoverTarget discovers a target
 func (i *Initiator) DiscoverTarget(ip, port string) (string, error) {
 	if i.hostProc != "" {
-		lock, err := i.getNewLock()
+		lock, err := i.newLock()
 		if err != nil {
 			return "", err
 		}
@@ -108,7 +108,7 @@ func (i *Initiator) DiscoverTarget(ip, port string) (string, error) {
 // ConnectTarget connects to a target
 func (i *Initiator) ConnectTarget(ip, port, nqn string) (string, error) {
 	if i.hostProc != "" {
-		lock, err := i.getNewLock()
+		lock, err := i.newLock()
 		if err != nil {
 			return "", err
 		}
@@ -121,7 +121,7 @@ func (i *Initiator) ConnectTarget(ip, port, nqn string) (string, error) {
 // DisconnectTarget disconnects a target
 func (i *Initiator) DisconnectTarget() error {
 	if i.hostProc != "" {
-		lock, err := i.getNewLock()
+		lock, err := i.newLock()
 		if err != nil {
 			return err
 		}
@@ -134,7 +134,7 @@ func (i *Initiator) DisconnectTarget() error {
 // WaitForConnect waits for the NVMe initiator to connect
 func (i *Initiator) WaitForConnect(maxNumRetries int, retryInterval time.Duration) (err error) {
 	if i.hostProc != "" {
-		lock, err := i.getNewLock()
+		lock, err := i.newLock()
 		if err != nil {
 			return err
 		}
@@ -155,7 +155,7 @@ func (i *Initiator) WaitForConnect(maxNumRetries int, retryInterval time.Duratio
 // WaitForDisconnect waits for the NVMe initiator to disconnect
 func (i *Initiator) WaitForDisconnect(maxNumRetries int, retryInterval time.Duration) (err error) {
 	if i.hostProc != "" {
-		lock, err := i.getNewLock()
+		lock, err := i.newLock()
 		if err != nil {
 			return err
 		}
@@ -176,7 +176,7 @@ func (i *Initiator) WaitForDisconnect(maxNumRetries int, retryInterval time.Dura
 // Suspend suspends the device mapper device for the NVMe initiator
 func (i *Initiator) Suspend(noflush, nolockfs bool) error {
 	if i.hostProc != "" {
-		lock, err := i.getNewLock()
+		lock, err := i.newLock()
 		if err != nil {
 			return err
 		}
@@ -200,7 +200,7 @@ func (i *Initiator) Suspend(noflush, nolockfs bool) error {
 // Resume resumes the device mapper device for the NVMe initiator
 func (i *Initiator) Resume() error {
 	if i.hostProc != "" {
-		lock, err := i.getNewLock()
+		lock, err := i.newLock()
 		if err != nil {
 			return err
 		}
@@ -263,7 +263,7 @@ func (i *Initiator) Start(transportAddress, transportServiceID string, dmDeviceA
 	}
 
 	if i.hostProc != "" {
-		lock, err := i.getNewLock()
+		lock, err := i.newLock()
 		if err != nil {
 			return false, err
 		}
@@ -370,7 +370,7 @@ func (i *Initiator) Start(transportAddress, transportServiceID string, dmDeviceA
 
 func (i *Initiator) Stop(dmDeviceAndEndpointCleanupRequired, deferDmDeviceCleanup, errOnBusyDmDevice bool) (bool, error) {
 	if i.hostProc != "" {
-		lock, err := i.getNewLock()
+		lock, err := i.newLock()
 		if err != nil {
 			return false, err
 		}
@@ -443,7 +443,7 @@ func (i *Initiator) GetEndpoint() string {
 
 func (i *Initiator) LoadNVMeDeviceInfo(transportAddress, transportServiceID, subsystemNQN string) (err error) {
 	if i.hostProc != "" {
-		lock, err := i.getNewLock()
+		lock, err := i.newLock()
 		if err != nil {
 			return err
 		}
@@ -621,7 +621,7 @@ func (i *Initiator) suspendLinearDmDevice(noflush, nolockfs bool) error {
 // ReloadDmDevice reloads the linear dm device
 func (i *Initiator) ReloadDmDevice() (err error) {
 	if i.hostProc != "" {
-		lock, err := i.getNewLock()
+		lock, err := i.newLock()
 		if err != nil {
 			return err
 		}
