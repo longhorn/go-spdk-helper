@@ -12,6 +12,9 @@ ENV DAPPER_ENV TAG REPO DRONE_REPO DRONE_PULL_REQUEST DRONE_COMMIT_REF
 ENV DAPPER_OUTPUT bin coverage.out
 ENV DAPPER_RUN_ARGS --privileged -v /dev:/host/dev -v /proc:/host/proc -v /sys:/host/sys
 ENV DAPPER_SOURCE /go/src/github.com/longhorn/go-spdk-helper
+
+ENV GOLANGCI_LINT_VERSION="v1.60.3"
+
 WORKDIR ${DAPPER_SOURCE}
 
 ENV SPDK_COMMIT_ID a6478cde7e0cff2fb09992868308a7387aa5202a
@@ -32,7 +35,7 @@ RUN zypper -n install cmake wget unzip xsltproc docbook-xsl-stylesheets python31
 # Install Go & tools
 ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
     GOPATH=/go PATH=/go/bin:/usr/local/go/bin:${PATH} SHELL=/bin/bash
-RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin ${GOLANGCI_LINT_VERSION}
 
 RUN ln -sf /usr/bin/python3.11 /usr/bin/python3 & \
     ln -sf /usr/bin/pip3.11 /usr/bin/pip3
