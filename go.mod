@@ -6,7 +6,7 @@ toolchain go1.23.1
 
 require (
 	github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8
-	github.com/longhorn/go-common-libs v0.0.0-20240907130740-7060fefb5bda
+	github.com/longhorn/go-common-libs v0.0.0-20240914083622-928beb30c12e
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.15
