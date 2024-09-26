@@ -161,9 +161,22 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 		c.Assert(deleted, Equals, true)
 	}()
 
-	lvolList, err := spdkCli.BdevLvolGet("", 0)
+	lvolFilter1 := func(bdev *spdktypes.BdevInfo) bool {
+		return bdev.DriverSpecific.Lvol != nil && bdev.UUID == lvolUUID1
+	}
+	lvolList1, err := spdkCli.BdevLvolGetWithFilter("", 0, lvolFilter1)
 	c.Assert(err, IsNil)
-	c.Assert(len(lvolList), Equals, 2)
+	c.Assert(len(lvolList1), Equals, 1)
+	c.Assert(lvolList1[0].Aliases[0], Equals, fmt.Sprintf("%s/%s", lvsName, lvolName1))
+	lvolFilter2 := func(bdev *spdktypes.BdevInfo) bool {
+		return bdev.DriverSpecific.Lvol != nil && bdev.UUID == lvolUUID2
+	}
+	lvolList2, err := spdkCli.BdevLvolGetWithFilter(lvolUUID2, 0, lvolFilter2)
+	c.Assert(err, IsNil)
+	c.Assert(len(lvolList2), Equals, 1)
+	c.Assert(lvolList2[0].Aliases[0], Equals, fmt.Sprintf("%s/%s", lvsName, lvolName2))
+
+	lvolList := append(lvolList1, lvolList2...)
 	for _, lvol := range lvolList {
 		c.Assert(len(lvol.Aliases), Equals, 1)
 		c.Assert(uint64(lvol.BlockSize)*lvol.NumBlocks, Equals, defaultLvolSizeInMiB*types.MiB)
@@ -175,12 +188,6 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 		c.Assert(lvol.DriverSpecific.Lvol.Snapshot, Equals, false)
 		c.Assert(lvol.DriverSpecific.Lvol.Clone, Equals, false)
 		c.Assert(lvol.DriverSpecific.Lvol.LvolStoreUUID, Equals, lvsUUID)
-		if lvol.UUID == lvolUUID1 {
-			c.Assert(lvol.Aliases[0], Equals, fmt.Sprintf("%s/%s", lvsName, lvolName1))
-		}
-		if lvol.UUID == lvolUUID2 {
-			c.Assert(lvol.Aliases[0], Equals, fmt.Sprintf("%s/%s", lvsName, lvolName2))
-		}
 		c.Assert(lvol.DriverSpecific.Lvol.Xattrs[client.UserCreated], Equals, "true")
 		c.Assert(lvol.DriverSpecific.Lvol.Xattrs[client.SnapshotTimestamp], Equals, "")
 	}
