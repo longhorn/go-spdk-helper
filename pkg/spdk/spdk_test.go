@@ -218,7 +218,8 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	c.Assert(snapLvol1.DriverSpecific.Lvol.Xattrs[client.UserCreated], Equals, "true")
 	c.Assert(snapLvol1.DriverSpecific.Lvol.Xattrs[client.SnapshotTimestamp], Equals, snapshotTimestamp)
 
-	cloneLvolUUID1, err := spdkCli.BdevLvolClone(snapLvolUUID1, "clone111")
+	cloneName1 := "clone111"
+	cloneLvolUUID1, err := spdkCli.BdevLvolClone(snapLvolUUID1, cloneName1)
 	c.Assert(err, IsNil)
 	defer func() {
 		deleted, err := spdkCli.BdevLvolDelete(cloneLvolUUID1)
@@ -229,12 +230,26 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(lvolList), Equals, 1)
 	cloneLvol1 := lvolList[0]
+	c.Assert(len(cloneLvol1.Aliases), Equals, 1)
+	c.Assert(cloneLvol1.Aliases[0], Equals, spdktypes.GetLvolAlias(lvsName, cloneName1))
 	c.Assert(cloneLvol1.CreationTime, Not(Equals), "")
 	c.Assert(cloneLvol1.DriverSpecific.Lvol, NotNil)
 	c.Assert(cloneLvol1.DriverSpecific.Lvol.Snapshot, Equals, false)
 	c.Assert(cloneLvol1.DriverSpecific.Lvol.Clone, Equals, true)
 	c.Assert(cloneLvol1.DriverSpecific.Lvol.Xattrs[client.UserCreated], Equals, "true")
 	c.Assert(cloneLvol1.DriverSpecific.Lvol.Xattrs[client.SnapshotTimestamp], Equals, "")
+
+	cloneRenamed1 := "clone111-tmp"
+	renamed, err := spdkCli.BdevLvolRename(cloneLvolUUID1, cloneRenamed1)
+	c.Assert(err, IsNil)
+	c.Assert(renamed, Equals, true)
+	lvolList, err = spdkCli.BdevLvolGet(cloneLvolUUID1, 0)
+	c.Assert(err, IsNil)
+	c.Assert(len(lvolList), Equals, 1)
+	cloneLvol1Renamed := lvolList[0]
+	c.Assert(len(cloneLvol1Renamed.Aliases), Equals, 1)
+	c.Assert(cloneLvol1Renamed.Aliases[0], Equals, spdktypes.GetLvolAlias(lvsName, cloneRenamed1))
+	c.Assert(cloneLvol1Renamed.CreationTime, Equals, cloneLvol1.CreationTime)
 
 	decoupled, err := spdkCli.BdevLvolDecoupleParent(cloneLvolUUID1)
 	c.Assert(err, IsNil)

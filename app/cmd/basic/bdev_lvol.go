@@ -32,6 +32,7 @@ func BdevLvolCmd() cli.Command {
 			BdevLvolCheckShallowCopyCmd(),
 			BdevLvolGetXattrCmd(),
 			BdevLvolGetFragmapCmd(),
+			BdevLvolRenameCmd(),
 		},
 	}
 }
@@ -604,4 +605,52 @@ func bdevLvolGetFragmap(c *cli.Context) error {
 	}
 
 	return util.PrintObject(output)
+}
+
+func BdevLvolRenameCmd() cli.Command {
+	return cli.Command{
+		Name: "rename",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:     "old-name",
+				Usage:    "The UUID or alias (<LVSTORE NAME>/<LVOL NAME>) of the existing logical volume",
+				Required: true,
+			},
+			cli.StringFlag{
+				Name:     "new-name",
+				Usage:    "New logical volume name.",
+				Required: true,
+			},
+		},
+		Usage: "Rename a logical volume. New name will rename only the alias of the logical volume: \"rename --old-name <LVSTORE NAME>/<LVOL NAME> --new-name <LVOL NAME>\" or \"rename --old-name <UUID> --new-name <LVOL NAME>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvolRename(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run rename bdev lvol command")
+			}
+		},
+	}
+}
+
+func bdevLvolRename(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	oldName := c.String("old-name")
+	newName := c.String("new-name")
+
+	if oldName == "" || newName == "" {
+		return fmt.Errorf("both old-name and new-name must be provided")
+	}
+	if oldName == newName {
+		return fmt.Errorf("old-name and new-name must be different")
+	}
+
+	renamed, err := spdkCli.BdevLvolRename(oldName, newName)
+	if err != nil {
+		return fmt.Errorf("failed to rename logical volume from %q to %q: %v", oldName, newName, err)
+	}
+
+	return util.PrintObject(renamed)
 }
