@@ -294,7 +294,8 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	c.Assert(time.Since(start) < time.Minute, Equals, true)
 
 	raidName := "test-raid"
-	created, err := spdkCli.BdevRaidCreate(raidName, spdktypes.BdevRaidLevelRaid1, 0, []string{lvolUUID1, lvolUUID2})
+	created, err := spdkCli.BdevRaidCreate(raidName, spdktypes.BdevRaidLevelRaid1, 0, []string{lvolUUID1, lvolUUID2},
+		"", false, false)
 	c.Assert(err, IsNil)
 	c.Assert(created, Equals, true)
 	defer func() {
@@ -554,7 +555,8 @@ func (s *TestSuite) TestSPDKEngineSuspend(c *C) {
 	c.Assert(len(lvolList), Equals, 2)
 
 	raidName := "test-raid"
-	created, err := spdkCli.BdevRaidCreate(raidName, spdktypes.BdevRaidLevelRaid1, 0, []string{lvolUUID1, lvolUUID2})
+	created, err := spdkCli.BdevRaidCreate(raidName, spdktypes.BdevRaidLevelRaid1, 0, []string{lvolUUID1, lvolUUID2},
+		"", false, false)
 	c.Assert(err, IsNil)
 	c.Assert(created, Equals, true)
 	defer func() {
