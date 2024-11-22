@@ -396,11 +396,11 @@ func BdevLvolResizeCmd() cli.Command {
 				Usage: "Specify this or alias",
 			},
 			cli.Uint64Flag{
-				Name:     "size",
+				Name:     "size-in-mib",
 				Required: true,
 			},
 		},
-		Usage: "resize a lvol to a new size: \"resize --alias <LVSTORE NAME>/<LVOL NAME> --size <SIZE>\", or \"resize --uuid <LVOL UUID> --size <SIZE>\"",
+		Usage: "resize a lvol to a new size: \"resize --alias <LVSTORE NAME>/<LVOL NAME> --size-in-mib <SIZE>\", or \"resize --uuid <LVOL UUID> --size-in-mib <SIZE>\"",
 		Action: func(c *cli.Context) {
 			if err := bdevLvolResize(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run resize bdev lvol command")
@@ -420,7 +420,7 @@ func bdevLvolResize(c *cli.Context) error {
 		name = c.String("uuid")
 	}
 
-	resized, err := spdkCli.BdevLvolResize(name, c.Uint64("size"))
+	resized, err := spdkCli.BdevLvolResize(name, c.Uint64("size-in-mib"))
 	if err != nil {
 		return err
 	}
