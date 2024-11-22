@@ -105,7 +105,7 @@ func ConnectCmd() cli.Command {
 }
 
 func connect(c *cli.Context) error {
-	executor, err := util.NewExecutor(c.String("host-proc"))
+	executor, err := util.NewExecutor(c.GlobalString("host-proc"))
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func DisconnectCmd() cli.Command {
 }
 
 func disconnect(c *cli.Context) error {
-	executor, err := util.NewExecutor(c.String("host-proc"))
+	executor, err := util.NewExecutor(c.GlobalString("host-proc"))
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func GetCmd() cli.Command {
 }
 
 func get(c *cli.Context) error {
-	executor, err := util.NewExecutor(c.String("host-proc"))
+	executor, err := util.NewExecutor(c.GlobalString("host-proc"))
 	if err != nil {
 		return err
 	}
@@ -216,7 +216,7 @@ func StartCmd() cli.Command {
 }
 
 func start(c *cli.Context) error {
-	initiator, err := nvme.NewInitiator(c.String("name"), c.String("nqn"), c.String("host-proc"))
+	initiator, err := nvme.NewInitiator(c.String("name"), c.String("nqn"), c.GlobalString("host-proc"))
 	if err != nil {
 		return err
 	}
@@ -257,7 +257,7 @@ func StopCmd() cli.Command {
 }
 
 func stop(c *cli.Context) error {
-	initiator, err := nvme.NewInitiator(c.String("name"), c.String("nqn"), c.String("host-proc"))
+	initiator, err := nvme.NewInitiator(c.String("name"), c.String("nqn"), c.GlobalString("host-proc"))
 	if err != nil {
 		return err
 	}
@@ -289,7 +289,7 @@ func FlushCmd() cli.Command {
 }
 
 func flush(c *cli.Context) error {
-	executor, err := util.NewExecutor(c.String("host-proc"))
+	executor, err := util.NewExecutor(c.GlobalString("host-proc"))
 	if err != nil {
 		return err
 	}
