@@ -2,6 +2,7 @@
 *.o
 *.a
 *.so
+go-spdk-helper
 
 # Folders
 _obj
