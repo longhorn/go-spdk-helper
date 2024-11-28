@@ -33,6 +33,8 @@ func BdevLvolCmd() cli.Command {
 			BdevLvolGetXattrCmd(),
 			BdevLvolGetFragmapCmd(),
 			BdevLvolRenameCmd(),
+			BdevLvolRegisterSnapshotChecksumCmd(),
+			BdevLvolGetSnapshotChecksumCmd(),
 		},
 	}
 }
@@ -653,4 +655,97 @@ func bdevLvolRename(c *cli.Context) error {
 	}
 
 	return util.PrintObject(renamed)
+}
+
+func BdevLvolRegisterSnapshotChecksumCmd() cli.Command {
+	return cli.Command{
+		Name: "register-snapshot-checksum",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "alias",
+				Usage: "The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>. Specify this or uuid",
+			},
+			cli.StringFlag{
+				Name:  "uuid",
+				Usage: "Specify this or alias",
+			},
+		},
+		Usage: "compute and store checksum of snapshot's data: \"register-snapshot-checksum --alias <LVSTORE NAME>/<LVOL NAME>\"," +
+			" or \"register-snapshot-checksum --uuid <LVOL UUID>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvolRegisterSnapshotChecksum(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run register snapshot checksum command")
+			}
+		},
+	}
+}
+
+func bdevLvolRegisterSnapshotChecksum(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	name := c.String("alias")
+	if name == "" {
+		name = c.String("uuid")
+	}
+	if name == "" {
+		return fmt.Errorf("either alias or uuid must be provided")
+	}
+
+	registered, err := spdkCli.BdevLvolRegisterSnapshotChecksum(name)
+	if err != nil {
+		return fmt.Errorf("failed to register checksum for snapshot %q: %v", name, err)
+	}
+
+	return util.PrintObject(registered)
+}
+
+func BdevLvolGetSnapshotChecksumCmd() cli.Command {
+	return cli.Command{
+		Name: "get-snapshot-checksum",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "alias",
+				Usage: "The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>. Specify this or uuid",
+			},
+			cli.StringFlag{
+				Name:  "uuid",
+				Usage: "Specify this or alias",
+			},
+		},
+		Usage: "get checksum of snapshot's data: \"get-snapshot-checksum --alias <LVSTORE NAME>/<LVOL NAME>\"," +
+			" or \"get-snapshot-checksum --uuid <LVOL UUID>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvolGetSnapshotChecksum(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run get snapshot checksum command")
+			}
+		},
+	}
+}
+
+func bdevLvolGetSnapshotChecksum(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	name := c.String("alias")
+	if name == "" {
+		name = c.String("uuid")
+	}
+	if name == "" {
+		return fmt.Errorf("either alias or uuid must be provided")
+	}
+
+	checksum, err := spdkCli.BdevLvolGetSnapshotChecksum(name)
+	if err != nil {
+		return fmt.Errorf("failed to get checksum for snapshot %q: %v", name, err)
+	}
+	if checksum == nil {
+		return fmt.Errorf("no checksum found for snapshot %q", name)
+	}
+
+	return util.PrintObject(*checksum)
 }
