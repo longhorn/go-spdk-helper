@@ -682,7 +682,23 @@ func (i *Initiator) reloadLinearDmDevice() error {
 
 	i.logger.Infof("Reloading linear dm device with table '%s'", table)
 
-	return util.DmsetupReload(i.Name, table, i.executor)
+	err = util.DmsetupReload(i.Name, table, i.executor)
+	if err != nil {
+		return err
+	}
+
+	// Reload the device numbers
+	dmDevPath := getDmDevicePath(i.Name)
+	major, minor, err := util.GetDeviceNumbers(dmDevPath, i.executor)
+	if err != nil {
+		return err
+	}
+
+	i.dev.Export.Name = i.Name
+	i.dev.Export.Major = major
+	i.dev.Export.Minor = minor
+
+	return nil
 }
 
 func getDmDevicePath(name string) string {
