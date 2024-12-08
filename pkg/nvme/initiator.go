@@ -302,11 +302,9 @@ func (i *Initiator) Start(transportAddress, transportServiceID string, dmDeviceA
 		return dmDeviceIsBusy, errors.Wrapf(err, "failed to load device info after connecting target for NVMe initiator %s", i.Name)
 	}
 
-	needMakeEndpoint := true
 	if dmDeviceAndEndpointCleanupRequired {
 		if dmDeviceIsBusy {
 			// Endpoint is already created, just replace the target device
-			needMakeEndpoint = false
 			i.logger.Info("Linear dm device is busy, trying the best to replace the target device for NVMe initiator")
 			if err := i.replaceDmDeviceTarget(); err != nil {
 				i.logger.WithError(err).Warnf("Failed to replace the target device for NVMe initiator")
@@ -325,8 +323,14 @@ func (i *Initiator) Start(transportAddress, transportServiceID string, dmDeviceA
 		i.dev.Export = i.dev.Nvme
 	}
 
-	if needMakeEndpoint {
-		i.logger.Infof("Creating endpoint %v", i.Endpoint)
+	i.logger.Infof("Creating endpoint %v", i.Endpoint)
+	exist, err := i.isEndpointExist()
+	if err != nil {
+		return dmDeviceIsBusy, errors.Wrapf(err, "failed to check if endpoint %v exists for NVMe initiator %s", i.Endpoint, i.Name)
+	}
+	if exist {
+		i.logger.Infof("Skipping endpoint %v creation for NVMe initiator", i.Endpoint)
+	} else {
 		if err := i.makeEndpoint(); err != nil {
 			return dmDeviceIsBusy, err
 		}
@@ -481,8 +485,8 @@ func (i *Initiator) loadNVMeDeviceInfoWithoutLock(transportAddress, transportSer
 		"transportServiceID": i.TransportServiceID,
 	})
 
-	devicePath := fmt.Sprintf("/dev/%s", i.NamespaceName)
-	dev, err := util.DetectDevice(devicePath, i.executor)
+	devPath := filepath.Join("/dev", i.NamespaceName)
+	dev, err := util.DetectDevice(devPath, i.executor)
 	if err != nil {
 		return errors.Wrapf(err, "cannot find the device for NVMe initiator %s with namespace name %s", i.Name, i.NamespaceName)
 	}
