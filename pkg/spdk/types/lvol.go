@@ -104,9 +104,10 @@ type BdevLvolDeleteRequest struct {
 }
 
 type BdevLvolSnapshotRequest struct {
-	LvolName     string            `json:"lvol_name"`
-	SnapshotName string            `json:"snapshot_name"`
-	Xattrs       map[string]string `json:"xattrs,omitempty"`
+	LvolName              string            `json:"lvol_name"`
+	SnapshotName          string            `json:"snapshot_name"`
+	Xattrs                map[string]string `json:"xattrs,omitempty"`
+	EnableAddUpdateXattrs bool              `json:"enable_add_update_xattrs,omitempty"`
 }
 
 type BdevLvolCloneRequest struct {
@@ -148,6 +149,18 @@ type BdevLvolGetFragmapRequest struct {
 type BdevLvolRenameRequest struct {
 	OldName string `json:"old_name"`
 	NewName string `json:"new_name"`
+}
+
+type BdevLvolRegisterSnapshotChecksumRequest struct {
+	Name string `json:"name"`
+}
+
+type BdevLvolGetSnapshotChecksumRequest struct {
+	Name string `json:"name"`
+}
+
+type BdevLvolSnapshotChecksum struct {
+	Checksum uint64 `json:"checksum"`
 }
 
 func GetLvolAlias(lvsName, lvolName string) string {
