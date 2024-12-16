@@ -27,6 +27,7 @@ func BdevLvolCmd() cli.Command {
 			BdevLvolCloneBdevCmd(),
 			BdevLvolSetParentCmd(),
 			BdevLvolDecoupleParentCmd(),
+			BdevLvolDetachParentCmd(),
 			BdevLvolResizeCmd(),
 			BdevLvolStartShallowCopyCmd(),
 			BdevLvolCheckShallowCopyCmd(),
@@ -340,6 +341,47 @@ func bdevLvolDecoupleParent(c *cli.Context) error {
 	}
 
 	decoupled, err := spdkCli.BdevLvolDecoupleParent(name)
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(decoupled)
+}
+
+func BdevLvolDetachParentCmd() cli.Command {
+	return cli.Command{
+		Name: "detach",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "alias",
+				Usage: "The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
+			},
+			cli.StringFlag{
+				Name:  "uuid",
+				Usage: "Specify this or alias",
+			},
+		},
+		Usage: "detach a lvol from its parent lvol without modifying lvol's data. The parent must be a standard snapshot, not an external snapshot: \"detach --alias <LVSTORE NAME>/<LVOL NAME>\", or \"detach --uuid <LVOL UUID>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvolDetachParent(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run detach parent bdev lvol command")
+			}
+		},
+	}
+}
+
+func bdevLvolDetachParent(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	name := c.String("alias")
+	if name == "" {
+		name = c.String("uuid")
+	}
+
+	decoupled, err := spdkCli.BdevLvolDetachParent(name)
 	if err != nil {
 		return err
 	}
