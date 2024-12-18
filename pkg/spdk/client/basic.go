@@ -387,6 +387,24 @@ func (c *Client) BdevLvolDecoupleParent(name string) (decoupled bool, err error)
 	return decoupled, json.Unmarshal(cmdOutput, &decoupled)
 }
 
+// BdevLvolDetachParent detach the parent of a logical volume.
+// No new clusters are allocated to the child blob, no data are copied from the parent to the child, so lvol's data are not modified.
+// The parent must be a standard snapshot, not an external snapshot. All dependencies on the parent are removed
+//
+//	"name": Required. UUID or alias of the logical volume to detach the parent of it. The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>.
+func (c *Client) BdevLvolDetachParent(name string) (decoupled bool, err error) {
+	req := spdktypes.BdevLvolDetachParentRequest{
+		Name: name,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_detach_parent", req)
+	if err != nil {
+		return false, err
+	}
+
+	return decoupled, json.Unmarshal(cmdOutput, &decoupled)
+}
+
 // BdevLvolSetParent sets a snapshot as the parent of a lvol, making the lvol a clone/child of this snapshot.
 // The previous parent of the lvol can be another snapshot or an external snapshot, if the lvol is not a clone must be thin-provisioned.
 // Lvol and parent snapshot must have the same size and must belong to the same lvol store.
