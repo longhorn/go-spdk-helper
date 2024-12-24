@@ -18,6 +18,7 @@ type Xattr struct {
 const (
 	UserCreated       = "user_created"
 	SnapshotTimestamp = "snapshot_timestamp"
+	SnapshotChecksum  = "snapshot_checksum"
 )
 
 // BdevGetBdevs get information about block devices (bdevs).
@@ -296,6 +297,12 @@ func (c *Client) BdevLvolGetWithFilter(name string, timeout uint64, filter func(
 		if err == nil {
 			b.DriverSpecific.Lvol.Xattrs[SnapshotTimestamp] = snapshot_timestamp
 		}
+		if b.DriverSpecific.Lvol.Snapshot {
+			checksum, err := c.BdevLvolGetSnapshotChecksum(b.Name)
+			if err == nil {
+				b.DriverSpecific.Lvol.Xattrs[SnapshotChecksum] = checksum
+			}
+		}
 
 		bdevLvolInfoList = append(bdevLvolInfoList, b)
 	}
@@ -521,23 +528,23 @@ func (c *Client) BdevLvolRegisterSnapshotChecksum(name string) (registered bool,
 // BdevLvolGetSnapshotChecksum gets snapshot's stored checksum. The checksum must has been previously registered.
 //
 //	"name": Required. UUID or alias of the snapshot. The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>.
-func (c *Client) BdevLvolGetSnapshotChecksum(name string) (checksum *uint64, err error) {
+func (c *Client) BdevLvolGetSnapshotChecksum(name string) (checksum string, err error) {
 	req := spdktypes.BdevLvolGetSnapshotChecksumRequest{
 		Name: name,
 	}
 
 	cmdOutput, err := c.jsonCli.SendCommandWithLongTimeout("bdev_lvol_get_snapshot_checksum", req)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	var snapshotChecksum spdktypes.BdevLvolSnapshotChecksum
 	err = json.Unmarshal(cmdOutput, &snapshotChecksum)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return &snapshotChecksum.Checksum, nil
+	return strconv.FormatUint(snapshotChecksum.Checksum, 10), nil
 }
 
 // BdevLvolRename renames a logical volume.

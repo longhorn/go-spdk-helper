@@ -743,9 +743,9 @@ func bdevLvolGetSnapshotChecksum(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to get checksum for snapshot %q: %v", name, err)
 	}
-	if checksum == nil {
+	if checksum == "" {
 		return fmt.Errorf("no checksum found for snapshot %q", name)
 	}
 
-	return util.PrintObject(*checksum)
+	return util.PrintObject(checksum)
 }
