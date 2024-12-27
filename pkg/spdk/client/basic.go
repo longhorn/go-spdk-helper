@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -241,6 +242,23 @@ func (c *Client) BdevLvolDelete(name string) (deleted bool, err error) {
 	}
 
 	return deleted, json.Unmarshal(cmdOutput, &deleted)
+}
+
+// BdevLvolGetByName gets information about a single lvol bdevs with the specified name.
+//
+//		"name": Required. UUID or alias of a logical volume (lvol) bdev.
+//	        	The alias of a lvol bdev is <LVSTORE NAME>/<LVOL NAME>. And the name of a lvol bdev is UUID.
+//
+//		"timeout": Optional. 0 by default, meaning the method returns immediately whether the lvol bdev exists or not.
+func (c *Client) BdevLvolGetByName(name string, timeout uint64) (bdevLvol spdktypes.BdevInfo, err error) {
+	bdevLvolList, err := c.BdevLvolGetWithFilter(name, timeout, func(*spdktypes.BdevInfo) bool { return true })
+	if err != nil {
+		return spdktypes.BdevInfo{}, err
+	}
+	if len(bdevLvolList) != 1 {
+		return spdktypes.BdevInfo{}, fmt.Errorf("zero or multiple lvols with name %s found", name)
+	}
+	return bdevLvolList[0], nil
 }
 
 // BdevLvolGet gets information about lvol bdevs if a name is not specified.
