@@ -21,6 +21,9 @@ func BdevRaidCmd() cli.Command {
 			BdevRaidGetCmd(),
 			BdevRaidRemoveBaseBdevCmd(),
 			BdevRaidGrowBaseBdevCmd(),
+			BdevRaidGetBaseBdevDeltaMapCmd(),
+			BdevRaidStopBaseBdevDeltaMapCmd(),
+			BdevRaidClearBaseBdevFaultyStateCmd(),
 		},
 	}
 }
@@ -50,6 +53,21 @@ func BdevRaidCreateCmd() cli.Command {
 				Usage:    "Names of Nvme bdevs, the input is like \"--base-devs Nvme0n1 --base-devs Nvme1n1\"",
 				Required: true,
 			},
+			cli.StringFlag{
+				Name:     "UUID",
+				Usage:    "UUID for this raid bdev",
+				Required: false,
+			},
+			cli.BoolFlag{
+				Name:     "superblock",
+				Usage:    "Raid bdev info will be stored in superblock on each base bdev",
+				Required: false,
+			},
+			cli.BoolFlag{
+				Name:     "delta-bitmap",
+				Usage:    "A delta bitmap for faulty base bdevs will be recorded",
+				Required: false,
+			},
 		},
 		Action: func(c *cli.Context) {
 			if err := bdevRaidCreate(c); err != nil {
@@ -65,7 +83,8 @@ func bdevRaidCreate(c *cli.Context) error {
 		return err
 	}
 
-	created, err := spdkCli.BdevRaidCreate(c.String("name"), spdktypes.BdevRaidLevel(c.String("level")), uint32(c.Uint64("strip-size-kb")), c.StringSlice("base-bdevs"))
+	created, err := spdkCli.BdevRaidCreate(c.String("name"), spdktypes.BdevRaidLevel(c.String("level")), uint32(c.Uint64("strip-size-kb")), c.StringSlice("base-bdevs"),
+		c.String("UUID"), c.Bool("superblock"), c.Bool("delta-bitmap"))
 	if err != nil {
 		return err
 	}
@@ -192,4 +211,94 @@ func bdevRaidGrowBaseBdev(c *cli.Context) error {
 	}
 
 	return util.PrintObject(growed)
+}
+
+func BdevRaidGetBaseBdevDeltaMapCmd() cli.Command {
+	return cli.Command{
+		Name:      "get-base-bdev-delta-map",
+		Usage:     "get the delta bitmap of a faulty base bdev",
+		ArgsUsage: "<BASE BDEV NAME>",
+		Action: func(c *cli.Context) {
+			if c.NArg() != 1 {
+				logrus.Fatal("BASE BDEV NAME argument required")
+			}
+			if err := bdevRaidGetBaseBdevDeltaMap(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run get base bdev delta map to raid command")
+			}
+		},
+	}
+}
+
+func bdevRaidGetBaseBdevDeltaMap(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	deltaMap, err := spdkCli.BdevRaidGetBaseBdevDeltaMap(c.Args().First())
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(deltaMap)
+}
+
+func BdevRaidStopBaseBdevDeltaMapCmd() cli.Command {
+	return cli.Command{
+		Name:      "stop-base-bdev-delta-map",
+		Usage:     "stop the updating of the delta bitmap of a faulty base bdev",
+		ArgsUsage: "<BASE BDEV NAME>",
+		Action: func(c *cli.Context) {
+			if c.NArg() != 1 {
+				logrus.Fatal("BASE BDEV NAME argument required")
+			}
+			if err := bdevRaidStopBaseBdevDeltaMap(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run stop base bdev delta map to raid command")
+			}
+		},
+	}
+}
+
+func bdevRaidStopBaseBdevDeltaMap(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	stopped, err := spdkCli.BdevRaidStopBaseBdevDeltaMap(c.Args().First())
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(stopped)
+}
+
+func BdevRaidClearBaseBdevFaultyStateCmd() cli.Command {
+	return cli.Command{
+		Name:      "clear-base-bdev-faulty-state",
+		Usage:     "clear the faulty state of a base bdev",
+		ArgsUsage: "<BASE BDEV NAME>",
+		Action: func(c *cli.Context) {
+			if c.NArg() != 1 {
+				logrus.Fatal("BASE BDEV NAME argument required")
+			}
+			if err := bdevRaidClearBaseBdevFaultyState(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run clear base bdev faulty state to raid command")
+			}
+		},
+	}
+}
+
+func bdevRaidClearBaseBdevFaultyState(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	cleared, err := spdkCli.BdevRaidClearBaseBdevFaultyState(c.Args().First())
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(cleared)
 }
