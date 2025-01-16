@@ -230,14 +230,12 @@ func (c *Client) read() {
 				continue
 			}
 
-			if !queueTimer.Stop() {
-				<-queueTimer.C
-			}
+			queueTimer.Stop()
 			queueTimer.Reset(DefaultQueueBlockingTimeout)
 			select {
 			case c.respReceiverQueue <- &resp:
 			case <-queueTimer.C:
-				logrus.Errorf("Response receiver queue is blocked for over %v second when sending response id %v", DefaultQueueBlockingTimeout, resp.ID)
+				logrus.Errorf("Response receiver queue is blocked for over %v second when sending response: %+v", DefaultQueueBlockingTimeout, resp)
 			}
 		}
 	}
