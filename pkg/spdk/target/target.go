@@ -15,7 +15,7 @@ import (
 const (
 	SPDKScriptsDir  = "scripts"
 	SPDKSetupScript = "setup.sh"
-	SPDKTGTBinary   = "build/bin/spdk_tgt"
+	SPDKTGTBinary   = "spdk_tgt"
 )
 
 // SetupTarget setups the spdk_tgt with the given args
@@ -59,9 +59,14 @@ func StartTarget(spdkDir string, args []string, timeout time.Duration, execute f
 	for _, arg := range args {
 		argsInStr = fmt.Sprintf("%s %s", argsInStr, arg)
 	}
+
+	binary := SPDKTGTBinary
+	if spdkDir == "" {
+		binary = filepath.Join(spdkDir, SPDKTGTBinary)
+	}
 	tgtOpts := []string{
 		"-c",
-		fmt.Sprintf("%s %s", filepath.Join(spdkDir, SPDKTGTBinary), argsInStr),
+		fmt.Sprintf("%s %s", binary, argsInStr),
 	}
 
 	_, err = execute(nil, "sh", tgtOpts, timeout)
