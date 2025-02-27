@@ -39,14 +39,6 @@ type TestSuite struct{}
 
 var _ = Suite(&TestSuite{})
 
-func GetSPDKDir() string {
-	spdkDir := os.Getenv("SPDK_DIR")
-	if spdkDir != "" {
-		return spdkDir
-	}
-	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/longhorn/spdk")
-}
-
 func LaunchTestSPDKTarget(c *C, execute func(envs []string, binary string, args []string, timeout time.Duration) (string, error)) {
 	targetReady := false
 	if spdkCli, err := client.NewClient(context.Background()); err == nil {
@@ -57,7 +49,7 @@ func LaunchTestSPDKTarget(c *C, execute func(envs []string, binary string, args 
 
 	if !targetReady {
 		go func() {
-			err := target.StartTarget(GetSPDKDir(), []string{"2>&1 | tee /tmp/spdk_tgt.log"}, 60*time.Minute, execute)
+			err := target.StartTarget("", []string{"2>&1 | tee /tmp/spdk_tgt.log"}, 60*time.Minute, execute)
 			c.Assert(err, IsNil)
 		}()
 
