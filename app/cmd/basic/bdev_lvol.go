@@ -36,6 +36,7 @@ func BdevLvolCmd() cli.Command {
 			BdevLvolRenameCmd(),
 			BdevLvolRegisterSnapshotChecksumCmd(),
 			BdevLvolGetSnapshotChecksumCmd(),
+			BdevLvolStopSnapshotChecksumCmd(),
 		},
 	}
 }
@@ -790,4 +791,49 @@ func bdevLvolGetSnapshotChecksum(c *cli.Context) error {
 	}
 
 	return util.PrintObject(checksum)
+}
+
+func BdevLvolStopSnapshotChecksumCmd() cli.Command {
+	return cli.Command{
+		Name: "stop-snapshot-checksum",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "alias",
+				Usage: "The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>. Specify this or uuid",
+			},
+			cli.StringFlag{
+				Name:  "uuid",
+				Usage: "Specify this or alias",
+			},
+		},
+		Usage: "stop an ongoing registration of a snapshot's checksum: \"stop-snapshot-checksum --alias <LVSTORE NAME>/<LVOL NAME>\"," +
+			" or \"stop-snapshot-checksum --uuid <LVOL UUID>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvolStopSnapshotChecksum(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run stop snapshot checksum command")
+			}
+		},
+	}
+}
+
+func bdevLvolStopSnapshotChecksum(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	name := c.String("alias")
+	if name == "" {
+		name = c.String("uuid")
+	}
+	if name == "" {
+		return fmt.Errorf("either alias or uuid must be provided")
+	}
+
+	registered, err := spdkCli.BdevLvolStopSnapshotChecksum(name)
+	if err != nil {
+		return fmt.Errorf("failed to stop checksum registration for snapshot %q: %v", name, err)
+	}
+
+	return util.PrintObject(registered)
 }
