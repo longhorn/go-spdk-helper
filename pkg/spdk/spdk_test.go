@@ -13,8 +13,8 @@ import (
 
 	commontypes "github.com/longhorn/go-common-libs/types"
 
+	"github.com/longhorn/go-spdk-helper/pkg/initiator"
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
-	"github.com/longhorn/go-spdk-helper/pkg/nvme"
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/target"
 	"github.com/longhorn/go-spdk-helper/pkg/types"
@@ -346,14 +346,17 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 		c.Assert(err, IsNil)
 	}()
 
-	initiator, err := nvme.NewInitiator(raidName, nqn, nvme.HostProc)
+	nvmeTCPInfo := &initiator.NVMeTCPInfo{
+		SubsystemNQN: nqn,
+	}
+	i, err := initiator.NewInitiator(raidName, initiator.HostProc, nvmeTCPInfo, nil)
 	c.Assert(err, IsNil)
 
-	dmDeviceBusy, err := initiator.Start(types.LocalIP, defaultPort1, true)
+	dmDeviceBusy, err := i.StartNvmeTCPInitiator(types.LocalIP, defaultPort1, true)
 	c.Assert(dmDeviceBusy, Equals, false)
 	c.Assert(err, IsNil)
 	defer func() {
-		dmDeviceBusy, err = initiator.Stop(true, true, true)
+		dmDeviceBusy, err = i.Stop(nil, true, true, true)
 		c.Assert(dmDeviceBusy, Equals, false)
 		c.Assert(err, IsNil)
 	}()
@@ -570,30 +573,32 @@ func (s *TestSuite) TestSPDKEngineSuspend(c *C) {
 		err = spdkCli.StopExposeBdev(nqn)
 		c.Assert(err, IsNil)
 	}()
-
-	initiator, err := nvme.NewInitiator(raidName, nqn, nvme.HostProc)
+	nvmeTCPInfo := &initiator.NVMeTCPInfo{
+		SubsystemNQN: nqn,
+	}
+	i, err := initiator.NewInitiator(raidName, initiator.HostProc, nvmeTCPInfo, nil)
 	c.Assert(err, IsNil)
 
-	dmDeviceBusy, err := initiator.Start(types.LocalIP, defaultPort1, true)
+	dmDeviceBusy, err := i.StartNvmeTCPInitiator(types.LocalIP, defaultPort1, true)
 	c.Assert(dmDeviceBusy, Equals, false)
 	c.Assert(err, IsNil)
 	defer func() {
-		dmDeviceBusy, err = initiator.Stop(true, true, true)
+		dmDeviceBusy, err = i.Stop(nil, true, true, true)
 		c.Assert(dmDeviceBusy, Equals, false)
 		c.Assert(err, IsNil)
 	}()
 
-	err = initiator.Suspend(true, true)
+	err = i.Suspend(true, true)
 	c.Assert(err, IsNil)
 
-	suspended, err := initiator.IsSuspended()
+	suspended, err := i.IsSuspended()
 	c.Assert(err, IsNil)
 	c.Assert(suspended, Equals, true)
 
-	err = initiator.LoadEndpoint(dmDeviceBusy)
+	err = i.LoadEndpointForNvmeTcpFrontend(dmDeviceBusy)
 	c.Assert(err, IsNil)
-	c.Assert(initiator.GetEndpoint(), Equals, "/dev/longhorn/test-raid")
+	c.Assert(i.GetEndpoint(), Equals, "/dev/longhorn/test-raid")
 
-	err = initiator.Resume()
+	err = i.Resume()
 	c.Assert(err, IsNil)
 }
