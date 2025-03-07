@@ -16,6 +16,14 @@ echo "Hugepages configured: $hugepages"
 
 mount --rbind /host/dev /dev
 mount --rbind /host/sys /sys
+
+echo "Checking /dev/hugepages"
+if [ ! -f /dev/hugepages ]; then
+  echo "Creating /dev/hugepages"
+  mkdir -p /dev/hugepages
+  mount -t hugetlbfs nodev /dev/hugepages
+fi
+
 trap "umount /dev && umount /sys" EXIT
 
 
