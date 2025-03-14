@@ -2,10 +2,12 @@ package basic
 
 import (
 	"context"
-	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
-	"github.com/longhorn/go-spdk-helper/pkg/util"
+
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+
+	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
+	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
 func UblkCmd() cli.Command {
@@ -29,7 +31,7 @@ func UblkCreateTargetCmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "cpumask",
-				Usage: "Specify CPU mask for ublk target",
+				Usage: "Specify CPU mask for ublk target. It will use current cpumask in SPDK when user does not specify cpumask option.",
 			},
 			cli.BoolFlag{
 				Name:  "disable-user-copy",
