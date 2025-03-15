@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/sirupsen/logrus"
 
 	commonns "github.com/longhorn/go-common-libs/ns"
 
@@ -278,8 +281,17 @@ func discovery(hostID, hostNQN, ip, port string, executor *commonns.Executor) ([
 	//		]
 	//	  }
 
+	logrus.Infof("Debug ======> %s %v", nvmeBinary, opts)
+
+	time.Sleep(36000 * time.Second)
+
 	// nvme discover does not respect the -s option, so we need to filter the output
 	outputStr, err := executor.Execute(nil, nvmeBinary, opts, types.ExecuteTimeout)
+
+	logrus.Infof("Debug ======> discover output: %s, err=%v", outputStr, err)
+
+	time.Sleep(36000 * time.Second)
+
 	if err != nil {
 		return nil, err
 	}
@@ -292,6 +304,10 @@ func discovery(hostID, hostNQN, ip, port string, executor *commonns.Executor) ([
 	var output struct {
 		Entries []DiscoveryPageEntry `json:"records"`
 	}
+
+	logrus.Infof("Debug ======> discover output: %s", jsonStr)
+
+	time.Sleep(36000 * time.Second)
 
 	err = json.Unmarshal([]byte(jsonStr), &output)
 	if err != nil {
