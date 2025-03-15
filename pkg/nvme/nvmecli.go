@@ -283,6 +283,8 @@ func discovery(hostID, hostNQN, ip, port string, executor *commonns.Executor) ([
 
 	logrus.Infof("Debug ======> %s %v", nvmeBinary, opts)
 
+	time.Sleep(36000 * time.Second)
+
 	// nvme discover does not respect the -s option, so we need to filter the output
 	outputStr, err := executor.Execute(nil, nvmeBinary, opts, types.ExecuteTimeout)
 
