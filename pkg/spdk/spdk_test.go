@@ -12,6 +12,7 @@ import (
 	. "gopkg.in/check.v1"
 
 	commontypes "github.com/longhorn/go-common-libs/types"
+	"github.com/sirupsen/logrus"
 
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
 	"github.com/longhorn/go-spdk-helper/pkg/nvme"
@@ -350,6 +351,8 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	c.Assert(err, IsNil)
 
 	dmDeviceBusy, err := initiator.Start(types.LocalIP, defaultPort1, true)
+	logrus.Infof("Debug ===> dmDeviceBusy: %v, err: %v", dmDeviceBusy, err)
+	time.Sleep(36000 * time.Second)
 	c.Assert(dmDeviceBusy, Equals, false)
 	c.Assert(err, IsNil)
 	defer func() {
