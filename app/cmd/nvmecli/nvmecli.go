@@ -216,12 +216,12 @@ func StartCmd() cli.Command {
 }
 
 func start(c *cli.Context) error {
-	initiator, err := nvme.NewInitiator(c.String("name"), c.String("nqn"), c.GlobalString("host-proc"))
+	initiator, err := nvme.NewInitiator(false, c.String("name"), c.String("nqn"), c.GlobalString("host-proc"))
 	if err != nil {
 		return err
 	}
 
-	if _, err := initiator.Start(c.String("traddr"), c.String("trsvcid"), true); err != nil {
+	if _, err := initiator.StartNvmeTcpInitiator(c.String("traddr"), c.String("trsvcid"), true); err != nil {
 		return err
 	}
 
@@ -257,12 +257,12 @@ func StopCmd() cli.Command {
 }
 
 func stop(c *cli.Context) error {
-	initiator, err := nvme.NewInitiator(c.String("name"), c.String("nqn"), c.GlobalString("host-proc"))
+	initiator, err := nvme.NewInitiator(false, c.String("name"), c.String("nqn"), c.GlobalString("host-proc"))
 	if err != nil {
 		return err
 	}
 
-	if _, err := initiator.Stop(true, false, true); err != nil {
+	if _, err := initiator.Stop(nil, true, false, true); err != nil {
 		return err
 	}
 
