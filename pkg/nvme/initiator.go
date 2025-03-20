@@ -42,7 +42,10 @@ const (
 	waitDeviceInterval   = 1 * time.Second
 )
 
-var iDGenerator IDGenerator
+var (
+	iDGenerator         IDGenerator
+	isUblkTargetCreated = false
+)
 
 type Initiator struct {
 	Name     string
@@ -407,6 +410,13 @@ func (i *Initiator) StartUblkInitiator(spdkClient *client.Client, dmDeviceAndEnd
 			return false, err
 		}
 		defer lock.Unlock()
+	}
+
+	if !isUblkTargetCreated {
+		if err := spdkClient.UblkCreateTarget("", true); err != nil {
+			return false, err
+		}
+		isUblkTargetCreated = true
 	}
 
 	ublkDeviceList, err := spdkClient.UblkGetDisks(0)
