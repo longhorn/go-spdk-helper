@@ -216,7 +216,7 @@ func StartCmd() cli.Command {
 }
 
 func start(c *cli.Context) error {
-	initiator, err := nvme.NewInitiator(false, c.String("name"), c.String("nqn"), c.GlobalString("host-proc"))
+	initiator, err := nvme.NewInitiator(false, c.String("name"), "", c.String("nqn"), c.GlobalString("host-proc"))
 	if err != nil {
 		return err
 	}
@@ -257,7 +257,7 @@ func StopCmd() cli.Command {
 }
 
 func stop(c *cli.Context) error {
-	initiator, err := nvme.NewInitiator(false, c.String("name"), c.String("nqn"), c.GlobalString("host-proc"))
+	initiator, err := nvme.NewInitiator(false, c.String("name"), "", c.String("nqn"), c.GlobalString("host-proc"))
 	if err != nil {
 		return err
 	}
