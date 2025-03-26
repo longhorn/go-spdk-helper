@@ -346,14 +346,14 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 		c.Assert(err, IsNil)
 	}()
 
-	initiator, err := nvme.NewInitiator(raidName, nqn, nvme.HostProc)
+	initiator, err := nvme.NewInitiator(false, raidName, nqn, nvme.HostProc)
 	c.Assert(err, IsNil)
 
-	dmDeviceBusy, err := initiator.Start(types.LocalIP, defaultPort1, true)
+	dmDeviceBusy, err := initiator.StartNvmeTcpInitiator(types.LocalIP, defaultPort1, true)
 	c.Assert(dmDeviceBusy, Equals, false)
 	c.Assert(err, IsNil)
 	defer func() {
-		dmDeviceBusy, err = initiator.Stop(true, true, true)
+		dmDeviceBusy, err = initiator.Stop(nil, true, true, true)
 		c.Assert(dmDeviceBusy, Equals, false)
 		c.Assert(err, IsNil)
 	}()
@@ -571,14 +571,14 @@ func (s *TestSuite) TestSPDKEngineSuspend(c *C) {
 		c.Assert(err, IsNil)
 	}()
 
-	initiator, err := nvme.NewInitiator(raidName, nqn, nvme.HostProc)
+	initiator, err := nvme.NewInitiator(false, raidName, nqn, nvme.HostProc)
 	c.Assert(err, IsNil)
 
-	dmDeviceBusy, err := initiator.Start(types.LocalIP, defaultPort1, true)
+	dmDeviceBusy, err := initiator.StartNvmeTcpInitiator(types.LocalIP, defaultPort1, true)
 	c.Assert(dmDeviceBusy, Equals, false)
 	c.Assert(err, IsNil)
 	defer func() {
-		dmDeviceBusy, err = initiator.Stop(true, true, true)
+		dmDeviceBusy, err = initiator.Stop(nil, true, true, true)
 		c.Assert(dmDeviceBusy, Equals, false)
 		c.Assert(err, IsNil)
 	}()
@@ -590,7 +590,7 @@ func (s *TestSuite) TestSPDKEngineSuspend(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(suspended, Equals, true)
 
-	err = initiator.LoadEndpoint(dmDeviceBusy)
+	err = initiator.LoadEndpointForNvmeTcpFrontend(dmDeviceBusy)
 	c.Assert(err, IsNil)
 	c.Assert(initiator.GetEndpoint(), Equals, "/dev/longhorn/test-raid")
 
