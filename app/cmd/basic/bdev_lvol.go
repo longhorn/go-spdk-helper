@@ -31,6 +31,7 @@ func BdevLvolCmd() cli.Command {
 			BdevLvolResizeCmd(),
 			BdevLvolStartShallowCopyCmd(),
 			BdevLvolCheckShallowCopyCmd(),
+			BdevLvolSetXattrCmd(),
 			BdevLvolGetXattrCmd(),
 			BdevLvolGetFragmapCmd(),
 			BdevLvolRenameCmd(),
@@ -552,6 +553,55 @@ func bdevLvolCheckShallowCopy(c *cli.Context) error {
 	}
 
 	return util.PrintObject(copied)
+}
+
+func BdevLvolSetXattrCmd() cli.Command {
+	return cli.Command{
+		Name: "set-xattr",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "alias",
+				Usage: "The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
+			},
+			cli.StringFlag{
+				Name:  "uuid",
+				Usage: "Specify this or alias",
+			},
+			cli.StringFlag{
+				Name:  "xattr-name",
+				Usage: "Specify the xattr name",
+			},
+			cli.StringFlag{
+				Name:  "xattr-value",
+				Usage: "Specify the xattr value",
+			},
+		},
+		Usage: "set xattr value of a lvol: \"set-xattr --name <LVSTORE NAME>/<LVOL NAME> --xattr-name <XATTR NAME> --xattr-value <XATTR VALUE>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvolSetXattr(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run set bdev lvol xattr command")
+			}
+		},
+	}
+}
+
+func bdevLvolSetXattr(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	name := c.String("alias")
+	if name == "" {
+		name = c.String("uuid")
+	}
+
+	set, err := spdkCli.BdevLvolSetXattr(name, c.String("xattr-name"), c.String("xattr-value"))
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(set)
 }
 
 func BdevLvolGetXattrCmd() cli.Command {
