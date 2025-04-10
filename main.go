@@ -38,6 +38,7 @@ func main() {
 		basic.BdevRaidCmd(),
 		basic.NvmfCmd(),
 		basic.LogCmd(),
+		basic.UblkCmd(),
 
 		advanced.DeviceCmd(),
 		advanced.ExposeCmd(),

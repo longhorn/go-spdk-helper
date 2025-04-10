@@ -8,7 +8,7 @@ import (
 
 	commontypes "github.com/longhorn/go-common-libs/types"
 
-	"github.com/longhorn/go-spdk-helper/pkg/nvme"
+	"github.com/longhorn/go-spdk-helper/pkg/initiator"
 	"github.com/longhorn/go-spdk-helper/pkg/types"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
@@ -66,7 +66,7 @@ func discover(c *cli.Context) error {
 		return err
 	}
 
-	subnqn, err := nvme.DiscoverTarget(c.String("traddr"), c.String("trsvcid"), executor)
+	subnqn, err := initiator.DiscoverTarget(c.String("traddr"), c.String("trsvcid"), executor)
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func connect(c *cli.Context) error {
 		return err
 	}
 
-	controllerName, err := nvme.ConnectTarget(c.String("traddr"), c.String("trsvcid"), c.String("nqn"), executor)
+	controllerName, err := initiator.ConnectTarget(c.String("traddr"), c.String("trsvcid"), c.String("nqn"), executor)
 	if err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func disconnect(c *cli.Context) error {
 		return err
 	}
 
-	return nvme.DisconnectTarget(c.Args().First(), executor)
+	return initiator.DisconnectTarget(c.Args().First(), executor)
 }
 
 func GetCmd() cli.Command {
@@ -172,7 +172,7 @@ func get(c *cli.Context) error {
 		return err
 	}
 
-	getResp, err := nvme.GetDevices(c.String("traddr"), c.String("trsvcid"), c.String("nqn"), executor)
+	getResp, err := initiator.GetDevices(c.String("traddr"), c.String("trsvcid"), c.String("nqn"), executor)
 	if err != nil {
 		return err
 	}
@@ -216,19 +216,22 @@ func StartCmd() cli.Command {
 }
 
 func start(c *cli.Context) error {
-	initiator, err := nvme.NewInitiator(c.String("name"), c.String("nqn"), c.GlobalString("host-proc"))
+	nvmeTCPInfo := &initiator.NVMeTCPInfo{
+		SubsystemNQN: c.String("nqn"),
+	}
+	i, err := initiator.NewInitiator(c.String("name"), c.GlobalString("host-proc"), nvmeTCPInfo, nil)
 	if err != nil {
 		return err
 	}
 
-	if _, err := initiator.Start(c.String("traddr"), c.String("trsvcid"), true); err != nil {
+	if _, err := i.StartNvmeTCPInitiator(c.String("traddr"), c.String("trsvcid"), true); err != nil {
 		return err
 	}
 
 	return util.PrintObject(map[string]string{
-		"controller_name": initiator.GetControllerName(),
-		"namespace_name":  initiator.GetNamespaceName(),
-		"endpoint":        initiator.GetEndpoint(),
+		"controller_name": i.GetControllerName(),
+		"namespace_name":  i.GetNamespaceName(),
+		"endpoint":        i.GetEndpoint(),
 	})
 }
 
@@ -257,12 +260,15 @@ func StopCmd() cli.Command {
 }
 
 func stop(c *cli.Context) error {
-	initiator, err := nvme.NewInitiator(c.String("name"), c.String("nqn"), c.GlobalString("host-proc"))
+	nvmeTCPInfo := &initiator.NVMeTCPInfo{
+		SubsystemNQN: c.String("nqn"),
+	}
+	i, err := initiator.NewInitiator(c.String("name"), c.GlobalString("host-proc"), nvmeTCPInfo, nil)
 	if err != nil {
 		return err
 	}
 
-	if _, err := initiator.Stop(true, false, true); err != nil {
+	if _, err := i.Stop(nil, true, false, true); err != nil {
 		return err
 	}
 
@@ -299,7 +305,7 @@ func flush(c *cli.Context) error {
 		return fmt.Errorf("device path is required")
 	}
 
-	resp, err := nvme.Flush(devicePath, c.String("namespace-id"), executor)
+	resp, err := initiator.Flush(devicePath, c.String("namespace-id"), executor)
 	if err != nil {
 		return err
 	}
