@@ -97,7 +97,7 @@ func ublkGetDisks(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err := spdkCli.UblkGetDisks(c.Int("ublk-id"))
+	resp, err := spdkCli.UblkGetDisks(int32(c.Int("ublk-id")))
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,7 @@ func ublkStartDisk(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	return spdkCli.UblkStartDisk(c.String("bdev-name"), c.Int("ublk-id"), c.Int("queue-depth"), c.Int("num-queues"))
+	return spdkCli.UblkStartDisk(c.String("bdev-name"), int32(c.Int("ublk-id")), int32(c.Int("queue-depth")), int32(c.Int("num-queues")))
 }
 
 func UblkRecoverDiskCmd() cli.Command {
@@ -175,7 +175,7 @@ func ublkRecoverDisk(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	return spdkCli.UblkRecoverDisk(c.String("bdev-name"), c.Int("ublk-id"))
+	return spdkCli.UblkRecoverDisk(c.String("bdev-name"), int32(c.Int("ublk-id")))
 }
 
 func UblkStopDiskCmd() cli.Command {
@@ -202,5 +202,5 @@ func ublkStopDisk(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	return spdkCli.UblkStopDisk(c.Int("ublk-id"))
+	return spdkCli.UblkStopDisk(int32(c.Int("ublk-id")))
 }
