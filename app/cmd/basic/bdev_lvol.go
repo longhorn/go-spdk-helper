@@ -30,13 +30,16 @@ func BdevLvolCmd() cli.Command {
 			BdevLvolDetachParentCmd(),
 			BdevLvolResizeCmd(),
 			BdevLvolStartShallowCopyCmd(),
+			BdevLvolStartRangeShallowCopyCmd(),
 			BdevLvolCheckShallowCopyCmd(),
 			BdevLvolSetXattrCmd(),
 			BdevLvolGetXattrCmd(),
 			BdevLvolGetFragmapCmd(),
 			BdevLvolRenameCmd(),
 			BdevLvolRegisterSnapshotChecksumCmd(),
+			BdevLvolRegisterRangeChecksumsCmd(),
 			BdevLvolGetSnapshotChecksumCmd(),
+			BdevLvolGetRangeChecksumsCmd(),
 			BdevLvolStopSnapshotChecksumCmd(),
 		},
 	}
@@ -520,6 +523,64 @@ func bdevLvolStartShallowCopy(c *cli.Context) error {
 	return util.PrintObject(operationId)
 }
 
+func BdevLvolStartRangeShallowCopyCmd() cli.Command {
+	return cli.Command{
+		Name: "range-shallow-copy-start",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "src-lvol-alias",
+				Usage: "The alias of a snapshot lvol to create a copy from, which is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
+			},
+			cli.StringFlag{
+				Name:  "src-lvol-uuid",
+				Usage: "Specify this or alias",
+			},
+			cli.StringFlag{
+				Name:     "dst-bdev-name",
+				Usage:    "Name of the bdev that acts as destination for the copy",
+				Required: true,
+			},
+			cli.Int64SliceFlag{
+				Name:  "cluster",
+				Usage: "Cluster index to copy/unmap",
+			},
+		},
+		Usage: "start a synchronization of clusters in the list from a read-only logical volume to a bdev, copying data of allocated clusters or unmapping data of unallocated clusters:" +
+			"\"shallow-copy-start --src-lvol-alias <LVSTORE NAME>/<LVOL NAME> --dst-bdev-name <BDEV NAME> --cluster <CLUSTER_INDEX_0> --cluster <CLUSTER_INDEX_1> ... \", or " +
+			"\"shallow-copy --uuid <LVOL UUID> --dst-bdev-name <BDEV NAME> --cluster <CLUSTER_INDEX_0> --cluster <CLUSTER_INDEX_1> ...\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvolStartRangeShallowCopy(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run start range shallow copy bdev lvol command")
+			}
+		},
+	}
+}
+
+func bdevLvolStartRangeShallowCopy(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	srcLvolName := c.String("src-lvol-alias")
+	if srcLvolName == "" {
+		srcLvolName = c.String("src-lvol-uuid")
+	}
+
+	var clusters []uint64
+	clustersArgs := c.Int64Slice("cluster")
+	for _, s := range clustersArgs {
+		clusters = append(clusters, uint64(s))
+	}
+
+	operationId, err := spdkCli.BdevLvolStartRangeShallowCopy(srcLvolName, c.String("dst-bdev-name"), clusters)
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(operationId)
+}
+
 func BdevLvolCheckShallowCopyCmd() cli.Command {
 	return cli.Command{
 		Name: "shallow-copy-check",
@@ -795,6 +856,51 @@ func bdevLvolRegisterSnapshotChecksum(c *cli.Context) error {
 	return util.PrintObject(registered)
 }
 
+func BdevLvolRegisterRangeChecksumsCmd() cli.Command {
+	return cli.Command{
+		Name: "register-range-checksums",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "alias",
+				Usage: "The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>. Specify this or uuid",
+			},
+			cli.StringFlag{
+				Name:  "uuid",
+				Usage: "Specify this or alias",
+			},
+		},
+		Usage: "compute and store a checksum for the whole snapshot and a checksum for every snapshot's cluster data: \"register-range-checksums --alias <LVSTORE NAME>/<LVOL NAME>\"," +
+			" or \"register-range-checksums --uuid <LVOL UUID>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvolRegisterRangeChecksums(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run register range checksums command")
+			}
+		},
+	}
+}
+
+func bdevLvolRegisterRangeChecksums(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	name := c.String("alias")
+	if name == "" {
+		name = c.String("uuid")
+	}
+	if name == "" {
+		return fmt.Errorf("either alias or uuid must be provided")
+	}
+
+	registered, err := spdkCli.BdevLvolRegisterRangeChecksums(name)
+	if err != nil {
+		return fmt.Errorf("failed to register range checksums for snapshot %q: %v", name, err)
+	}
+
+	return util.PrintObject(registered)
+}
+
 func BdevLvolGetSnapshotChecksumCmd() cli.Command {
 	return cli.Command{
 		Name: "get-snapshot-checksum",
@@ -841,6 +947,69 @@ func bdevLvolGetSnapshotChecksum(c *cli.Context) error {
 	}
 
 	return util.PrintObject(checksum)
+}
+
+func BdevLvolGetRangeChecksumsCmd() cli.Command {
+	return cli.Command{
+		Name: "get-range-checksums",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "alias",
+				Usage: "The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>. Specify this or uuid",
+			},
+			cli.StringFlag{
+				Name:  "uuid",
+				Usage: "Specify this or alias",
+			},
+			cli.Uint64Flag{
+				Name:  "cluster-start-index",
+				Usage: "Cluster start index to retrieve checksum for",
+			},
+			cli.Uint64Flag{
+				Name:  "cluster-count",
+				Usage: "Number of clusters to retrieve checksums for",
+			},
+		},
+		Usage: "get a checksum for every snapshot's cluster in the range: \"get-snapshot-checksum --alias <LVSTORE NAME>/<LVOL NAME> --cluster-start-index <CLUSTER_START_INDEX> --cluster-count <CLUSTER_COUNT>\"," +
+			" or \"get-snapshot-checksum --uuid <LVOL UUID> --cluster-start-index <CLUSTER_START_INDEX> --cluster-count <CLUSTER_COUNT>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvolGetRangeChecksums(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run get range checksums command")
+			}
+		},
+	}
+}
+
+func bdevLvolGetRangeChecksums(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	name := c.String("alias")
+	if name == "" {
+		name = c.String("uuid")
+	}
+	if name == "" {
+		return fmt.Errorf("either alias or uuid must be provided")
+	}
+
+	clusterStartIndex := c.Uint64("cluster-start-index")
+	clusterCount := c.Uint64("cluster-count")
+
+	if clusterCount == 0 {
+		return fmt.Errorf("cluster-count must be greater than 0")
+	}
+
+	checksums, err := spdkCli.BdevLvolGetRangeChecksums(name, clusterStartIndex, clusterCount)
+	if err != nil {
+		return fmt.Errorf("failed to get range checksums for snapshot %q: %v", name, err)
+	}
+	if len(checksums) == 0 {
+		return fmt.Errorf("no checksum found for snapshot %q", name)
+	}
+
+	return util.PrintObject(checksums)
 }
 
 func BdevLvolStopSnapshotChecksumCmd() cli.Command {
