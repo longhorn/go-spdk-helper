@@ -98,7 +98,7 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	LaunchTestSPDKTarget(c, ne.Execute)
 	PrepareDeviceFile(c)
 	defer func() {
-		os.RemoveAll(defaultDevicePath)
+		_ = os.RemoveAll(defaultDevicePath)
 	}()
 
 	spdkCli, err := client.NewClient(context.Background())
@@ -410,7 +410,7 @@ func (s *TestSuite) TestSPDKClientMultiThread(c *C) {
 	LaunchTestSPDKTarget(c, ne.Execute)
 	PrepareDeviceFile(c)
 	defer func() {
-		os.RemoveAll(defaultDevicePath)
+		_ = os.RemoveAll(defaultDevicePath)
 	}()
 
 	spdkCli, err := client.NewClient(context.Background())
@@ -497,7 +497,7 @@ func (s *TestSuite) TestSPDKEngineSuspend(c *C) {
 	LaunchTestSPDKTarget(c, ne.Execute)
 	PrepareDeviceFile(c)
 	defer func() {
-		os.RemoveAll(defaultDevicePath)
+		_ = os.RemoveAll(defaultDevicePath)
 	}()
 
 	spdkCli, err := client.NewClient(context.Background())
