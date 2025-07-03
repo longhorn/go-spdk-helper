@@ -49,7 +49,7 @@ func LaunchTestSPDKTarget(c *C, execute func(envs []string, binary string, args 
 
 	if !targetReady {
 		go func() {
-			err := target.StartTarget("", []string{"2>&1 | tee /tmp/spdk_tgt.log"}, 60*time.Minute, execute)
+			err := target.StartTarget("", []string{"2>&1 | tee /tmp/nvmf_tgt.log"}, 60*time.Minute, execute)
 			c.Assert(err, IsNil)
 		}()
 

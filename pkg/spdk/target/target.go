@@ -15,10 +15,10 @@ import (
 const (
 	SPDKScriptsDir  = "scripts"
 	SPDKSetupScript = "setup.sh"
-	SPDKTGTBinary   = "spdk_tgt"
+	SPDKTGTBinary   = "nvmf_tgt"
 )
 
-// SetupTarget setups the spdk_tgt with the given args
+// SetupTarget setups the nvmf_tgt with the given args
 func SetupTarget(spdkDir string, setupArgs []string, execute func(name string, args []string, timeout time.Duration) (string, error)) (err error) {
 	setupArgsInStr := ""
 	for _, arg := range setupArgs {
@@ -46,11 +46,11 @@ func SetupTarget(spdkDir string, setupArgs []string, execute func(name string, a
 	return nil
 }
 
-// StartTarget starts the spdk_tgt with the given args
+// StartTarget starts the nvmf_tgt with the given args
 func StartTarget(spdkDir string, args []string, timeout time.Duration, execute func(envs []string, binary string, args []string, timeout time.Duration) (string, error)) (err error) {
 	if spdkCli, err := client.NewClient(context.Background()); err == nil {
 		if _, err := spdkCli.BdevGetBdevs("", 0); err == nil {
-			logrus.Info("Detected running spdk_tgt, skipped the target starting")
+			logrus.Info("Detected running nvmf_tgt, skipped the target starting")
 			return nil
 		}
 	}

@@ -21,13 +21,13 @@ func Cmd() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:     "spdk-dir",
-				Usage:    "The SPDK directory that contains the setup scripts and binary \"spdk_tgt\"",
+				Usage:    "The SPDK directory that contains the setup scripts and binary \"nvmf_tgt\"",
 				Required: true,
 				Value:    os.Getenv("SPDK_DIR"),
 			},
 			cli.StringSliceFlag{
 				Name:  "opts",
-				Usage: "The spdk_tgt command line flags",
+				Usage: "The nvmf_tgt command line flags",
 			},
 			cli.Int64Flag{
 				Name:  "timeout",

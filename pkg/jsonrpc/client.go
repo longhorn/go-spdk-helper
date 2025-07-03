@@ -57,7 +57,7 @@ func NewClient(ctx context.Context, conn net.Conn) *Client {
 		conn: conn,
 
 		// idCounter is required for each SPDK rpc request.
-		// If it starts from 1, there may be a conflict when there are other clients try to talk with the spdk_tgt.
+		// If it starts from 1, there may be a conflict when there are other clients try to talk with the nvmf_tgt.
 		// Hence, we choose a random small number as the first id counter.
 		// Notice that there is still a chance to encounter the number conflict case.
 		// Since it's not a main blocker or frequently happened case, we won't take too much time on a better solution now.
