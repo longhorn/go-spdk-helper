@@ -50,6 +50,11 @@ func BdevRaidCreateCmd() cli.Command {
 				Usage:    "Names of Nvme bdevs, the input is like \"--base-devs Nvme0n1 --base-devs Nvme1n1\"",
 				Required: true,
 			},
+			cli.StringFlag{
+				Name:     "uuid,u",
+				Usage:    "User defined raid bdev uuid, optional",
+				Required: false,
+			},
 		},
 		Action: func(c *cli.Context) {
 			if err := bdevRaidCreate(c); err != nil {
@@ -65,7 +70,7 @@ func bdevRaidCreate(c *cli.Context) error {
 		return err
 	}
 
-	created, err := spdkCli.BdevRaidCreate(c.String("name"), spdktypes.BdevRaidLevel(c.String("level")), uint32(c.Uint64("strip-size-kb")), c.StringSlice("base-bdevs"))
+	created, err := spdkCli.BdevRaidCreate(c.String("name"), spdktypes.BdevRaidLevel(c.String("level")), uint32(c.Uint64("strip-size-kb")), c.StringSlice("base-bdevs"), c.String("uuid"))
 	if err != nil {
 		return err
 	}
