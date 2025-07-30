@@ -32,6 +32,8 @@ func BdevLvolCmd() cli.Command {
 			BdevLvolStartShallowCopyCmd(),
 			BdevLvolStartRangeShallowCopyCmd(),
 			BdevLvolCheckShallowCopyCmd(),
+			BdevLvolStartDeepCopyCmd(),
+			BdevLvolCheckDeepCopyCmd(),
 			BdevLvolSetXattrCmd(),
 			BdevLvolGetXattrCmd(),
 			BdevLvolGetFragmapCmd(),
@@ -614,6 +616,81 @@ func bdevLvolCheckShallowCopy(c *cli.Context) error {
 	}
 
 	return util.PrintObject(copied)
+}
+
+func BdevLvolStartDeepCopyCmd() cli.Command {
+	return cli.Command{
+		Name: "deep-copy-start",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:     "src-lvol",
+				Usage:    "The alias or uuid of the source lvol to create a copy from",
+				Required: true,
+			},
+			cli.StringFlag{
+				Name:     "dst-bdev",
+				Usage:    "Name of the bdev that acts as destination for the copy",
+				Required: true,
+			},
+		},
+		Usage: "start a copy of allocated clusters from a read-only logical volume or its ancestors to a bdev: \"deep-copy-start --src-lvol <LVSTORE NAME>/<LVOL NAME> --dst-bdev <BDEV NAME>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvolStartDeepCopy(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run start deep copy bdev lvol command")
+			}
+		},
+	}
+}
+
+func bdevLvolStartDeepCopy(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	srcLvolName := c.String("src-lvol")
+
+	operationId, err := spdkCli.BdevLvolStartDeepCopy(srcLvolName, c.String("dst-bdev"))
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(operationId)
+}
+
+func BdevLvolCheckDeepCopyCmd() cli.Command {
+	return cli.Command{
+		Name: "deep-copy-check",
+		Flags: []cli.Flag{
+			cli.UintFlag{
+				Name:     "operation-id",
+				Usage:    "The operation ID returned by the command deep-copy-start",
+				Required: true,
+			},
+		},
+		Usage: "check the status of a previously started deep copy: \"deep-copy-check --operation-id <OPERATION ID>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvolCheckDeepCopy(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run check deep copy bdev lvol command")
+			}
+		},
+	}
+}
+
+func bdevLvolCheckDeepCopy(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	operationId := c.Uint("operation-id")
+
+	deepCopyStatus, err := spdkCli.BdevLvolCheckDeepCopy(uint32(operationId))
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(deepCopyStatus)
 }
 
 func BdevLvolSetXattrCmd() cli.Command {
