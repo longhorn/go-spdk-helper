@@ -39,6 +39,7 @@ func main() {
 		basic.NvmfCmd(),
 		basic.LogCmd(),
 		basic.UblkCmd(),
+		basic.SpdkKillInstanceCmd(),
 
 		advanced.DeviceCmd(),
 		advanced.ExposeCmd(),
