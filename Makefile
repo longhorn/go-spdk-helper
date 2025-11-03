@@ -1,7 +1,7 @@
 TARGETS := $(shell ls scripts)
 export SRC_BRANCH := master
 export SRC_TAG := $(shell git tag --points-at HEAD | head -n 1)
-export CACHEBUST := $(shell date +%s)
+export CACHEBUST := 0
 
 .dapper:
 	@echo Downloading dapper
