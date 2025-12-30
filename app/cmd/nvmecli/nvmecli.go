@@ -224,7 +224,7 @@ func start(c *cli.Context) error {
 		return err
 	}
 
-	if _, err := i.StartNvmeTCPInitiator(c.String("traddr"), c.String("trsvcid"), true); err != nil {
+	if _, err := i.StartNvmeTCPInitiator(c.String("traddr"), c.String("trsvcid"), true, true); err != nil {
 		return err
 	}
 
