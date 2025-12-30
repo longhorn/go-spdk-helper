@@ -352,7 +352,7 @@ func (s *TestSuite) TestSPDKBasic(c *C) {
 	i, err := initiator.NewInitiator(raidName, initiator.HostProc, nvmeTCPInfo, nil)
 	c.Assert(err, IsNil)
 
-	dmDeviceBusy, err := i.StartNvmeTCPInitiator(types.LocalIP, defaultPort1, true)
+	dmDeviceBusy, err := i.StartNvmeTCPInitiator(types.LocalIP, defaultPort1, true, true)
 	c.Assert(dmDeviceBusy, Equals, false)
 	c.Assert(err, IsNil)
 	defer func() {
@@ -579,7 +579,7 @@ func (s *TestSuite) TestSPDKEngineSuspend(c *C) {
 	i, err := initiator.NewInitiator(raidName, initiator.HostProc, nvmeTCPInfo, nil)
 	c.Assert(err, IsNil)
 
-	dmDeviceBusy, err := i.StartNvmeTCPInitiator(types.LocalIP, defaultPort1, true)
+	dmDeviceBusy, err := i.StartNvmeTCPInitiator(types.LocalIP, defaultPort1, true, true)
 	c.Assert(dmDeviceBusy, Equals, false)
 	c.Assert(err, IsNil)
 	defer func() {
