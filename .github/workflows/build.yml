@@ -22,7 +22,7 @@ jobs:
     - name: Run ci
       run: make ci
 
-    - uses: codecov/codecov-action@v4
+    - uses: codecov/codecov-action@v5
       with:
         files: ./coverage.out
         flags: unittests
@@ -44,7 +44,7 @@ jobs:
     - name: Run ci
       run: sudo make ci
 
-    - uses: codecov/codecov-action@v4
+    - uses: codecov/codecov-action@v5
       with:
         files: ./coverage.out
         flags: unittests
