@@ -423,11 +423,9 @@ func (i *Initiator) StartNvmeTCPInitiator(transportAddress, transportServiceID s
 	if err != nil {
 		return dmDeviceIsBusy, errors.Wrapf(err, "failed to discover and connect NVMe/TCP target %s:%s", transportAddress, transportServiceID)
 	}
-	if controllerName == "" {
-		return dmDeviceIsBusy, fmt.Errorf("controller name is empty after discovering and connecting NVMe/TCP target %s:%s", transportAddress, transportServiceID)
+	if err := i.recordConnectedNVMeTCPInfo(subsystemNQN, controllerName); err != nil {
+		return dmDeviceIsBusy, errors.Wrapf(err, "invalid connected NVMe/TCP target state %s:%s", transportAddress, transportServiceID)
 	}
-	i.NVMeTCPInfo.SubsystemNQN = subsystemNQN
-	i.NVMeTCPInfo.ControllerName = controllerName
 
 	i.logger.Info("Loading NVMe/TCP initiator device info")
 	err = i.waitAndLoadNVMeDeviceInfoWithoutLock(transportAddress, transportServiceID)
@@ -636,6 +634,25 @@ func (i *Initiator) waitAndLoadNVMeDeviceInfoWithoutLock(transportAddress, trans
 		return errors.Wrap(err, "failed to load NVMe device info")
 	}
 
+	return nil
+}
+
+func (i *Initiator) recordConnectedNVMeTCPInfo(subsystemNQN, controllerName string) error {
+	if i.NVMeTCPInfo == nil {
+		return fmt.Errorf("nvmeTCPInfo is nil")
+	}
+
+	// Persist the discovered subsystem immediately after a successful connect.
+	// Later reload/load/cleanup paths use SubsystemNQN to locate or disconnect
+	// the NVMe device, so it must stay in sync even if controllerName validation fails.
+	if subsystemNQN != "" {
+		i.NVMeTCPInfo.SubsystemNQN = subsystemNQN
+	}
+	if controllerName == "" {
+		return fmt.Errorf("controller name is empty")
+	}
+
+	i.NVMeTCPInfo.ControllerName = controllerName
 	return nil
 }
 
