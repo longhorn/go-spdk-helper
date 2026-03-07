@@ -179,6 +179,29 @@ func (s *InitiatorTestSuite) TestLoadEndpointForNvmeTcpFrontendNilInfo(c *C) {
 	c.Assert(err.Error(), Matches, ".*nvmeTCPInfo is nil.*")
 }
 
+func (s *InitiatorTestSuite) TestRecordConnectedNVMeTCPInfoUpdatesSubsystemBeforeControllerValidation(c *C) {
+	i := &Initiator{
+		NVMeTCPInfo: &NVMeTCPInfo{
+			SubsystemNQN:   "nqn.old",
+			ControllerName: "nvme-old",
+		},
+	}
+
+	err := i.recordConnectedNVMeTCPInfo("nqn.new", "")
+	c.Assert(err, NotNil)
+	c.Assert(err.Error(), Equals, "controller name is empty")
+	c.Assert(i.NVMeTCPInfo.SubsystemNQN, Equals, "nqn.new")
+	c.Assert(i.NVMeTCPInfo.ControllerName, Equals, "nvme-old")
+}
+
+func (s *InitiatorTestSuite) TestRecordConnectedNVMeTCPInfoNilInfo(c *C) {
+	i := &Initiator{}
+
+	err := i.recordConnectedNVMeTCPInfo("nqn.new", "nvme1")
+	c.Assert(err, NotNil)
+	c.Assert(err.Error(), Equals, "nvmeTCPInfo is nil")
+}
+
 func (s *InitiatorTestSuite) TestIsNamespaceExist(c *C) {
 	i := &Initiator{}
 	c.Assert(i.isNamespaceExist([]string{"nvme0n1"}), Equals, false)
