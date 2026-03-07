@@ -5,7 +5,7 @@ go 1.25.3
 require (
 	github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8
 	github.com/cockroachdb/errors v1.12.0
-	github.com/longhorn/go-common-libs v0.0.0-20260223034035-98eef598b5bd
+	github.com/longhorn/go-common-libs v0.0.0-20260307044012-ae36fc92e72e
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli v1.22.17
 	golang.org/x/sys v0.38.0
