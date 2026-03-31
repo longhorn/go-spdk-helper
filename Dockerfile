@@ -1,9 +1,9 @@
-FROM registry.suse.com/bci/bci-base:16.0
+# syntax=docker/dockerfile:1.22.0
+FROM registry.suse.com/bci/bci-base:16.0 AS base
 
-ARG DAPPER_HOST_ARCH
+ARG TARGETARCH
 ARG http_proxy
 ARG https_proxy
-ENV HOST_ARCH=${DAPPER_HOST_ARCH} ARCH=${DAPPER_HOST_ARCH}
 ARG SRC_BRANCH=master
 ARG SRC_TAG
 ARG CACHEBUST
@@ -11,17 +11,8 @@ ARG CACHEBUST
 ENV GOLANG_VERSION=1.26.1
 ENV GOLANGCI_LINT_VERSION=v2.11.4
 
-# Setup environment
-ENV PATH /go/bin:$PATH
-ENV DAPPER_DOCKER_SOCKET true
-ENV DAPPER_ENV TAG REPO DRONE_REPO DRONE_PULL_REQUEST DRONE_COMMIT_REF
-ENV DAPPER_OUTPUT bin coverage.out
-ENV DAPPER_RUN_ARGS --privileged -v /dev:/host/dev -v /proc:/host/proc -v /sys:/host/sys
-ENV DAPPER_SOURCE /go/src/github.com/longhorn/go-spdk-helper
-ENV SRC_BRANCH ${SRC_BRANCH}
-ENV SRC_TAG ${SRC_TAG}
-
-WORKDIR ${DAPPER_SOURCE}
+ENV ARCH=${TARGETARCH}
+ENV GOFLAGS=-mod=vendor
 
 RUN for i in {1..10}; do \
         zypper -n addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/openSUSE_Factory/system:snappy.repo && \
@@ -37,24 +28,27 @@ RUN for i in {1..10}; do \
 RUN zypper -n install cmake gcc gcc13 unzip tar xsltproc docbook-xsl-stylesheets python3 python3-pip fuse3-devel \
               e2fsprogs xfsprogs util-linux-systemd libcmocka-devel device-mapper procps jq git
 
-# Install Go & tools
-ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm64=arm64 GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
-    GOPATH=/go PATH=/go/bin:/usr/local/go/bin:${PATH} SHELL=/bin/bash
+# Install Go
+ENV GOPATH=/go PATH=/go/bin:/usr/local/go/bin:${PATH} SHELL=/bin/bash
 RUN curl -sSL "https://golang.org/dl/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz" -o /tmp/go.tar.gz \
     && tar -C /usr/local -xzf /tmp/go.tar.gz \
     && rm /tmp/go.tar.gz
 
+# Install golangci-lint
 RUN curl -fsSL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh -o /tmp/install.sh \
     && chmod +x /tmp/install.sh \
     && /tmp/install.sh -b /usr/local/bin ${GOLANGCI_LINT_VERSION}
+
+
+ENV SRC_BRANCH=${SRC_BRANCH}
+ENV SRC_TAG=${SRC_TAG}
 
 RUN git clone https://github.com/longhorn/dep-versions.git -b ${SRC_BRANCH} /usr/src/dep-versions && \
     cd /usr/src/dep-versions && \
     if [ -n "${SRC_TAG}" ] && git show-ref --tags ${SRC_TAG} > /dev/null 2>&1; then \
         echo "Checking out tag ${SRC_TAG}"; \
         cd /usr/src/dep-versions && git checkout tags/${SRC_TAG}; \
-    fi && \
-    echo "dep-versions commit: $(git rev-parse HEAD)"
+    fi
 
 # Build spdk
 RUN export REPO_OVERRIDE="" && \
@@ -73,7 +67,11 @@ RUN export REPO_OVERRIDE="" && \
 
 RUN ldconfig
 
-VOLUME /tmp
-ENV TMPDIR /tmp
-ENTRYPOINT ["./scripts/entry"]
-CMD ["ci"]
+WORKDIR /go/src/github.com/longhorn/go-spdk-helper
+COPY . .
+
+FROM base AS validate
+RUN ./scripts/validate && touch /validate.done
+
+FROM scratch AS ci-artifacts
+COPY --from=validate /validate.done /validate.done

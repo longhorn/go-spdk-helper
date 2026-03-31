@@ -26,12 +26,7 @@ _testmain.go
 
 coverage.out
 
-# Rancher
-.dapper
-trash.lock
-.trash-conf
 bin/
-Dockerfile.dapper[0-9]*
 
 # patch tmp files
 *.orig
@@ -41,3 +36,7 @@ Dockerfile.dapper[0-9]*
 .idea/
 *.iml
 *.ipr
+
+cscope*
+Dockerfile.dapper[0-9]*
+validate.done
