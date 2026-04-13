@@ -56,8 +56,20 @@ func (c *Client) DeleteDevice(bdevAioName, lvsName string) (err error) {
 }
 
 // StartExposeBdev exposes the bdev with the given nqn, bdevName, nguid, ip, and port.
+// The listener ANA state is set to "optimized" by default.
 func (c *Client) StartExposeBdev(nqn, bdevName, nguid, ip, port string) error {
-	logrus.Infof("Exposing bdev with nqn %v, bdevName %v, nguid %v, ip %v, port %v", nqn, bdevName, nguid, ip, port)
+	return c.StartExposeBdevWithANAState(nqn, bdevName, nguid, "", ip, port, spdktypes.NvmfSubsystemListenerAnaStateOptimized, 0, 0)
+}
+
+// StartExposeBdevWithANAState exposes the bdev with the given nqn, bdevName,
+// nguid, nsUUID, ip, port, initial ANA state, and optional CNTLID range.
+// nsUUID sets a stable namespace UUID so the Linux kernel can aggregate
+// controllers into the same NVMe multipath group. minCntlid/maxCntlid assign
+// a unique controller-ID range per engine to avoid "Duplicate cntlid" errors
+// when multiple targets share one subsystem NQN. Pass 0 for defaults.
+func (c *Client) StartExposeBdevWithANAState(nqn, bdevName, nguid, nsUUID, ip, port string, anaState spdktypes.NvmfSubsystemListenerAnaState, minCntlid, maxCntlid uint16) error {
+	logrus.Infof("Exposing bdev with nqn %v, bdevName %v, nguid %v, nsUUID %v, ip %v, port %v, anaState %v, minCntlid %v, maxCntlid %v",
+		nqn, bdevName, nguid, nsUUID, ip, port, anaState, minCntlid, maxCntlid)
 
 	nvmfTransportList, err := c.NvmfGetTransports("", "")
 	if err != nil {
@@ -70,18 +82,24 @@ func (c *Client) StartExposeBdev(nqn, bdevName, nguid, ip, port string) error {
 		}
 	}
 
-	logrus.Infof("Creating subsystem with nqn %v", nqn)
-	if _, err := c.NvmfCreateSubsystem(nqn); err != nil {
+	logrus.Infof("Creating subsystem with nqn %v, minCntlid %v, maxCntlid %v", nqn, minCntlid, maxCntlid)
+	if _, err := c.NvmfCreateSubsystemWithCntlid(nqn, minCntlid, maxCntlid); err != nil {
 		return err
 	}
 
-	logrus.Infof("Adding NVMe namespace with bdev name %v and nguid %v to subsystem with nqn %v", bdevName, nguid, nqn)
-	if _, err := c.NvmfSubsystemAddNs(nqn, bdevName, nguid); err != nil {
+	logrus.Infof("Adding NVMe namespace with bdev name %v, nguid %v, uuid %v to subsystem with nqn %v", bdevName, nguid, nsUUID, nqn)
+	if _, err := c.NvmfSubsystemAddNsWithUUID(nqn, bdevName, nguid, nsUUID); err != nil {
 		return err
 	}
 
 	logrus.Infof("Adding listener with transport address %v, transport service id %v, transport type %v, address family %v to subsystem with nqn %v", ip, port, spdktypes.NvmeTransportTypeTCP, spdktypes.NvmeAddressFamilyIPv4, nqn)
 	if _, err := c.NvmfSubsystemAddListener(nqn, ip, port, spdktypes.NvmeTransportTypeTCP, spdktypes.NvmeAddressFamilyIPv4); err != nil {
+		return err
+	}
+
+	logrus.Infof("Setting listener ANA state to %v for subsystem with nqn %v", anaState, nqn)
+	if _, err := c.NvmfSubsystemListenerSetANAState(nqn, ip, port, spdktypes.NvmeTransportTypeTCP,
+		spdktypes.NvmeAddressFamilyIPv4, anaState, spdktypes.DefaultNvmfANAGroupID); err != nil {
 		return err
 	}
 
