@@ -46,7 +46,29 @@ func TestNvmfSubsystemNamespaceUnmarshalNumericANAGroupID(t *testing.T) {
 		t.Fatalf("failed to unmarshal namespace: %v", err)
 	}
 
-	if namespace.Anagrpid != NvmfANAGroupID("1") {
-		t.Fatalf("expected namespace anagrpid %q, got %q", NvmfANAGroupID("1"), namespace.Anagrpid)
+	if namespace.Anagrpid != "1" {
+		t.Fatalf("expected namespace anagrpid %q, got %q", "1", namespace.Anagrpid)
+	}
+}
+
+func TestNvmfSubsystemNamespaceUnmarshalStringANAGroupID(t *testing.T) {
+	input := []byte(`{"nsid":1,"bdev_name":"volume-bdev","anagrpid":"3"}`)
+
+	var namespace NvmfSubsystemNamespace
+	if err := json.Unmarshal(input, &namespace); err != nil {
+		t.Fatalf("failed to unmarshal namespace: %v", err)
+	}
+
+	if namespace.Anagrpid != "3" {
+		t.Fatalf("expected namespace anagrpid %q, got %q", "3", namespace.Anagrpid)
+	}
+}
+
+func TestNvmfSubsystemNamespaceBackwardCompatible(t *testing.T) {
+	// Verify the field is a plain string so old callers can use it directly
+	ns := NvmfSubsystemNamespace{BdevName: "bdev0", Anagrpid: "1"}
+	s := ns.Anagrpid
+	if s != "1" {
+		t.Fatalf("expected %q, got %q", "1", s)
 	}
 }
