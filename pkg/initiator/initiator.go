@@ -771,10 +771,21 @@ func (i *Initiator) discoverAndConnectNVMeTCPTarget(transportAddress, transportS
 		func() error {
 			var e error
 
-			i.logger.Infof("Discovering NVMe/TCP target %s:%s", transportAddress, transportServiceID)
-			subsystemNQN, e = DiscoverTarget(transportAddress, transportServiceID, i.executor)
-			if e != nil {
-				return errors.Wrapf(e, "discover NVMe/TCP target %s:%s failed", transportAddress, transportServiceID)
+			// If SubsystemNQN is already known (e.g. for backup or rebuild
+			// initiators), skip the discovery step and connect directly.
+			// This avoids "failed to add controller" errors from nvme-cli 2.x
+			// when the kernel already has NVMe-oF connections to the same
+			// target address with the same hostNQN/hostID.
+			if i.NVMeTCPInfo.SubsystemNQN != "" {
+				subsystemNQN = i.NVMeTCPInfo.SubsystemNQN
+				i.logger.Infof("Using pre-configured SubsystemNQN %s for target %s:%s, skipping discovery",
+					subsystemNQN, transportAddress, transportServiceID)
+			} else {
+				i.logger.Infof("Discovering NVMe/TCP target %s:%s", transportAddress, transportServiceID)
+				subsystemNQN, e = DiscoverTarget(transportAddress, transportServiceID, i.executor)
+				if e != nil {
+					return errors.Wrapf(e, "discover NVMe/TCP target %s:%s failed", transportAddress, transportServiceID)
+				}
 			}
 
 			i.logger.Infof("Connecting to NVMe/TCP target %s:%s with subsystemNQN %s", transportAddress, transportServiceID, subsystemNQN)
