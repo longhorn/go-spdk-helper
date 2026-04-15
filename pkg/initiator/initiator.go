@@ -249,6 +249,8 @@ func (i *Initiator) connectNVMeTCPPathWithoutLock(transportAddress, transportSer
 		if reused {
 			return nil
 		}
+	} else {
+		i.logger.WithError(err).Debugf("Failed to reuse existing NVMe/TCP path for %s:%s, will attempt fresh connect", transportAddress, transportServiceID)
 	}
 
 	// For switchover flows the caller may intentionally keep the newly
@@ -1037,6 +1039,8 @@ func selectControllerForNVMeDevice(device Device, transportAddress, transportSer
 		}
 	}
 
+	logrus.Warnf("No NVMe controller matched address %s:%s or recorded name %q for subsystem %s, falling back to first controller %s",
+		transportAddress, transportServiceID, recordedControllerName, device.SubsystemNQN, device.Controllers[0].Controller)
 	return device.Controllers[0], nil
 }
 
