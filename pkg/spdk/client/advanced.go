@@ -56,9 +56,36 @@ func (c *Client) DeleteDevice(bdevAioName, lvsName string) (err error) {
 }
 
 // StartExposeBdev exposes the bdev with the given nqn, bdevName, nguid, ip, and port.
-// The listener ANA state is set to "optimized" by default.
 func (c *Client) StartExposeBdev(nqn, bdevName, nguid, ip, port string) error {
-	return c.StartExposeBdevWithANAState(nqn, bdevName, nguid, "", ip, port, spdktypes.NvmfSubsystemListenerAnaStateOptimized, 0, 0)
+	logrus.Infof("Exposing bdev with nqn %v, bdevName %v, nguid %v, ip %v, port %v", nqn, bdevName, nguid, ip, port)
+
+	nvmfTransportList, err := c.NvmfGetTransports("", "")
+	if err != nil {
+		return err
+	}
+	if nvmfTransportList != nil && len(nvmfTransportList) == 0 {
+		logrus.Infof("Creating transport with type %v", spdktypes.NvmeTransportTypeTCP)
+		if _, err := c.NvmfCreateTransport(spdktypes.NvmeTransportTypeTCP); err != nil && !jsonrpc.IsJSONRPCRespErrorTransportTypeAlreadyExists(err) {
+			return err
+		}
+	}
+
+	logrus.Infof("Creating subsystem with nqn %v", nqn)
+	if _, err := c.NvmfCreateSubsystem(nqn); err != nil {
+		return err
+	}
+
+	logrus.Infof("Adding NVMe namespace with bdev name %v and nguid %v to subsystem with nqn %v", bdevName, nguid, nqn)
+	if _, err := c.NvmfSubsystemAddNs(nqn, bdevName, nguid); err != nil {
+		return err
+	}
+
+	logrus.Infof("Adding listener with transport address %v, transport service id %v, transport type %v, address family %v to subsystem with nqn %v", ip, port, spdktypes.NvmeTransportTypeTCP, spdktypes.NvmeAddressFamilyIPv4, nqn)
+	if _, err := c.NvmfSubsystemAddListener(nqn, ip, port, spdktypes.NvmeTransportTypeTCP, spdktypes.NvmeAddressFamilyIPv4); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // StartExposeBdevWithANAState exposes the bdev with the given nqn, bdevName,
