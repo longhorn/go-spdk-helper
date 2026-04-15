@@ -172,13 +172,13 @@ func (i *Initiator) ConnectNVMeTCPTarget(ip, port, nqn string) (string, error) {
 	return ConnectTarget(ip, port, nqn, i.executor)
 }
 
-// ConnectNVMeTCPPath connects an additional NVMe/TCP path without touching dm-linear.
-// It is intended for native multipath switchover flows where dm-linear must remain
-// intact for later snapshot suspend/resume operations.
-func (i *Initiator) ConnectNVMeTCPPath(transportAddress, transportServiceID string) (err error) {
+// executeNVMeTCPPathOp validates initiator state, acquires the file lock, and
+// delegates to fn. It is the shared skeleton for ConnectNVMeTCPPath and
+// ReconnectNVMeTCPPath.
+func (i *Initiator) executeNVMeTCPPathOp(transportAddress, transportServiceID, opName string, fn func(string, string) error) (err error) {
 	defer func() {
 		if err != nil {
-			err = errors.Wrapf(err, "failed to connect NVMe/TCP path for initiator %s", i.Name)
+			err = errors.Wrapf(err, "failed to %s NVMe/TCP path for initiator %s", opName, i.Name)
 		}
 	}()
 
@@ -197,35 +197,21 @@ func (i *Initiator) ConnectNVMeTCPPath(transportAddress, transportServiceID stri
 		defer lock.Unlock()
 	}
 
-	return i.connectNVMeTCPPathWithoutLock(transportAddress, transportServiceID)
+	return fn(transportAddress, transportServiceID)
+}
+
+// ConnectNVMeTCPPath connects an additional NVMe/TCP path without touching dm-linear.
+// It is intended for native multipath switchover flows where dm-linear must remain
+// intact for later snapshot suspend/resume operations.
+func (i *Initiator) ConnectNVMeTCPPath(transportAddress, transportServiceID string) error {
+	return i.executeNVMeTCPPathOp(transportAddress, transportServiceID, "connect", i.connectNVMeTCPPathWithoutLock)
 }
 
 // ReconnectNVMeTCPPath refreshes the current NVMe/TCP initiator state for the
 // specified path without touching dm-linear. It reuses an existing matching
 // path when present and otherwise establishes a new multipath connection.
-func (i *Initiator) ReconnectNVMeTCPPath(transportAddress, transportServiceID string) (err error) {
-	defer func() {
-		if err != nil {
-			err = errors.Wrapf(err, "failed to reconnect NVMe/TCP path for initiator %s", i.Name)
-		}
-	}()
-
-	if i.NVMeTCPInfo == nil {
-		return fmt.Errorf("nvmeTCPInfo is nil")
-	}
-	if transportAddress == "" || transportServiceID == "" {
-		return fmt.Errorf("invalid transportAddress %s and transportServiceID %s for initiator %s", transportAddress, transportServiceID, i.Name)
-	}
-
-	if i.hostProc != "" {
-		lock, err := i.newLock()
-		if err != nil {
-			return err
-		}
-		defer lock.Unlock()
-	}
-
-	return i.ensureNVMeTCPPathWithoutLock(transportAddress, transportServiceID)
+func (i *Initiator) ReconnectNVMeTCPPath(transportAddress, transportServiceID string) error {
+	return i.executeNVMeTCPPathOp(transportAddress, transportServiceID, "reconnect", i.ensureNVMeTCPPathWithoutLock)
 }
 
 // DisconnectNVMeTCPTarget disconnects a target
