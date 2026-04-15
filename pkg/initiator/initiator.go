@@ -717,11 +717,21 @@ func (i *Initiator) ensureNVMeTCPPathWithoutLock(transportAddress, transportServ
 	if err != nil {
 		return err
 	}
+
+	cleanupConnection := func(reason error) {
+		i.logger.WithError(reason).Warnf("Cleaning up orphaned NVMe/TCP connection for %s at %s:%s after post-connect failure", subsystemNQN, transportAddress, transportServiceID)
+		if disconnectErr := DisconnectController(subsystemNQN, transportAddress, transportServiceID, i.executor); disconnectErr != nil {
+			i.logger.WithError(disconnectErr).Warnf("Failed to disconnect orphaned NVMe/TCP controller for %s at %s:%s", subsystemNQN, transportAddress, transportServiceID)
+		}
+	}
+
 	if err := i.recordConnectedNVMeTCPInfo(subsystemNQN, controllerName); err != nil {
+		cleanupConnection(err)
 		*i.NVMeTCPInfo = previousInfo
 		return err
 	}
 	if err := i.waitAndLoadNVMeDeviceInfoWithoutLock(transportAddress, transportServiceID); err != nil {
+		cleanupConnection(err)
 		*i.NVMeTCPInfo = previousInfo
 		return err
 	}
