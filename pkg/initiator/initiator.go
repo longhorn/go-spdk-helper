@@ -925,39 +925,49 @@ func (i *Initiator) WaitForControllerLive(transportAddress, transportServiceID s
 
 	nqn := i.NVMeTCPInfo.SubsystemNQN
 
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		subsystems, err := GetSubsystems(i.executor)
-		if err != nil {
-			i.logger.WithError(err).Warn("Failed to list subsystems while waiting for controller live state")
-			if attempt < maxAttempts {
-				time.Sleep(retryInterval)
+	err := retry.Do(
+		func() error {
+			subsystems, err := GetSubsystems(i.executor)
+			if err != nil {
+				return errors.Wrap(err, "failed to list subsystems while waiting for controller live state")
 			}
-			continue
-		}
 
-		for _, sys := range subsystems {
-			if sys.NQN != nqn {
-				continue
-			}
-			for _, path := range sys.Paths {
-				controllerIP, controllerPort := GetIPAndPortFromControllerAddress(path.Address)
-				if controllerIP == transportAddress && controllerPort == transportServiceID {
-					if path.State == "live" {
-						i.logger.Infof("NVMe controller %s for %s:%s reached live state after %d attempt(s)",
-							path.Name, transportAddress, transportServiceID, attempt)
-						return nil
+			for _, sys := range subsystems {
+				if sys.NQN != nqn {
+					continue
+				}
+				for _, path := range sys.Paths {
+					controllerIP, controllerPort := GetIPAndPortFromControllerAddress(path.Address)
+					if controllerIP == transportAddress && controllerPort == transportServiceID {
+						if path.State == "live" {
+							i.logger.Infof("NVMe controller %s for %s:%s reached live state",
+								path.Name, transportAddress, transportServiceID)
+							return nil
+						}
 					}
 				}
 			}
-		}
 
-		if attempt < maxAttempts {
-			time.Sleep(retryInterval)
-		}
+			return fmt.Errorf("NVMe controller for %s:%s is not live yet", transportAddress, transportServiceID)
+		},
+		retry.Attempts(uint(maxAttempts)),
+		retry.Delay(retryInterval),
+		retry.DelayType(retry.FixedDelay),
+		retry.LastErrorOnly(true),
+		retry.OnRetry(func(n uint, err error) {
+			i.logger.WithError(err).Warnf(
+				"Retrying waiting for NVMe controller live: addr=%s:%s attempt=%d/%d next_wait=%s",
+				transportAddress, transportServiceID, n+1, maxAttempts, retryInterval,
+			)
+		}),
+	)
+
+	if err != nil {
+		return fmt.Errorf("timed out waiting for NVMe controller to become live for %s:%s after %d attempts",
+			transportAddress, transportServiceID, maxAttempts)
 	}
 
-	return fmt.Errorf("timed out waiting for NVMe controller to become live for %s:%s after %d attempts",
-		transportAddress, transportServiceID, maxAttempts)
+	return nil
 }
 
 // GetDevice returns the device information
