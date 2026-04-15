@@ -102,13 +102,41 @@ type NvmfSubsystemListenAddress struct {
 }
 
 type NvmfSubsystemNamespace struct {
-	Nsid     uint32         `json:"nsid,omitempty"`
-	BdevName string         `json:"bdev_name"`
-	Nguid    string         `json:"nguid,omitempty"`
-	Eui64    string         `json:"eui64,omitempty"`
-	UUID     string         `json:"uuid,omitempty"`
-	Anagrpid NvmfANAGroupID `json:"anagrpid,omitempty"`
-	PtplFile string         `json:"ptpl_file,omitempty"`
+	Nsid     uint32 `json:"nsid,omitempty"`
+	BdevName string `json:"bdev_name"`
+	Nguid    string `json:"nguid,omitempty"`
+	Eui64    string `json:"eui64,omitempty"`
+	UUID     string `json:"uuid,omitempty"`
+	Anagrpid string `json:"anagrpid,omitempty"`
+	PtplFile string `json:"ptpl_file,omitempty"`
+}
+
+// UnmarshalJSON handles SPDK returning anagrpid as either a string or a number.
+func (ns *NvmfSubsystemNamespace) UnmarshalJSON(data []byte) error {
+	type Alias NvmfSubsystemNamespace
+	aux := &struct {
+		Anagrpid json.RawMessage `json:"anagrpid,omitempty"`
+		*Alias
+	}{
+		Alias: (*Alias)(ns),
+	}
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+	if len(aux.Anagrpid) > 0 && string(aux.Anagrpid) != "null" {
+		var s string
+		if err := json.Unmarshal(aux.Anagrpid, &s); err == nil {
+			ns.Anagrpid = s
+		} else {
+			var n uint32
+			if err := json.Unmarshal(aux.Anagrpid, &n); err == nil {
+				ns.Anagrpid = strconv.FormatUint(uint64(n), 10)
+			} else {
+				return fmt.Errorf("failed to unmarshal anagrpid: %s", string(aux.Anagrpid))
+			}
+		}
+	}
+	return nil
 }
 
 type NvmfSubsystemHost struct {
