@@ -787,14 +787,21 @@ func (i *Initiator) discoverAndConnectNVMeTCPTarget(transportAddress, transportS
 			i.logger.Infof("Connecting to NVMe/TCP target %s:%s with subsystemNQN %s", transportAddress, transportServiceID, subsystemNQN)
 			controllerName, e = ConnectTarget(transportAddress, transportServiceID, subsystemNQN, i.executor)
 			if e != nil {
-				connectErr := errors.Wrapf(e, "connect NVMe/TCP target %s:%s (nqn=%s) failed", transportAddress, transportServiceID, subsystemNQN)
-				// "already connected" is a permanent condition that will not
-				// resolve with retries. Return immediately so the caller can
-				// handle it (e.g. reload initiator state for multipath).
+				// "already connected" means the path is present in the kernel
+				// but GetDevices() couldn't find a namespace device yet (e.g.
+				// multipath ANA inaccessible). Since the goal is to ensure
+				// the path is connected, verify via subsystem listing and
+				// treat it as success.
 				if strings.Contains(strings.ToLower(e.Error()), "already connected") {
-					return retry.Unrecoverable(connectErr)
+					i.logger.Infof("NVMe/TCP target %s:%s is already connected, verifying controller via subsystem listing", transportAddress, transportServiceID)
+					if name, verifyErr := i.findControllerBySubsystem(subsystemNQN, transportAddress, transportServiceID); verifyErr == nil {
+						controllerName = name
+						i.logger.Infof("Verified existing controller %s for %s:%s", controllerName, transportAddress, transportServiceID)
+						return nil
+					}
+					return retry.Unrecoverable(errors.Wrapf(e, "connect NVMe/TCP target %s:%s (nqn=%s) failed", transportAddress, transportServiceID, subsystemNQN))
 				}
-				return connectErr
+				return errors.Wrapf(e, "connect NVMe/TCP target %s:%s (nqn=%s) failed", transportAddress, transportServiceID, subsystemNQN)
 			}
 
 			return nil
@@ -816,6 +823,29 @@ func (i *Initiator) discoverAndConnectNVMeTCPTarget(transportAddress, transportS
 	}
 
 	return subsystemNQN, controllerName, nil
+}
+
+// findControllerBySubsystem looks up the controller name for the given NQN
+// and transport address via subsystem listing. This is used as a fallback
+// when ConnectTarget reports "already connected" but GetDevices cannot find
+// a namespace device (e.g. multipath ANA inaccessible state).
+func (i *Initiator) findControllerBySubsystem(nqn, transportAddress, transportServiceID string) (string, error) {
+	subsystems, err := GetSubsystems(i.executor)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to list subsystems")
+	}
+	for _, sys := range subsystems {
+		if sys.NQN != nqn {
+			continue
+		}
+		for _, path := range sys.Paths {
+			controllerIP, controllerPort := GetIPAndPortFromControllerAddress(path.Address)
+			if controllerIP == transportAddress && controllerPort == transportServiceID {
+				return path.Name, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("no controller found for subsystem %s at %s:%s", nqn, transportAddress, transportServiceID)
 }
 
 // Stop stops the NVMe/TCP initiator
