@@ -1151,7 +1151,17 @@ func (c *Client) NvmfGetTransports(trtype spdktypes.NvmeTransportType, tgtName s
 //
 //	"nqn": Required. Subsystem NQN.
 func (c *Client) NvmfCreateSubsystem(nqn string) (created bool, err error) {
-	return c.NvmfCreateSubsystemWithCntlid(nqn, 0, 0)
+	req := spdktypes.NvmfCreateSubsystemRequest{
+		Nqn:          nqn,
+		AllowAnyHost: true,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("nvmf_create_subsystem", req)
+	if err != nil {
+		return false, err
+	}
+
+	return created, json.Unmarshal(cmdOutput, &created)
 }
 
 // NvmfCreateSubsystemWithCntlid constructs an NVMe over Fabrics target

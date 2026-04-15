@@ -162,6 +162,13 @@ const (
 	NvmfSubsystemListenerAnaStateOptimized    = "optimized"
 	NvmfSubsystemListenerAnaStateNonOptimized = "non_optimized"
 	NvmfSubsystemListenerAnaStateInaccessible = "inaccessible"
+
+	// Deprecated: NvmfSubsystemListenerAnaStatePersistentLoss is kept for
+	// backward compatibility with older Longhorn versions that reference it.
+	NvmfSubsystemListenerAnaStatePersistentLoss = "persistent_loss"
+	// Deprecated: NvmfSubsystemListenerAnaStateChange is kept for backward
+	// compatibility with older Longhorn versions that reference it.
+	NvmfSubsystemListenerAnaStateChange = "change"
 )
 
 type NvmfSubsystemListener struct {
