@@ -70,7 +70,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/longhorn/go-common-libs v0.0.0-20260328134226-cafa38fc4ce8
+# github.com/longhorn/go-common-libs v0.0.0-20260418032157-c135767e4855
 ## explicit; go 1.25.0
 github.com/longhorn/go-common-libs/exec
 github.com/longhorn/go-common-libs/io
@@ -131,3 +131,6 @@ golang.org/x/text/unicode/norm
 # gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 ## explicit; go 1.11
 gopkg.in/check.v1
+# k8s.io/apimachinery v0.28.15
+## explicit; go 1.20
+k8s.io/apimachinery/pkg/util/version
