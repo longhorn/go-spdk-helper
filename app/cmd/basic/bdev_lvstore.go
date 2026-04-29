@@ -2,6 +2,7 @@ package basic
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -20,6 +21,7 @@ func BdevLvstoreCmd() cli.Command {
 			BdevLvstoreDeleteCmd(),
 			BdevLvstoreGetCmd(),
 			BdevLvstoreRenameCmd(),
+			BdevLvstoreGrowCmd(),
 			BdevLvstoreGetLvolsCmd(),
 		},
 	}
@@ -176,6 +178,51 @@ func bdevLvstoreGet(c *cli.Context) error {
 	}
 
 	return util.PrintObject(bdevLvstoreGetResp)
+}
+
+func BdevLvstoreGrowCmd() cli.Command {
+	return cli.Command{
+		Name: "grow",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "lvs-name",
+				Usage: "Specify this or uuid",
+			},
+			cli.StringFlag{
+				Name:  "uuid",
+				Usage: "Specify this or lvs-name",
+			},
+		},
+		Usage: "grow a bdev lvstore to fill the underlying bdev after it has been expanded: \"grow --lvs-name <LVSTORE NAME>\" or \"grow --uuid <UUID>\"",
+		Action: func(c *cli.Context) {
+			if err := bdevLvstoreGrow(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run grow bdev lvstore command")
+			}
+		},
+	}
+}
+
+func bdevLvstoreGrow(c *cli.Context) error {
+	lvsName := c.String("lvs-name")
+	uuid := c.String("uuid")
+	if lvsName == "" && uuid == "" {
+		return fmt.Errorf("either --lvs-name or --uuid must be provided")
+	}
+	if lvsName != "" && uuid != "" {
+		return fmt.Errorf("only one of --lvs-name or --uuid may be provided")
+	}
+
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	grown, err := spdkCli.BdevLvolGrowLvstore(lvsName, uuid)
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(grown)
 }
 
 func BdevLvstoreGetLvolsCmd() cli.Command {
