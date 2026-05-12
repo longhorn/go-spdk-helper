@@ -1015,6 +1015,23 @@ func (c *Client) BdevNvmeDetachController(name string) (detached bool, err error
 	return detached, json.Unmarshal(cmdOutput, &detached)
 }
 
+// BdevNvmeResetController resets an NVMe controller. The associated bdevs
+// remain registered; qpairs are destroyed and recreated.
+//
+//	"name": Name of the NVMe controller. e.g., "Nvme0"
+func (c *Client) BdevNvmeResetController(name string) (success bool, err error) {
+	req := spdktypes.BdevNvmeResetControllerRequest{
+		Name: name,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_nvme_reset_controller", req)
+	if err != nil {
+		return false, err
+	}
+
+	return success, json.Unmarshal(cmdOutput, &success)
+}
+
 // BdevNvmeGetControllers gets information about bdev NVMe controllers.
 //
 //	"name": Name of the NVMe controller. Optional. If this is not specified, the function will list all NVMe controllers.
