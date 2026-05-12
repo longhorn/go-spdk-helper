@@ -116,3 +116,22 @@ func TestNvmfSubsystemListenerSetANAStateDefaultsANAGroup(t *testing.T) {
 		true,
 	)
 }
+
+func TestBdevNvmeResetControllerSendsCorrectMethod(t *testing.T) {
+	runJSONRPCRequestTest(t,
+		func(cli *Client) error {
+			_, err := cli.BdevNvmeResetController("Nvme0")
+			return err
+		},
+		func(t *testing.T, method string, params map[string]interface{}) {
+			t.Helper()
+			if method != "bdev_nvme_reset_controller" {
+				t.Fatalf("unexpected method %s", method)
+			}
+			if params["name"] != "Nvme0" {
+				t.Fatalf("expected name Nvme0, got %#v", params["name"])
+			}
+		},
+		true,
+	)
+}

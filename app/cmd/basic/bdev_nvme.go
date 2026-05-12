@@ -2,6 +2,7 @@ package basic
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -19,6 +20,7 @@ func BdevNvmeCmd() cli.Command {
 		Subcommands: []cli.Command{
 			BdevNvmeAttachControllerCmd(),
 			BdevNvmeDetachControllerCmd(),
+			BdevNvmeResetControllerCmd(),
 			BdevNvmeGetControllersCmd(),
 			BdevNvmeGetCmd(),
 			BdevNvmeSetOptionsCmd(),
@@ -135,6 +137,37 @@ func bdevNvmeDetachController(c *cli.Context) error {
 	}
 
 	return util.PrintObject(detached)
+}
+
+func BdevNvmeResetControllerCmd() cli.Command {
+	return cli.Command{
+		Name:  "controller-reset",
+		Usage: "reset a nvme controller: controller-reset <CONTROLLER NAME>",
+		Action: func(c *cli.Context) {
+			if err := bdevNvmeResetController(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run reset nvme controller command")
+			}
+		},
+	}
+}
+
+func bdevNvmeResetController(c *cli.Context) error {
+	name := c.Args().First()
+	if name == "" {
+		return fmt.Errorf("controller name is required")
+	}
+
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	success, err := spdkCli.BdevNvmeResetController(name)
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(success)
 }
 
 func BdevNvmeGetControllersCmd() cli.Command {
