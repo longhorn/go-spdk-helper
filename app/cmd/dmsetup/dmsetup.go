@@ -188,7 +188,7 @@ func RemoveCmd() cli.Command {
 		Usage: "Remove the device mapper device with the given name: remove --force --deferred <device name>",
 		Action: func(c *cli.Context) {
 			if err := remove(c); err != nil {
-				logrus.WithError(err).Fatalf("Failed to create device %v with table %v", c.Args().First(), c.String("table"))
+				logrus.WithError(err).Fatalf("Failed to remove device mapper device %v", c.Args().First())
 			}
 		},
 	}

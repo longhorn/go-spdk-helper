@@ -1227,8 +1227,49 @@ func (i *Initiator) removeLinearDmDevice(force, deferred bool) error {
 		return err
 	}
 
-	i.logger.Info("Removing linear dm device")
-	return util.DmsetupRemove(i.Name, force, deferred, i.executor)
+	i.logger.Infof("Removing linear dm device %v", dmDevPath)
+	if err := util.DmsetupRemove(dmDevPath, force, deferred, i.executor); err != nil {
+		i.logger.WithError(err).Debugf("Failed to remove linear dm device: %v", dmDevPath)
+		if isRemoveDmDevNotFoundError(err) {
+			return nil
+		}
+		return err
+	}
+
+	// Encrypted volume will create another dm device with "-encrypted" suffix,
+	// and this dm device will block the removal of the linear dm device until it's removed.
+	// So we need to remove the encrypted dm device after the linear dm device,
+	encryptedDmDevPath := fmt.Sprintf("%s-encrypted", dmDevPath)
+	isEncryptedDmDevExist := true
+	if _, err := os.Stat(encryptedDmDevPath); err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+		isEncryptedDmDevExist = false
+	}
+	if isEncryptedDmDevExist {
+		i.logger.Infof("Removing encrypted dm device %v", encryptedDmDevPath)
+		if err := util.DmsetupRemove(encryptedDmDevPath, true, true, i.executor); err != nil {
+			i.logger.WithError(err).Debugf("Failed to remove encrypted dm device: %s", encryptedDmDevPath)
+			if isRemoveDmDevNotFoundError(err) {
+				return nil
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+func isRemoveDmDevNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	errMsg := strings.ToLower(err.Error())
+	return strings.Contains(errMsg, "no such device or address") ||
+		strings.Contains(errMsg, "not found") ||
+		strings.Contains(errMsg, "no such file or directory")
 }
 
 func (i *Initiator) createLinearDmDevice() error {

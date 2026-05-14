@@ -24,7 +24,8 @@ const (
 	ShallowCopyStateComplete   = "complete"
 	ShallowCopyStateError      = "error"
 
-	ExecuteTimeout = 180 * time.Second
+	ExecuteShortTimeout = 5 * time.Second
+	ExecuteTimeout      = 180 * time.Second
 )
 
 const (

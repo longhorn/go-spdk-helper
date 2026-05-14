@@ -71,7 +71,7 @@ func DmsetupRemove(dmDeviceName string, force, deferred bool, executor *commonns
 	if deferred {
 		opts = append(opts, "--deferred")
 	}
-	_, err := executor.Execute(nil, dmsetupBinary, opts, types.ExecuteTimeout)
+	_, err := executor.Execute(nil, dmsetupBinary, opts, types.ExecuteShortTimeout)
 	return err
 }
 
