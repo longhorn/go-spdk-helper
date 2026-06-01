@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+
 	. "gopkg.in/check.v1"
 
 	commonns "github.com/longhorn/go-common-libs/ns"
@@ -110,7 +111,7 @@ func (s *InitiatorTestSuite) TestNewLockInvalidHostProc(c *C) {
 		hostProc: "/invalid/host/proc",
 	}
 
-	lock, err := i.newLock()
+	lock, err := i.newLock("TestNewLockInvalidHostProc")
 	c.Assert(lock, IsNil)
 	c.Assert(err, NotNil)
 	c.Assert(err.Error(), Matches, ".*invalid host proc path.*")
