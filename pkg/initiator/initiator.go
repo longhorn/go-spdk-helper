@@ -157,7 +157,7 @@ func (i *Initiator) newLock(operation string) (*initiatorLock, error) {
 		return nil, fmt.Errorf("invalid host proc path %s for initiator %s, supported path is %s", i.hostProc, i.Name, commontypes.HostProcDirectory)
 	}
 
-	if err := os.MkdirAll(LockDir, 0700); err != nil {
+	if _, err := commonns.CreateDirectory(LockDir, time.Time{}); err != nil {
 		return nil, errors.Wrapf(err, "failed to create lock directory %s for initiator %s", LockDir, i.Name)
 	}
 
