@@ -172,11 +172,6 @@ func (i *Initiator) newLock(operation string) (*initiatorLock, error) {
 		lockFile:  lockFile,
 	}
 
-	il.logger.WithFields(logrus.Fields{
-		"lockFile":  il.lockFile,
-		"operation": il.operation,
-	}).Info("Acquired initiator lock")
-
 	return il, nil
 }
 
@@ -184,11 +179,6 @@ func (lock *initiatorLock) Unlock() {
 	if lock == nil || lock.lock == nil {
 		return
 	}
-
-	lock.logger.WithFields(logrus.Fields{
-		"lockFile":  lock.lockFile,
-		"operation": lock.operation,
-	}).Info("Releasing initiator lock")
 	lock.lock.Unlock()
 }
 
