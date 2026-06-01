@@ -23,7 +23,8 @@ import (
 )
 
 const (
-	LockFilePrefix = "/var/run/longhorn-spdk"
+	LockDir        = "/var/run/longhorn"
+	LockFilePrefix = LockDir + "/spdk"
 	LockTimeout    = 120 * time.Second
 
 	HostProc = "/host/proc"
@@ -154,6 +155,10 @@ func (i *Initiator) lockFilePath() string {
 func (i *Initiator) newLock(operation string) (*initiatorLock, error) {
 	if i.hostProc != commontypes.HostProcDirectory {
 		return nil, fmt.Errorf("invalid host proc path %s for initiator %s, supported path is %s", i.hostProc, i.Name, commontypes.HostProcDirectory)
+	}
+
+	if err := os.MkdirAll(LockDir, 0700); err != nil {
+		return nil, errors.Wrapf(err, "failed to create lock directory %s for initiator %s", LockDir, i.Name)
 	}
 
 	lockFile := i.lockFilePath()
