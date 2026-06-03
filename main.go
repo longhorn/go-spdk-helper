@@ -36,6 +36,7 @@ func main() {
 		basic.BdevLvolCmd(),
 		basic.BdevNvmeCmd(),
 		basic.BdevRaidCmd(),
+		basic.BdevEcCmd(),
 		basic.NvmfCmd(),
 		basic.LogCmd(),
 		basic.UblkCmd(),
