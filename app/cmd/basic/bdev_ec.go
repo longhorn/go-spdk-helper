@@ -2,6 +2,7 @@ package basic
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -24,6 +25,9 @@ func BdevEcCmd() cli.Command {
 			BdevEcRebuildProgressCmd(),
 			BdevEcRebuildQosSetCmd(),
 			BdevEcResizeCmd(),
+			BdevEcWibStatusCmd(),
+			BdevEcUnmapStatusCmd(),
+			BdevEcScrubProgressCmd(),
 		},
 	}
 }
@@ -105,12 +109,17 @@ func BdevEcDeleteCmd() cli.Command {
 }
 
 func bdevEcDelete(c *cli.Context) error {
+	name := c.Args().First()
+	if name == "" {
+		return fmt.Errorf("EC bdev name is required")
+	}
+
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
 
-	deleted, err := spdkCli.BdevEcDelete(c.Args().First())
+	deleted, err := spdkCli.BdevEcDelete(name)
 	if err != nil {
 		return err
 	}
@@ -200,12 +209,17 @@ func BdevEcRebuildStartCmd() cli.Command {
 }
 
 func bdevEcRebuildStart(c *cli.Context) error {
+	name := c.Args().First()
+	if name == "" {
+		return fmt.Errorf("EC bdev name is required")
+	}
+
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
 
-	resp, err := spdkCli.BdevEcStartRebuild(c.Args().First())
+	resp, err := spdkCli.BdevEcStartRebuild(name)
 	if err != nil {
 		return err
 	}
@@ -226,12 +240,17 @@ func BdevEcRebuildStopCmd() cli.Command {
 }
 
 func bdevEcRebuildStop(c *cli.Context) error {
+	name := c.Args().First()
+	if name == "" {
+		return fmt.Errorf("EC bdev name is required")
+	}
+
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
 
-	stopped, err := spdkCli.BdevEcStopRebuild(c.Args().First())
+	stopped, err := spdkCli.BdevEcStopRebuild(name)
 	if err != nil {
 		return err
 	}
@@ -294,12 +313,17 @@ func BdevEcRebuildProgressCmd() cli.Command {
 }
 
 func bdevEcRebuildProgress(c *cli.Context) error {
+	name := c.Args().First()
+	if name == "" {
+		return fmt.Errorf("EC bdev name is required")
+	}
+
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
 
-	progress, err := spdkCli.BdevEcGetRebuildProgress(c.Args().First())
+	progress, err := spdkCli.BdevEcGetRebuildProgress(name)
 	if err != nil {
 		return err
 	}
@@ -320,15 +344,113 @@ func BdevEcResizeCmd() cli.Command {
 }
 
 func bdevEcResize(c *cli.Context) error {
+	name := c.Args().First()
+	if name == "" {
+		return fmt.Errorf("EC bdev name is required")
+	}
+
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
 
-	resp, err := spdkCli.BdevEcResize(c.Args().First())
+	resp, err := spdkCli.BdevEcResize(name)
 	if err != nil {
 		return err
 	}
 
 	return util.PrintObject(resp)
+}
+
+func BdevEcWibStatusCmd() cli.Command {
+	return cli.Command{
+		Name:  "wib-status",
+		Usage: "query Write-Intent Bitmap state: wib-status <NAME>",
+		Action: func(c *cli.Context) {
+			if err := bdevEcWibStatus(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run wib-status bdev ec command")
+			}
+		},
+	}
+}
+
+func bdevEcWibStatus(c *cli.Context) error {
+	name := c.Args().First()
+	if name == "" {
+		return fmt.Errorf("EC bdev name is required")
+	}
+
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	status, err := spdkCli.BdevEcGetWibStatus(name)
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(status)
+}
+
+func BdevEcUnmapStatusCmd() cli.Command {
+	return cli.Command{
+		Name:  "unmap-status",
+		Usage: "query in-band unmapped-bitmap state: unmap-status <NAME>",
+		Action: func(c *cli.Context) {
+			if err := bdevEcUnmapStatus(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run unmap-status bdev ec command")
+			}
+		},
+	}
+}
+
+func bdevEcUnmapStatus(c *cli.Context) error {
+	name := c.Args().First()
+	if name == "" {
+		return fmt.Errorf("EC bdev name is required")
+	}
+
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	status, err := spdkCli.BdevEcGetUnmapStatus(name)
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(status)
+}
+
+func BdevEcScrubProgressCmd() cli.Command {
+	return cli.Command{
+		Name:  "scrub-progress",
+		Usage: "query startup scrub progress: scrub-progress <NAME>",
+		Action: func(c *cli.Context) {
+			if err := bdevEcScrubProgress(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run scrub-progress bdev ec command")
+			}
+		},
+	}
+}
+
+func bdevEcScrubProgress(c *cli.Context) error {
+	name := c.Args().First()
+	if name == "" {
+		return fmt.Errorf("EC bdev name is required")
+	}
+
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	progress, err := spdkCli.BdevEcGetScrubProgress(name)
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(progress)
 }
