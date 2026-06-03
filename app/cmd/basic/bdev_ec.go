@@ -23,6 +23,7 @@ func BdevEcCmd() cli.Command {
 			BdevEcRebuildStopCmd(),
 			BdevEcRebuildProgressCmd(),
 			BdevEcRebuildQosSetCmd(),
+			BdevEcResizeCmd(),
 		},
 	}
 }
@@ -304,4 +305,30 @@ func bdevEcRebuildProgress(c *cli.Context) error {
 	}
 
 	return util.PrintObject(progress)
+}
+
+func BdevEcResizeCmd() cli.Command {
+	return cli.Command{
+		Name:  "resize",
+		Usage: "expand EC bdev capacity in-place (base bdevs must be resized first): resize <NAME>",
+		Action: func(c *cli.Context) {
+			if err := bdevEcResize(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run resize bdev ec command")
+			}
+		},
+	}
+}
+
+func bdevEcResize(c *cli.Context) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	resp, err := spdkCli.BdevEcResize(c.Args().First())
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(resp)
 }

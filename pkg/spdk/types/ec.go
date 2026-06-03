@@ -155,6 +155,18 @@ type BdevEcSetRebuildQosRequest struct {
 	Paused           bool   `json:"paused"`
 }
 
+// BdevEcResizeRequest is the request for bdev_ec_resize.
+type BdevEcResizeRequest struct {
+	Name string `json:"ec_name"`
+}
+
+// BdevEcResizeResponse is the response for bdev_ec_resize.
+type BdevEcResizeResponse struct {
+	EcName      string `json:"ec_name"`
+	OldBlockcnt uint64 `json:"old_blockcnt"`
+	NewBlockcnt uint64 `json:"new_blockcnt"`
+}
+
 // BdevEcRebuildProgress is the response for bdev_ec_get_rebuild_progress.
 // It is also embedded in BdevEcInfo when RebuildInProgress is true.
 // RebuildState is not returned by the SPDK JSON-RPC; it is derived by the Go layer:
