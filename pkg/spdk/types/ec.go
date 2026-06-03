@@ -167,6 +167,21 @@ type BdevEcResizeResponse struct {
 	NewBlockcnt uint64 `json:"new_blockcnt"`
 }
 
+// BdevEcGetWibStatusRequest is the request for bdev_ec_get_wib_status.
+type BdevEcGetWibStatusRequest struct {
+	Name string `json:"ec_name"`
+}
+
+// BdevEcGetUnmapStatusRequest is the request for bdev_ec_get_unmap_status.
+type BdevEcGetUnmapStatusRequest struct {
+	Name string `json:"ec_name"`
+}
+
+// BdevEcGetScrubProgressRequest is the request for bdev_ec_get_scrub_progress.
+type BdevEcGetScrubProgressRequest struct {
+	Name string `json:"ec_name"`
+}
+
 // BdevEcRebuildProgress is the response for bdev_ec_get_rebuild_progress.
 // It is also embedded in BdevEcInfo when RebuildInProgress is true.
 // RebuildState is not returned by the SPDK JSON-RPC; it is derived by the Go layer:
@@ -180,4 +195,41 @@ type BdevEcRebuildProgress struct {
 	SlotsToRebuild  uint32             `json:"slots_to_rebuild"`
 	PercentComplete uint32             `json:"percent_complete"`
 	RebuildState    BdevEcRebuildState `json:"-"`
+}
+
+// BdevEcWibStatus is the response for bdev_ec_get_wib_status.
+type BdevEcWibStatus struct {
+	EcName         string `json:"ec_name"`
+	NumRegions     uint32 `json:"num_regions"`
+	DirtyRegions   uint32 `json:"dirty_regions"`
+	Generation     uint64 `json:"generation"`
+	PersistPending bool   `json:"persist_pending"`
+}
+
+// BdevEcUnmapStatus is the response for bdev_ec_get_unmap_status. It reports
+// the on-disk state of the in-band unmapped bitmap, which is provisioned at
+// bdev_ec_create time and persists for the bdev's lifetime.
+type BdevEcUnmapStatus struct {
+	EcName          string `json:"ec_name"`
+	NumStripes      uint64 `json:"num_stripes"`
+	UnmappedStripes uint64 `json:"unmapped_stripes"`
+	BlobBytes       uint64 `json:"blob_bytes"`
+	Generation      uint64 `json:"generation"`
+	// ActiveCopy is the double-buffer slot the bitmap was loaded from at
+	// startup (0 or 1). Surfaced for diagnostics; consumers should not
+	// dispatch on it without a documented need.
+	ActiveCopy     uint32 `json:"active_copy"`
+	PersistPending bool   `json:"persist_pending"`
+}
+
+// BdevEcScrubProgress is the response for bdev_ec_get_scrub_progress.
+type BdevEcScrubProgress struct {
+	EcName            string `json:"ec_name"`
+	CurrentRegion     uint32 `json:"current_region"`
+	NumRegions        uint32 `json:"num_regions"`
+	TotalDirtyRegions uint32 `json:"total_dirty_regions"`
+	CurrentStripe     uint64 `json:"current_stripe"`
+	StripesScrubbed   uint64 `json:"stripes_scrubbed"`
+	RegionsScrubbed   uint64 `json:"regions_scrubbed"`
+	PercentComplete   uint32 `json:"percent_complete"`
 }

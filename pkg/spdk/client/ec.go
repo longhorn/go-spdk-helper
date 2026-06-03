@@ -213,3 +213,58 @@ func (c *Client) BdevEcResize(name string) (resp spdktypes.BdevEcResizeResponse,
 
 	return resp, json.Unmarshal(cmdOutput, &resp)
 }
+
+// BdevEcGetWibStatus queries the Write-Intent Bitmap (WIB) state of an EC bdev.
+func (c *Client) BdevEcGetWibStatus(name string) (status spdktypes.BdevEcWibStatus, err error) {
+	req := spdktypes.BdevEcGetWibStatusRequest{
+		Name: name,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_ec_get_wib_status", req)
+	if err != nil {
+		return status, err
+	}
+
+	return status, json.Unmarshal(cmdOutput, &status)
+}
+
+// BdevEcGetUnmapStatus queries the in-band unmapped-bitmap state of an EC
+// bdev. The bitmap is lifecycle-bound to the bdev (provisioned at create
+// time, persists for the bdev's lifetime), so a successful call always
+// returns a populated status. A non-nil error means the bdev itself is
+// gone (-ENODEV) or the RPC failed.
+func (c *Client) BdevEcGetUnmapStatus(name string) (status spdktypes.BdevEcUnmapStatus, err error) {
+	req := spdktypes.BdevEcGetUnmapStatusRequest{
+		Name: name,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_ec_get_unmap_status", req)
+	if err != nil {
+		return status, err
+	}
+
+	return status, json.Unmarshal(cmdOutput, &status)
+}
+
+// BdevEcGetScrubProgress queries the startup scrub progress of an EC bdev.
+// Returns nil, nil when SPDK signals -ENOENT (no scrub is active).
+// A non-nil pointer means a scrub is currently running.
+func (c *Client) BdevEcGetScrubProgress(name string) (*spdktypes.BdevEcScrubProgress, error) {
+	req := spdktypes.BdevEcGetScrubProgressRequest{
+		Name: name,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_ec_get_scrub_progress", req)
+	if err != nil {
+		if jsonrpc.IsJSONRPCRespErrorNoEntry(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var progress spdktypes.BdevEcScrubProgress
+	if err := json.Unmarshal(cmdOutput, &progress); err != nil {
+		return nil, err
+	}
+	return &progress, nil
+}
