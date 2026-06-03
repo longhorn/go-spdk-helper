@@ -197,3 +197,19 @@ func (c *Client) BdevEcSetRebuildQos(name string, maxStripesPerSec uint32, pause
 
 	return set, json.Unmarshal(cmdOutput, &set)
 }
+
+// BdevEcResize performs an in-place capacity expansion of an EC bdev.
+// All k+m base bdevs must have been resized before calling this.
+// No data movement occurs; only geometry and WIB metadata are updated.
+func (c *Client) BdevEcResize(name string) (resp spdktypes.BdevEcResizeResponse, err error) {
+	req := spdktypes.BdevEcResizeRequest{
+		Name: name,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_ec_resize", req)
+	if err != nil {
+		return resp, err
+	}
+
+	return resp, json.Unmarshal(cmdOutput, &resp)
+}
