@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net"
+	"reflect"
 	"testing"
 
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
@@ -35,11 +36,15 @@ func runJSONRPCRequestTest(t *testing.T, fn func(*Client) error, verify func(t *
 			return
 		}
 
-		params, ok := msg.Params.(map[string]interface{})
-		if !ok {
-			serverErrCh <- nil
-			t.Errorf("unexpected params type %T", msg.Params)
-			return
+		var params map[string]interface{}
+		if msg.Params != nil {
+			var ok bool
+			params, ok = msg.Params.(map[string]interface{})
+			if !ok {
+				serverErrCh <- nil
+				t.Errorf("unexpected params type %T", msg.Params)
+				return
+			}
 		}
 
 		verify(t, msg.Method, params)
@@ -134,4 +139,61 @@ func TestBdevNvmeResetControllerSendsCorrectMethod(t *testing.T) {
 		},
 		true,
 	)
+}
+
+func TestBdevLvolGrowLvstoreRPCRequests(t *testing.T) {
+	cases := []struct {
+		name       string
+		call       func(*Client) error
+		expectKeys map[string]any
+		absentKeys []string
+	}{
+		{
+			name: "BdevLvolGrowLvstore with lvs-name",
+			call: func(cli *Client) error {
+				_, err := cli.BdevLvolGrowLvstore("lvs0", "")
+				return err
+			},
+			expectKeys: map[string]any{"lvs_name": "lvs0"},
+			absentKeys: []string{"uuid"},
+		},
+		{
+			name: "BdevLvolGrowLvstore with uuid",
+			call: func(cli *Client) error {
+				_, err := cli.BdevLvolGrowLvstore("", "abc-uuid")
+				return err
+			},
+			expectKeys: map[string]any{"uuid": "abc-uuid"},
+			absentKeys: []string{"lvs_name"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			runJSONRPCRequestTest(t,
+				tc.call,
+				func(t *testing.T, method string, params map[string]interface{}) {
+					t.Helper()
+					if method != "bdev_lvol_grow_lvstore" {
+						t.Fatalf("unexpected method %s", method)
+					}
+					for k, want := range tc.expectKeys {
+						got, exists := params[k]
+						if !exists {
+							t.Fatalf("expected key %q present, missing", k)
+						}
+						if !reflect.DeepEqual(got, want) {
+							t.Fatalf("key %q: got %#v, want %#v", k, got, want)
+						}
+					}
+					for _, k := range tc.absentKeys {
+						if v, exists := params[k]; exists {
+							t.Fatalf("expected key %q absent, got %#v", k, v)
+						}
+					}
+				},
+				true,
+			)
+		})
+	}
 }
