@@ -109,6 +109,52 @@ type BdevEcGetBdevsRequest struct {
 	Name string `json:"name,omitempty"`
 }
 
+// BdevEcReplaceBaseBdevRequest is the request for bdev_ec_replace_base_bdev.
+type BdevEcReplaceBaseBdevRequest struct {
+	Name        string `json:"ec_name"`
+	Slot        uint32 `json:"slot"`
+	NewBdevName string `json:"new_bdev_name"`
+}
+
+// BdevEcReplaceBaseBdevResponse is the response for bdev_ec_replace_base_bdev.
+// State is always "replacing" on success; NeedsRebuild is always true on success.
+type BdevEcReplaceBaseBdevResponse struct {
+	EcName       string          `json:"ec_name"`
+	Slot         uint32          `json:"slot"`
+	NewBdevName  string          `json:"new_bdev_name"`
+	State        BdevEcSlotState `json:"state"`
+	NeedsRebuild bool            `json:"needs_rebuild"`
+}
+
+// BdevEcStartRebuildRequest is the request for bdev_ec_start_rebuild.
+type BdevEcStartRebuildRequest struct {
+	Name string `json:"ec_name"`
+}
+
+// BdevEcStartRebuildResponse is the response for bdev_ec_start_rebuild.
+type BdevEcStartRebuildResponse struct {
+	EcName     string `json:"ec_name"`
+	NumStripes uint64 `json:"num_stripes"`
+	FirstSlot  uint32 `json:"first_slot"`
+}
+
+// BdevEcGetRebuildProgressRequest is the request for bdev_ec_get_rebuild_progress.
+type BdevEcGetRebuildProgressRequest struct {
+	Name string `json:"ec_name"`
+}
+
+// BdevEcStopRebuildRequest is the request for bdev_ec_stop_rebuild.
+type BdevEcStopRebuildRequest struct {
+	Name string `json:"ec_name"`
+}
+
+// BdevEcSetRebuildQosRequest is the request for bdev_ec_set_rebuild_qos.
+type BdevEcSetRebuildQosRequest struct {
+	Name             string `json:"ec_name"`
+	MaxStripesPerSec uint32 `json:"max_stripes_per_sec"`
+	Paused           bool   `json:"paused"`
+}
+
 // BdevEcRebuildProgress is the response for bdev_ec_get_rebuild_progress.
 // It is also embedded in BdevEcInfo when RebuildInProgress is true.
 // RebuildState is not returned by the SPDK JSON-RPC; it is derived by the Go layer:
