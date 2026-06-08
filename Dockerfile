@@ -1,4 +1,6 @@
 # syntax=docker/dockerfile:1.22.0@sha256:4a43a54dd1fedceb30ba47e76cfcf2b47304f4161c0caeac2db1c61804ea3c91
+FROM golangci/golangci-lint:v2.12.2 AS golangci-lint
+
 FROM registry.suse.com/bci/bci-base:16.0@sha256:a32c3257af38871a6366e4114ab2fc39ded81867e40c15f4ab5e4805925c81d6 AS base
 
 ARG TARGETARCH
@@ -9,7 +11,6 @@ ARG SRC_TAG
 ARG CACHEBUST
 
 ENV GOLANG_VERSION=1.26.1
-ENV GOLANGCI_LINT_VERSION=v2.11.4
 
 ENV ARCH=${TARGETARCH}
 ENV GOFLAGS=-mod=vendor
@@ -34,11 +35,8 @@ RUN curl -sSL "https://golang.org/dl/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz" -
     && tar -C /usr/local -xzf /tmp/go.tar.gz \
     && rm /tmp/go.tar.gz
 
-# Install golangci-lint
-RUN curl -fsSL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh -o /tmp/install.sh \
-    && chmod +x /tmp/install.sh \
-    && /tmp/install.sh -b /usr/local/bin ${GOLANGCI_LINT_VERSION}
-
+# Copy golangci-lint binary from official image
+COPY --from=golangci-lint /usr/bin/golangci-lint /usr/local/bin/golangci-lint
 
 ENV SRC_BRANCH=${SRC_BRANCH}
 ENV SRC_TAG=${SRC_TAG}
