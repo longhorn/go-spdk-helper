@@ -1434,6 +1434,21 @@ func (i *Initiator) IsSuspended() (bool, error) {
 	return false, fmt.Errorf("failed to find linear dm device %s", i.Name)
 }
 
+// IsDeferredRemoveSet checks if the linear dm device has the deferred-remove flag set
+func (i *Initiator) IsDeferredRemoveSet() (bool, error) {
+	devices, err := util.DmsetupInfo(i.Name, i.executor)
+	if err != nil {
+		return false, err
+	}
+
+	for _, device := range devices {
+		if device.Name == i.Name {
+			return device.DeferredRemove, nil
+		}
+	}
+	return false, fmt.Errorf("failed to find linear dm device %s", i.Name)
+}
+
 func (i *Initiator) reloadLinearDmDevice() error {
 	devPath := fmt.Sprintf("/dev/%s", i.dev.Source.Name)
 
