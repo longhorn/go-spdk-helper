@@ -433,6 +433,14 @@ func (i *Initiator) resumeLinearDmDevice() error {
 }
 
 func (i *Initiator) replaceDmDeviceTarget() error {
+	deferredRemove, err := i.IsDeferredRemoveSet()
+	if err != nil {
+		return errors.Wrapf(err, "failed to check if linear dm device has deferred-remove flag set for initiator %s", i.Name)
+	}
+	if deferredRemove {
+		i.logger.Warn("Trying to reuse the linear dm device that has deferred-remove flag set, the device will be removed after not busy")
+	}
+
 	suspended, err := i.IsSuspended()
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if linear dm device is suspended for initiator %s", i.Name)
