@@ -27,11 +27,11 @@ type RespErrorMsg string
 type RespErrorCode int32
 
 const (
-	RespErrorCodeNoEntry       = -2
-	RespErrorCodeNoSuchProcess = -3
-  RespErrorCodeDeviceOrResourceBusy = -16
-	RespErrorCodeNoFileExists  = -17
-	RespErrorCodeNoSuchDevice  = -19
+	RespErrorCodeNoEntry              = -2
+	RespErrorCodeNoSuchProcess        = -3
+	RespErrorCodeDeviceOrResourceBusy = -16
+	RespErrorCodeNoFileExists         = -17
+	RespErrorCodeNoSuchDevice         = -19
 )
 
 type Response struct {
