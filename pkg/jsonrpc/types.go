@@ -27,9 +27,10 @@ type RespErrorMsg string
 type RespErrorCode int32
 
 const (
-	RespErrorCodeNoSuchProcess = -3
-	RespErrorCodeNoFileExists  = -17
-	RespErrorCodeNoSuchDevice  = -19
+	RespErrorCodeNoSuchProcess        = -3
+	RespErrorCodeDeviceOrResourceBusy = -16
+	RespErrorCodeNoFileExists         = -17
+	RespErrorCodeNoSuchDevice         = -19
 )
 
 type Response struct {
@@ -84,6 +85,18 @@ func IsJSONRPCRespErrorNoSuchDevice(err error) bool {
 	}
 
 	return responseError.Code == RespErrorCodeNoSuchDevice
+}
+
+func IsJSONRPCRespErrorDeviceOrResourceBusy(err error) bool {
+	jsonRPCError, ok := err.(JSONClientError)
+	if !ok {
+		return false
+	}
+	responseError, ok := jsonRPCError.ErrorDetail.(*ResponseError)
+	if !ok {
+		return false
+	}
+	return responseError.Code == RespErrorCodeDeviceOrResourceBusy
 }
 
 func IsJSONRPCRespErrorFileExists(err error) bool {

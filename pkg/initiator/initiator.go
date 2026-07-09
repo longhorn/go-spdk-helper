@@ -675,6 +675,14 @@ func (i *Initiator) StartUblkInitiator(spdkClient *client.Client, dmDeviceAndEnd
 
 	i.logger.Infof("Starting ublk initiator with bdev %s, available UBLK ID %d, queue depth %d, number of queues %d",
 		i.UblkInfo.BdevName, availableUblkID, i.UblkInfo.UblkQueueDepth, i.UblkInfo.UblkNumberOfQueue)
+
+	// Ensure the ublk target exists before starting the disk. This was dropped in
+	// the v0.6.x initiator rewrite (regression: Longhorn v1.11.3), causing
+	// ublk_start_disk/START_DEV to fail. UblkCreateTarget is idempotent.
+	if err := spdkClient.UblkCreateTarget("", true); err != nil {
+		return false, errors.Wrap(err, "failed to create ublk target")
+	}
+
 	if err := spdkClient.UblkStartDisk(i.UblkInfo.BdevName, availableUblkID, i.UblkInfo.UblkQueueDepth, i.UblkInfo.UblkNumberOfQueue); err != nil {
 		return false, err
 	}
