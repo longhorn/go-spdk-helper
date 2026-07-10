@@ -62,6 +62,18 @@ func (re JSONClientError) Error() string {
 		re.ID, re.Method, re.Params, re.ErrorDetail)
 }
 
+func IsJSONRPCRespErrorNoEntry(err error) bool {
+	jsonRPCError, ok := err.(JSONClientError)
+	if !ok {
+		return false
+	}
+	responseError, ok := jsonRPCError.ErrorDetail.(*ResponseError)
+	if !ok {
+		return false
+	}
+	return responseError.Code == RespErrorCodeNoEntry
+}
+
 func IsJSONRPCRespErrorNoSuchProcess(err error) bool {
 	jsonRPCError, ok := err.(JSONClientError)
 	if !ok {
