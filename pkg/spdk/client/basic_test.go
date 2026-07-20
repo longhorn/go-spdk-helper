@@ -451,3 +451,67 @@ func TestBdevLvolGrowLvstoreRPCRequests(t *testing.T) {
 		})
 	}
 }
+
+func TestBdevLvolCreateLvstoreRPCRequests(t *testing.T) {
+	cases := []struct {
+		name       string
+		call       func(*Client) error
+		expectKeys map[string]any
+		absentKeys []string
+	}{
+		{
+			name: "BdevLvolCreateLvstoreWithMdRatio",
+			call: func(cli *Client) error {
+				_, err := cli.BdevLvolCreateLvstoreWithMdRatio("bdev0", "lvs0", 4194304, 100)
+				return err
+			},
+			expectKeys: map[string]any{
+				"bdev_name":                      "bdev0",
+				"lvs_name":                       "lvs0",
+				"cluster_sz":                     float64(4194304),
+				"num_md_pages_per_cluster_ratio": float64(100),
+			},
+		},
+		{
+			name: "BdevLvolCreateLvstore omits zero-value options",
+			call: func(cli *Client) error {
+				_, err := cli.BdevLvolCreateLvstore("bdev0", "lvs0", 0)
+				return err
+			},
+			expectKeys: map[string]any{
+				"bdev_name": "bdev0",
+				"lvs_name":  "lvs0",
+			},
+			absentKeys: []string{"cluster_sz", "num_md_pages_per_cluster_ratio"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			runJSONRPCRequestTest(t,
+				tc.call,
+				func(t *testing.T, method string, params map[string]interface{}) {
+					t.Helper()
+					if method != "bdev_lvol_create_lvstore" {
+						t.Fatalf("unexpected method %s", method)
+					}
+					for k, want := range tc.expectKeys {
+						got, exists := params[k]
+						if !exists {
+							t.Fatalf("expected key %q present, missing", k)
+						}
+						if !reflect.DeepEqual(got, want) {
+							t.Fatalf("key %q: got %#v, want %#v", k, got, want)
+						}
+					}
+					for _, k := range tc.absentKeys {
+						if v, exists := params[k]; exists {
+							t.Fatalf("expected key %q absent, got %#v", k, v)
+						}
+					}
+				},
+				"lvs-uuid-0",
+			)
+		})
+	}
+}
