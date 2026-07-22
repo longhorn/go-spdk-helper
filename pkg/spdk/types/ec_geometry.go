@@ -1,5 +1,7 @@
 package types
 
+import "math"
+
 // SPDK bdev_ec on-disk metadata constants, mirrored from longhorn/spdk. The front
 // reservation recomputes ec_compute_geometry, so these must stay in sync with SPDK.
 const (
@@ -31,11 +33,41 @@ func EcFrontReservationBytes(stripSizeKB uint32) uint64 {
 }
 
 // Lvstore parameters the engine pins at creation, so shard sizing works from
-// known values instead of SPDK defaults. Ratio 100 gives one 4 KiB md page per
-// cluster, enough metadata for the head lvol plus about 500 snapshots.
+// known values instead of SPDK defaults.
+//
+// SPDK sizes the lvstore metadata region once, at creation. Growing the
+// lvstore later does not extend it; see bs_load_try_to_grow:
+// https://github.com/longhorn/spdk/blob/8d8b790728eb210141aab70fba0e30d5ba291ed3/lib/blob/blobstore.c#L10762
+//
+// The md-pages ratio therefore sets both the metadata budget and the in-place
+// expansion ceiling:
+//
+//	max growable size = (ratio / 100) x creation size
+//
+// Ratio 100 is one 4 KiB md page per cluster: enough for the head lvol and
+// snapshots, but no room to grow. Multiplying by EcLvstoreMaxGrowthFactor
+// lets the lvstore grow to 10x its creation size, at a metadata cost of
+// about 1% of the creation size. Growing past the ceiling requires a
+// shard-group rebuild.
 const (
-	EcLvstoreClusterSize            = 4 * 1024 * 1024
-	EcLvstoreMdPagesPerClusterRatio = 100
+	EcLvstoreClusterSize = 4 * 1024 * 1024
+
+	// ecLvstoreMdRatioBase is SPDK's scale for num_md_pages_per_cluster_ratio:
+	// ratio 100 means one metadata page per cluster.
+	ecLvstoreMdRatioBase = 100
+
+	// EcLvstoreMaxGrowthFactor is how far a lvstore can grow in place, as a
+	// multiple of its creation size.
+	EcLvstoreMaxGrowthFactor = 10
+
+	EcLvstoreMdPagesPerClusterRatio = ecLvstoreMdRatioBase * EcLvstoreMaxGrowthFactor
+
+	// EcLvstoreMaxCreationSize is the largest device SPDK can size lvstore
+	// metadata for at the pinned ratio. setup_lvs_opts (lib/lvol/lvol.c in
+	// longhorn/spdk) rejects lvstore creation with -EINVAL when the metadata
+	// page count, ratio x clusters / 100, exceeds UINT32_MAX.
+	// Callers must reject creating an EC volume above this size.
+	EcLvstoreMaxCreationSize = (math.MaxUint32 / (EcLvstoreMdPagesPerClusterRatio / ecLvstoreMdRatioBase)) * EcLvstoreClusterSize
 
 	ecLvstoreMdPageSize      = 4096
 	ecLvstorePagesPerCluster = EcLvstoreClusterSize / ecLvstoreMdPageSize
@@ -49,13 +81,17 @@ func lvstoreMaskPages(bits uint64) uint64 {
 	return (ecBsMdMaskHeaderBytes + (bits+7)/8 + ecLvstoreMdPageSize - 1) / ecLvstoreMdPageSize
 }
 
-// lvstoreMetadataBytesFor returns the metadata SPDK bs_init carves out of a
-// device of deviceBytes, in whole clusters. It rounds up where SPDK rounds
-// down, so the result is an upper bound.
+// lvstoreMetadataBytesFor returns the metadata SPDK carves out of a device of
+// deviceBytes, in whole clusters. It mirrors spdk_bs_init: one super block
+// page, the used_pages, used_clusters, and used_blobids masks, then the
+// md_len metadata pages. The used_clusters mask region is sized for the
+// larger of clusters and md_len. It rounds up where SPDK rounds down, so the
+// result is an upper bound. See
+// https://github.com/longhorn/spdk/blob/8d8b790728eb210141aab70fba0e30d5ba291ed3/lib/blob/blobstore.c#L5847-L5896
 func lvstoreMetadataBytesFor(deviceBytes uint64) uint64 {
 	clusters := (deviceBytes + EcLvstoreClusterSize - 1) / EcLvstoreClusterSize
-	mdLen := (clusters*EcLvstoreMdPagesPerClusterRatio + 99) / 100
-	mdPages := 1 + lvstoreMaskPages(mdLen) +
+	mdLen := (clusters*EcLvstoreMdPagesPerClusterRatio + ecLvstoreMdRatioBase - 1) / ecLvstoreMdRatioBase
+	mdPages := 1 + lvstoreMaskPages(mdLen) + // 1 page for the super block
 		max(lvstoreMaskPages(clusters), lvstoreMaskPages(mdLen)) +
 		lvstoreMaskPages(mdLen) + mdLen
 	mdClusters := (mdPages + ecLvstorePagesPerCluster - 1) / ecLvstorePagesPerCluster
@@ -63,20 +99,29 @@ func lvstoreMetadataBytesFor(deviceBytes uint64) uint64 {
 }
 
 // lvstoreMetadataBytes bounds the metadata a lvstore holding dataBytes carves
-// out. The metadata itself grows the device, so compute it once more on the
-// grown size and keep one spare cluster for the remainder.
+// out. The metadata itself takes device space, so iterate until the estimate
+// stops growing, then keep one spare cluster.
 func lvstoreMetadataBytes(dataBytes uint64) uint64 {
 	meta := lvstoreMetadataBytesFor(dataBytes)
-	meta = lvstoreMetadataBytesFor(dataBytes + meta)
+	for {
+		next := lvstoreMetadataBytesFor(dataBytes + meta)
+		if next <= meta {
+			break
+		}
+		meta = next
+	}
 	return meta + EcLvstoreClusterSize
 }
 
-// ComputeShardSize returns the size in bytes of each EC shard lvol so that the
+// ComputeShardSize returns the size in bytes of each EC shard lvol so the
 // lvstore built on the EC bdev can hold the full volume spec. The manager
 // schedules with this; the engine checks it against the real lvstore at
 // creation.
+//
+// stripSizeKB must be a valid strip size (see EcFrontReservationStrips).
+// Non-positive volumeSize or k returns volumeSize unchanged.
 func ComputeShardSize(volumeSize int64, k, stripSizeKB int) int64 {
-	if k <= 0 {
+	if volumeSize <= 0 || k <= 0 {
 		return volumeSize
 	}
 	backing := uint64(volumeSize) + lvstoreMetadataBytes(uint64(volumeSize))
