@@ -195,3 +195,66 @@ func TestEcLvstoreMaxCreationSize(t *testing.T) {
 		t.Fatalf("EcLvstoreMaxCreationSize (%d clusters) is not the md-pages boundary", clusters)
 	}
 }
+
+// TestEcUsableSizeWholeStrips pins the divisibility argument EcUsableSize's
+// exactness rests on: every valid strip size divides the 2 MiB-aligned shard
+// size, so the per-disk data bytes after the front reservation are whole
+// strips and ec_compute_geometry truncates nothing.
+func TestEcUsableSizeWholeStrips(t *testing.T) {
+	const gib = int64(1) << 30
+	for _, spec := range []int64{gib, 33 * gib, 1024 * gib} {
+		for _, strip := range []int{4, 8, 16, 32, 64, 128, 256, 512, 1024} {
+			for _, k := range []int{1, 2, 4, 8, 16} {
+				stripBytes := uint64(strip) * 1024
+				perDiskData := uint64(ComputeShardSize(spec, k, strip)) - EcFrontReservationBytes(uint32(strip))
+				if perDiskData%stripBytes != 0 {
+					t.Errorf("spec=%d k=%d strip=%dKiB: per-disk data %d is not whole strips",
+						spec, k, strip, perDiskData)
+				}
+			}
+		}
+	}
+}
+
+// TestEcUsableSizeGolden pins EcUsableSize against a hand-computed
+// ec_compute_geometry result for the production failure geometry (33 Gi,
+// k=1, strip 64 KiB): shard 35926310912 minus the 134479872-byte front
+// reservation leaves 546140 whole 64 KiB stripes of user data.
+func TestEcUsableSizeGolden(t *testing.T) {
+	if got := EcUsableSize(33<<30, 1, 64); got != 35791831040 {
+		t.Fatalf("EcUsableSize(33Gi,1,64) = %d, want 35791831040", got)
+	}
+	if got := EcUsableSize(0, 1, 64); got != 0 {
+		t.Fatalf("EcUsableSize(0,1,64) = %d, want 0", got)
+	}
+}
+
+// TestValidateECCreationSize pins the admission boundary to the shard sizing
+// formula across representative geometries: the reported maximum passes, one
+// byte more fails, and the usable size SPDK sees stays within the md-pages
+// cluster limit at the maximum.
+func TestValidateECCreationSize(t *testing.T) {
+	maxClusters := uint64(EcLvstoreMaxCreationSize) / EcLvstoreClusterSize
+	for _, k := range []int{1, 2, 4, 8} {
+		for _, strip := range []int{4, 64, 1024} {
+			maxSize := MaxECVolumeSizeForCreation(k, strip)
+			if err := ValidateECCreationSize(maxSize, k, strip); err != nil {
+				t.Errorf("k=%d strip=%dKiB: max %d rejected: %v", k, strip, maxSize, err)
+			}
+			if err := ValidateECCreationSize(maxSize+1, k, strip); err == nil {
+				t.Errorf("k=%d strip=%dKiB: max+1 %d accepted", k, strip, maxSize+1)
+			}
+			if got := EcUsableSize(maxSize, k, strip) / EcLvstoreClusterSize; got > maxClusters {
+				t.Errorf("k=%d strip=%dKiB: usable %d clusters exceeds limit %d", k, strip, got, maxClusters)
+			}
+			// The usable size must always cover the volume, and the max must
+			// sit below the raw cap (the admission gap this helper closes).
+			if usable := EcUsableSize(maxSize, k, strip); usable < uint64(maxSize) {
+				t.Errorf("k=%d strip=%dKiB: usable %d < volume %d", k, strip, usable, maxSize)
+			}
+			if maxSize >= EcLvstoreMaxCreationSize {
+				t.Errorf("k=%d strip=%dKiB: max %d not below the raw cap", k, strip, maxSize)
+			}
+		}
+	}
+}

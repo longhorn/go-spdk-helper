@@ -1,6 +1,9 @@
 package types
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 // SPDK bdev_ec on-disk metadata constants, mirrored from longhorn/spdk. The front
 // reservation recomputes ec_compute_geometry, so these must stay in sync with SPDK.
@@ -127,4 +130,53 @@ func ComputeShardSize(volumeSize int64, k, stripSizeKB int) int64 {
 	backing := uint64(volumeSize) + lvstoreMetadataBytes(uint64(volumeSize))
 	perDisk := (backing+uint64(k)-1)/uint64(k) + EcFrontReservationBytes(uint32(stripSizeKB))
 	return int64((perDisk + ecShardSizeAlignment - 1) / ecShardSizeAlignment * ecShardSizeAlignment)
+}
+
+// EcUsableSize returns the EC bdev usable capacity, in bytes, implied by the
+// shard sizing formula: the shards from ComputeShardSize minus the per-disk
+// front reservation, times k. This is the device SPDK sizes the shard
+// lvstore's metadata from. It is exact, not a bound, because every valid
+// strip size (power of two, 4..1024 KiB) divides the 2 MiB-aligned shard
+// size, so the per-disk data bytes are whole strips and ec_compute_geometry
+// truncates nothing. Non-positive volumeSize or k returns 0.
+func EcUsableSize(volumeSize int64, k, stripSizeKB int) uint64 {
+	if volumeSize <= 0 || k <= 0 {
+		return 0
+	}
+	shard := uint64(ComputeShardSize(volumeSize, k, stripSizeKB))
+	return (shard - EcFrontReservationBytes(uint32(stripSizeKB))) * uint64(k)
+}
+
+// MaxECVolumeSizeForCreation returns the largest volume size that
+// ValidateECCreationSize accepts for the given geometry. The shard sizing
+// formula has no closed-form inverse, so search for the boundary.
+func MaxECVolumeSizeForCreation(k, stripSizeKB int) int64 {
+	maxClusters := uint64(EcLvstoreMaxCreationSize) / EcLvstoreClusterSize
+	fits := func(volumeSize int64) bool {
+		return EcUsableSize(volumeSize, k, stripSizeKB)/EcLvstoreClusterSize <= maxClusters
+	}
+	lo, hi := int64(1), int64(EcLvstoreMaxCreationSize)
+	for lo < hi {
+		mid := lo + (hi-lo+1)/2
+		if fits(mid) {
+			lo = mid
+		} else {
+			hi = mid - 1
+		}
+	}
+	return lo
+}
+
+// ValidateECCreationSize rejects volume sizes whose EC usable capacity
+// exceeds what SPDK can size lvstore metadata for at the pinned ratio
+// (EcLvstoreMaxCreationSize). Admission uses this to predict the engine's
+// runtime check against the real EC bdev size; both floor to whole clusters,
+// as SPDK does, so they cannot drift at the boundary.
+func ValidateECCreationSize(volumeSize int64, k, stripSizeKB int) error {
+	maxClusters := uint64(EcLvstoreMaxCreationSize) / EcLvstoreClusterSize
+	if EcUsableSize(volumeSize, k, stripSizeKB)/EcLvstoreClusterSize > maxClusters {
+		return fmt.Errorf("volume size %v exceeds the maximum creatable EC volume size %v for k=%v stripSizeKB=%v",
+			volumeSize, MaxECVolumeSizeForCreation(k, stripSizeKB), k, stripSizeKB)
+	}
+	return nil
 }
