@@ -105,7 +105,7 @@ func bdevNvmeAttachController(c *cli.Context) error {
 		c.String("traddr"), c.String("trsvcid"),
 		spdktypes.NvmeTransportType(c.String("trtype")), spdktypes.NvmeAddressFamily(c.String("adrfam")),
 		int32(c.Int("ctrlr-loss-timeout-sec")), int32(c.Int("reconnect-delay-sec")), int32(c.Int("fast-io-fail-timeout-sec")),
-		c.String("multipath"))
+		c.String("multipath"), "")
 	if err != nil {
 		return err
 	}

@@ -119,7 +119,7 @@ func nvmfCreateSubsystem(c *cli.Context) error {
 		return err
 	}
 
-	created, err := spdkCli.NvmfCreateSubsystem(c.Args().First())
+	created, err := spdkCli.NvmfCreateSubsystem(c.Args().First(), true)
 	if err != nil {
 		return err
 	}
