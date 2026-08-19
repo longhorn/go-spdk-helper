@@ -7,6 +7,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
+	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
@@ -50,6 +51,12 @@ func StartExposeCmd() cli.Command {
 				Usage:    "Port number",
 				Required: true,
 			},
+			cli.StringFlag{
+				Name:     "transport",
+				Usage:    "NVMe-oF transport type: tcp (default) or rdma",
+				Required: false,
+				Value:    string(spdktypes.NvmeTransportTypeTCP),
+			},
 		},
 		Action: func(c *cli.Context) {
 			if err := startExpose(c); err != nil {
@@ -65,7 +72,8 @@ func startExpose(c *cli.Context) error {
 		return err
 	}
 
-	if err := spdkCli.StartExposeBdev(c.String("nqn"), c.String("bdev-name"), c.String("nguid"), c.String("ip"), c.String("port")); err != nil {
+	trtype := spdktypes.NvmeTransportType(c.String("transport"))
+	if err := spdkCli.StartExposeBdev(c.String("nqn"), c.String("bdev-name"), c.String("nguid"), c.String("ip"), c.String("port"), trtype); err != nil {
 		return err
 	}
 
