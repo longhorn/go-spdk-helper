@@ -3,9 +3,14 @@ package initiator
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/cockroachdb/errors"
+	"github.com/sirupsen/logrus"
 
 	commonns "github.com/longhorn/go-common-libs/ns"
 
@@ -16,6 +21,13 @@ import (
 
 const (
 	nvmeBinary = "nvme"
+
+	// nvmeListTimeoutSec is the timeout for the nvme list command, used as a
+	// hard deadline via the timeout(1) command. It is set to 5 seconds to ensure
+	// rapid failure and avoid cascading process accumulation during device hangs.
+	nvmeListTimeoutSec = 5
+
+	sysfsNvmeSubsystemPath = "/sys/devices/virtual/nvme-subsystem"
 
 	DefaultTransportType = "tcp"
 
@@ -201,11 +213,25 @@ type CliDevice struct {
 }
 
 func listRecognizedNvmeDevices(executor *commonns.Executor) ([]CliDevice, error) {
+	// 1. Fast Path: Directly query sysfs to avoid spawning external processes and issuing blocking ioctls
+	devices, err := listRecognizedNvmeDevicesFromSysfs(sysfsNvmeSubsystemPath)
+	if err == nil && len(devices) > 0 {
+		return devices, nil
+	}
+	if err != nil {
+		logrus.WithError(err).Debug("Failed to list NVMe devices from sysfs, falling back to nvme cli")
+	}
+
+	// 2. Fallback Path: Wrap nvme list with the timeout(1) command using SIGKILL (-s SIGKILL -k 1s)
 	opts := []string{
+		"-s", "SIGKILL",
+		"-k", "1s",
+		strconv.Itoa(nvmeListTimeoutSec),
+		nvmeBinary,
 		"list",
 		"-o", "json",
 	}
-	outputStr, err := executor.Execute(nil, nvmeBinary, opts, types.ExecuteTimeout)
+	outputStr, err := executor.Execute(nil, "timeout", opts, (nvmeListTimeoutSec+2)*time.Second)
 	if err != nil {
 		return nil, err
 	}
@@ -219,6 +245,36 @@ func listRecognizedNvmeDevices(executor *commonns.Executor) ([]CliDevice, error)
 	}
 
 	return output["Devices"], nil
+}
+
+func listRecognizedNvmeDevicesFromSysfs(sysfsPath string) ([]CliDevice, error) {
+	subsysDirs, err := filepath.Glob(filepath.Join(sysfsPath, "nvme-subsys*"))
+	if err != nil || len(subsysDirs) == 0 {
+		return nil, errors.Errorf("no nvme subsystems found in %s: %v", sysfsPath, err)
+	}
+
+	var devices []CliDevice
+	for _, subsysDir := range subsysDirs {
+		nsEntries, err := os.ReadDir(subsysDir)
+		if err != nil {
+			continue
+		}
+
+		for _, entry := range nsEntries {
+			// Look for block namespace entries like nvme0n1, nvme1n1, etc.
+			if strings.HasPrefix(entry.Name(), "nvme") && strings.Contains(entry.Name(), "n") {
+				devNode := filepath.Join("/dev", entry.Name())
+				devices = append(devices, CliDevice{
+					DevicePath: devNode,
+				})
+			}
+		}
+	}
+
+	if len(devices) == 0 {
+		return nil, errors.New("no recognized nvme devices in sysfs")
+	}
+	return devices, nil
 }
 
 func getHostID(executor *commonns.Executor) (string, error) {
@@ -254,37 +310,6 @@ func discovery(hostID, hostNQN, ip, port string, executor *commonns.Executor) ([
 		opts = append(opts, "-q", hostNQN)
 	}
 
-	// A valid output is like below:
-	// # nvme discover -t tcp -a 10.42.2.20 -s 20011 -o json
-	//	{
-	//		"device" : "nvme0",
-	//		"genctr" : 2,
-	//		"records" : [
-	//		  {
-	//			"trtype" : "tcp",
-	//			"adrfam" : "ipv4",
-	//			"subtype" : "nvme subsystem",
-	//			"treq" : "not required",
-	//			"portid" : 0,
-	//			"trsvcid" : "20001",
-	//			"subnqn" : "nqn.2023-01.io.longhorn.spdk:pvc-81bab972-8e6b-48be-b691-18eaa430a897-r-0881c7b4",
-	//			"traddr" : "10.42.2.20",
-	//			"sectype" : "none"
-	//		  },
-	//		  {
-	//			"trtype" : "tcp",
-	//			"adrfam" : "ipv4",
-	//			"subtype" : "nvme subsystem",
-	//			"treq" : "not required",
-	//			"portid" : 0,
-	//			"trsvcid" : "20011",
-	//			"subnqn" : "nqn.2023-01.io.longhorn.spdk:pvc-5f94d59d-baec-40e5-9e8b-25b79909d14e-e-49c947f5",
-	//			"traddr" : "10.42.2.20",
-	//			"sectype" : "none"
-	//		  }
-	//		]
-	//	  }
-
 	// nvme discover does not respect the -s option, so we need to filter the output
 	outputStr, err := executor.Execute(nil, nvmeBinary, opts, types.ExecuteTimeout)
 	if err != nil {
@@ -310,8 +335,6 @@ func discovery(hostID, hostNQN, ip, port string, executor *commonns.Executor) ([
 
 func connect(hostID, hostNQN, nqn, transpotType, ip, port string, nrIoQueues int32, executor *commonns.Executor) (string, error) {
 	ip = spdkutil.NormalizeNvmeAddr(ip)
-
-	var err error
 
 	opts := []string{
 		"connect",
@@ -342,10 +365,6 @@ func connect(hostID, hostNQN, nqn, transpotType, ip, port string, nrIoQueues int
 		opts = append(opts, "-s", port)
 	}
 
-	// The output example:
-	// {
-	//  "device" : "nvme0"
-	// }
 	outputStr, err := executor.Execute(nil, nvmeBinary, opts, types.ExecuteTimeout)
 	if err != nil {
 		return "", err
@@ -370,10 +389,6 @@ func disconnect(nqn string, executor *commonns.Executor) error {
 		"--nqn", nqn,
 	}
 
-	// The output example:
-	// NQN:nqn.2023-01.io.spdk:raid01 disconnected 1 controller(s)
-	//
-	// And trying to disconnect a non-existing target would return exit code 0
 	_, err := executor.Execute(nil, nvmeBinary, opts, types.ExecuteTimeout)
 	return err
 }
