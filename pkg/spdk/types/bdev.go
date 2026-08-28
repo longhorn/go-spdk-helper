@@ -76,7 +76,6 @@ type BdevInfoBasic struct {
 	SupportedIoTypes SupportedIoTypes `json:"supported_io_types"`
 
 	MemoryDomains []struct {
-		DmaDeviceID   string `json:"dma_device_id"`
 		DmaDeviceType string `json:"dma_device_type"`
 	} `json:"memory_domains,omitempty"`
 }
