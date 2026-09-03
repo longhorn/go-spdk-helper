@@ -22,6 +22,7 @@ func BdevNvmeCmd() *cli.Command {
 			BdevNvmeDetachControllerCmd(),
 			BdevNvmeResetControllerCmd(),
 			BdevNvmeGetControllersCmd(),
+			BdevNvmeGetIoPathsCmd(),
 			BdevNvmeGetCmd(),
 			BdevNvmeSetOptionsCmd(),
 		},
@@ -202,6 +203,34 @@ func bdevNvmeGetControllers(c *cli.Command) error {
 	}
 
 	return util.PrintObject(bdevNvmeGetControllersResp)
+}
+
+func BdevNvmeGetIoPathsCmd() *cli.Command {
+	return &cli.Command{
+		Name:  "io-paths-get",
+		Usage: "get NVMe I/O paths of one namespace bdev, or of all bdevs when no name is given: io-paths-get [NAMESPACE BDEV NAME, e.g. Nvme0n1]",
+		Action: func(ctx context.Context, c *cli.Command) error {
+			if err := bdevNvmeGetIoPaths(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run get nvme io paths command")
+				return err
+			}
+			return nil
+		},
+	}
+}
+
+func bdevNvmeGetIoPaths(c *cli.Command) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	bdevNvmeGetIoPathsResp, err := spdkCli.BdevNvmeGetIoPaths(c.Args().First())
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(bdevNvmeGetIoPathsResp)
 }
 
 func BdevNvmeGetCmd() *cli.Command {
