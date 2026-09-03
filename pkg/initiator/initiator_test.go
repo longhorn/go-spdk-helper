@@ -407,6 +407,349 @@ func (s *InitiatorTestSuite) TestGetDmDevicePath(c *C) {
 	c.Assert(getDmDevicePath("vol-1"), Equals, "/dev/mapper/vol-1")
 }
 
+func (s *InitiatorTestSuite) TestStopDisconnectFirstNilNVMeInfo(c *C) {
+	i := &Initiator{Name: "vol-1", logger: logrus.New()}
+
+	err := i.StopDisconnectFirst()
+	c.Assert(err, NotNil)
+	c.Assert(err.Error(), Matches, ".*nvmeTCPInfo is nil.*")
+}
+
+func (s *InitiatorTestSuite) TestStopDisconnectFirstDisconnectFailureSkipsCleanup(c *C) {
+	restorePath := setupFakeCommandPath(c, map[string]string{
+		"nvme": "#!/bin/sh\nexit 1\n",
+	})
+	defer restorePath()
+
+	executor, err := newExecutorWithoutNamespace()
+	c.Assert(err, IsNil)
+
+	i := &Initiator{
+		Name: "vol-stop-disconnect-fail",
+		NVMeTCPInfo: &NVMeTCPInfo{
+			SubsystemNQN:       "nqn.test",
+			ControllerName:     "nvme0",
+			TransportAddress:   "10.0.0.1",
+			TransportServiceID: "4420",
+		},
+		executor: executor,
+		logger:   logrus.New(),
+	}
+
+	err = i.StopDisconnectFirst()
+	c.Assert(err, NotNil)
+	c.Assert(err.Error(), Matches, ".*failed to disconnect target.*")
+	// A failed disconnect must leave the recorded state untouched so a retry
+	// starts from the same state.
+	c.Assert(i.NVMeTCPInfo.ControllerName, Equals, "nvme0")
+	c.Assert(i.NVMeTCPInfo.TransportAddress, Equals, "10.0.0.1")
+	c.Assert(i.NVMeTCPInfo.TransportServiceID, Equals, "4420")
+}
+
+func (s *InitiatorTestSuite) TestStopDisconnectFirstSuccess(c *C) {
+	restorePath := setupFakeCommandPath(c, map[string]string{
+		"nvme": `#!/bin/sh
+case "$1" in
+	--version) echo "nvme version 1.16" ;;
+	list-subsys) echo '{"Subsystems":[{"NQN":"nqn.test","Paths":[{"Name":"nvme0","Transport":"tcp","Address":"traddr=10.0.0.1,trsvcid=4420","State":"live"}]}]}' ;;
+esac
+exit 0
+`,
+		// No dm device exists for this volume; removal must see "does not exist".
+		"dmsetup": "#!/bin/sh\necho 'Device does not exist.' >&2\nexit 1\n",
+	})
+	defer restorePath()
+
+	executor, err := newExecutorWithoutNamespace()
+	c.Assert(err, IsNil)
+
+	i := &Initiator{
+		// No dm device exists for this name; the missing device must be
+		// tolerated. The empty Endpoint makes endpoint removal a no-op.
+		Name: "vol-stop-disconnect-success",
+		NVMeTCPInfo: &NVMeTCPInfo{
+			SubsystemNQN:       "nqn.test",
+			ControllerName:     "nvme0",
+			NamespaceName:      "nvme0n1",
+			TransportAddress:   "10.0.0.1",
+			TransportServiceID: "4420",
+		},
+		executor: executor,
+		logger:   logrus.New(),
+	}
+
+	err = i.StopDisconnectFirst()
+	c.Assert(err, IsNil)
+	c.Assert(i.NVMeTCPInfo.ControllerName, Equals, "")
+	c.Assert(i.NVMeTCPInfo.NamespaceName, Equals, "")
+	c.Assert(i.NVMeTCPInfo.TransportAddress, Equals, "")
+	c.Assert(i.NVMeTCPInfo.TransportServiceID, Equals, "")
+
+	// Calling again after success skips the disconnect and returns nil.
+	err = i.StopDisconnectFirst()
+	c.Assert(err, IsNil)
+}
+
+func (s *InitiatorTestSuite) TestStopDisconnectFirstRetrySkipsDisconnect(c *C) {
+	disconnectFile := filepath.Join(c.MkDir(), "nvme-disconnects")
+	restorePath := setupFakeCommandPath(c, map[string]string{
+		"nvme": fmt.Sprintf(`#!/bin/sh
+case "$1" in
+	--version) echo "nvme version 1.16" ;;
+	list-subsys) echo '{"Subsystems":[{"NQN":"nqn.test","Paths":[{"Name":"nvme0","Transport":"tcp","Address":"traddr=10.0.0.1,trsvcid=4420","State":"live"}]}]}' ;;
+	disconnect) echo x >> %s ;;
+esac
+exit 0
+`, disconnectFile),
+		"dmsetup": "#!/bin/sh\necho 'Device does not exist.' >&2\nexit 1\n",
+	})
+	defer restorePath()
+
+	executor, err := newExecutorWithoutNamespace()
+	c.Assert(err, IsNil)
+
+	i := &Initiator{
+		Name: "vol-stop-disconnect-retry",
+		NVMeTCPInfo: &NVMeTCPInfo{
+			SubsystemNQN: "nqn.test",
+		},
+		executor: executor,
+		logger:   logrus.New(),
+	}
+
+	// A fresh stop-only instance must perform the disconnect on the first call.
+	c.Assert(i.StopDisconnectFirst(), IsNil)
+	c.Assert(i.targetDisconnected, Equals, true)
+
+	// Retries must not re-disconnect the subsystem: a concurrent new
+	// connection to the same subsystem has to survive them.
+	c.Assert(i.StopDisconnectFirst(), IsNil)
+	c.Assert(i.StopDisconnectFirst(), IsNil)
+
+	data, err := os.ReadFile(disconnectFile)
+	c.Assert(err, IsNil)
+	c.Assert(len(data), Equals, 2) // one "x\n" for the single disconnect call
+}
+
+func (s *InitiatorTestSuite) TestStopDisconnectFirstDisconnectFailureKeepsFlagUnset(c *C) {
+	restorePath := setupFakeCommandPath(c, map[string]string{
+		"nvme": "#!/bin/sh\nexit 1\n",
+	})
+	defer restorePath()
+
+	executor, err := newExecutorWithoutNamespace()
+	c.Assert(err, IsNil)
+
+	i := &Initiator{
+		Name: "vol-stop-disconnect-fail-flag",
+		NVMeTCPInfo: &NVMeTCPInfo{
+			SubsystemNQN: "nqn.test",
+		},
+		executor: executor,
+		logger:   logrus.New(),
+	}
+
+	c.Assert(i.StopDisconnectFirst(), NotNil)
+	// A failed disconnect must not mark the target as disconnected, so the
+	// next retry attempts the disconnect again.
+	c.Assert(i.targetDisconnected, Equals, false)
+}
+
+// fakeNvmeScriptConnected fakes an nvme binary for which GetDevices finds a
+// single connected device for nqn.test at 10.0.0.1:4420.
+const fakeNvmeScriptConnected = `#!/bin/sh
+case "$1" in
+--version)
+	echo "nvme version 2.0"
+	;;
+list)
+	echo '{"Devices":[{"DevicePath":"/dev/nvme0n1","Namespace":1}]}'
+	;;
+list-subsys)
+	echo '[{"Subsystems":[{"Name":"nvme-subsys0","NQN":"nqn.test","Paths":[{"Name":"nvme0","Transport":"tcp","Address":"traddr=10.0.0.1,trsvcid=4420","State":"live"}]}]}]'
+	;;
+*)
+	exit 1
+	;;
+esac
+`
+
+func (s *InitiatorTestSuite) TestDiscoverAndConnectClearsTargetDisconnected(c *C) {
+	restorePath := setupFakeCommandPath(c, map[string]string{
+		"nvme": fakeNvmeScriptConnected,
+	})
+	defer restorePath()
+
+	executor, err := newExecutorWithoutNamespace()
+	c.Assert(err, IsNil)
+
+	i := &Initiator{
+		Name:               "vol-connect-clears-flag",
+		NVMeTCPInfo:        &NVMeTCPInfo{SubsystemNQN: "nqn.test"},
+		targetDisconnected: true,
+		executor:           executor,
+		logger:             logrus.New(),
+	}
+
+	// A successful connect means a kernel connection now exists, so the
+	// disconnected marker must be cleared even before the caller records the
+	// connection info or loads the device info.
+	subsystemNQN, controllerName, err := i.discoverAndConnectNVMeTCPTarget("10.0.0.1", "4420", 1, time.Millisecond)
+	c.Assert(err, IsNil)
+	c.Assert(subsystemNQN, Equals, "nqn.test")
+	c.Assert(controllerName, Equals, "nvme0")
+	c.Assert(i.targetDisconnected, Equals, false)
+}
+
+func (s *InitiatorTestSuite) TestDiscoverAndConnectFailureKeepsTargetDisconnected(c *C) {
+	restorePath := setupFakeCommandPath(c, map[string]string{
+		"nvme": "#!/bin/sh\nexit 1\n",
+	})
+	defer restorePath()
+
+	executor, err := newExecutorWithoutNamespace()
+	c.Assert(err, IsNil)
+
+	i := &Initiator{
+		Name:               "vol-connect-fail-flag",
+		NVMeTCPInfo:        &NVMeTCPInfo{SubsystemNQN: "nqn.test"},
+		targetDisconnected: true,
+		executor:           executor,
+		logger:             logrus.New(),
+	}
+
+	_, _, err = i.discoverAndConnectNVMeTCPTarget("10.0.0.1", "4420", 1, time.Millisecond)
+	c.Assert(err, NotNil)
+	c.Assert(i.targetDisconnected, Equals, true)
+}
+
+func (s *InitiatorTestSuite) TestConnectNVMeTCPTargetClearsTargetDisconnected(c *C) {
+	restorePath := setupFakeCommandPath(c, map[string]string{
+		"nvme": fakeNvmeScriptConnected,
+	})
+	defer restorePath()
+
+	executor, err := newExecutorWithoutNamespace()
+	c.Assert(err, IsNil)
+
+	i := &Initiator{
+		Name:               "vol-public-connect-clears-flag",
+		NVMeTCPInfo:        &NVMeTCPInfo{SubsystemNQN: "nqn.test"},
+		targetDisconnected: true,
+		executor:           executor,
+		logger:             logrus.New(),
+	}
+
+	controllerName, err := i.ConnectNVMeTCPTarget("10.0.0.1", "4420", "nqn.test")
+	c.Assert(err, IsNil)
+	c.Assert(controllerName, Equals, "nvme0")
+	c.Assert(i.targetDisconnected, Equals, false)
+}
+
+func (s *InitiatorTestSuite) TestLoadNVMeDeviceInfoFailureKeepsTargetDisconnected(c *C) {
+	restorePath := setupFakeCommandPath(c, map[string]string{
+		"nvme": "#!/bin/sh\nexit 1\n",
+	})
+	defer restorePath()
+
+	executor, err := newExecutorWithoutNamespace()
+	c.Assert(err, IsNil)
+
+	i := &Initiator{
+		Name:               "vol-load-fail-flag",
+		NVMeTCPInfo:        &NVMeTCPInfo{SubsystemNQN: "nqn.test"},
+		targetDisconnected: true,
+		executor:           executor,
+		logger:             logrus.New(),
+	}
+
+	// A load that fails before a controller is matched proves nothing about
+	// the connection, so it must leave the disconnected marker in place.
+	c.Assert(i.loadNVMeDeviceInfoWithoutLock("10.0.0.1", "4420", "nqn.test"), NotNil)
+	c.Assert(i.targetDisconnected, Equals, true)
+}
+
+func (s *InitiatorTestSuite) TestLoadNVMeDeviceInfoControllerMatchClearsTargetDisconnected(c *C) {
+	restorePath := setupFakeCommandPath(c, map[string]string{
+		"nvme": fakeNvmeScriptConnected,
+		// Fail device inspection (lsblk) after the controller is matched.
+		"lsblk": "#!/bin/sh\nexit 1\n",
+	})
+	defer restorePath()
+
+	executor, err := newExecutorWithoutNamespace()
+	c.Assert(err, IsNil)
+
+	i := &Initiator{
+		Name:               "vol-load-partial-clears-marker",
+		NVMeTCPInfo:        &NVMeTCPInfo{SubsystemNQN: "nqn.test"},
+		targetDisconnected: true,
+		executor:           executor,
+		logger:             logrus.New(),
+	}
+
+	// A matched controller proves a kernel connection exists, so the marker
+	// must be cleared even when the load then fails at device inspection.
+	// Otherwise a later StopDisconnectFirst would skip a necessary disconnect
+	// and leak the live connection.
+	c.Assert(i.loadNVMeDeviceInfoWithoutLock("10.0.0.1", "4420", "nqn.test"), NotNil)
+	c.Assert(i.targetDisconnected, Equals, false)
+}
+
+func (s *InitiatorTestSuite) TestDisconnectNVMeTCPTargetSetsTargetDisconnected(c *C) {
+	testCases := []struct {
+		name                     string
+		nvmeScript               string
+		expectError              bool
+		expectTargetDisconnected bool
+	}{
+		{
+			name: "successful disconnect sets the marker",
+			nvmeScript: `#!/bin/sh
+case "$1" in
+	--version) echo "nvme version 1.16" ;;
+	list-subsys) echo '{"Subsystems":[{"NQN":"` + testSubsystemNQN + `","Paths":[` + testLivePath + `]}]}' ;;
+esac
+exit 0
+`,
+			expectError:              false,
+			expectTargetDisconnected: true,
+		},
+		{
+			name:                     "failed disconnect keeps the marker unset",
+			nvmeScript:               "#!/bin/sh\nexit 1\n",
+			expectError:              true,
+			expectTargetDisconnected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		restorePath := setupFakeCommandPath(c, map[string]string{
+			"nvme": tc.nvmeScript,
+		})
+
+		executor, err := newExecutorWithoutNamespace()
+		c.Assert(err, IsNil, Commentf("case=%s", tc.name))
+
+		i := &Initiator{
+			Name:        "vol-disconnect-marker",
+			NVMeTCPInfo: &NVMeTCPInfo{SubsystemNQN: testSubsystemNQN},
+			executor:    executor,
+			logger:      logrus.New(),
+		}
+
+		err = i.disconnectNVMeTCPTarget()
+		if tc.expectError {
+			c.Assert(err, NotNil, Commentf("case=%s", tc.name))
+		} else {
+			c.Assert(err, IsNil, Commentf("case=%s", tc.name))
+		}
+		c.Assert(i.targetDisconnected, Equals, tc.expectTargetDisconnected, Commentf("case=%s", tc.name))
+
+		restorePath()
+	}
+}
+
 // New multipath tests (plain testing.T)
 
 func TestConnectNVMeTCPPathRequiresNVMeInfo(t *testing.T) {
