@@ -430,6 +430,196 @@ func (s *InitiatorTestSuite) TestGetDmDevicePath(c *C) {
 	c.Assert(getDmDevicePath("vol-1"), Equals, "/dev/mapper/vol-1")
 }
 
+func (s *InitiatorTestSuite) TestStopDisconnectFirstNilNVMeInfo(c *C) {
+	i := &Initiator{Name: "vol-1", logger: logrus.New()}
+
+	err := i.StopDisconnectFirst()
+	c.Assert(err, NotNil)
+	c.Assert(err.Error(), Matches, ".*nvmeTCPInfo is nil.*")
+}
+
+func (s *InitiatorTestSuite) TestStopDisconnectFirstDisconnectFailureSkipsCleanup(c *C) {
+	// The listing succeeds with one live path so the failure comes from the
+	// disconnect itself, not from an earlier nvme call.
+	dmsetupCalls := filepath.Join(c.MkDir(), "dmsetup-calls")
+	restorePath := setupFakeCommandPath(c, map[string]string{
+		"nvme": `#!/bin/sh
+case "$1" in
+	--version) echo "nvme version 1.16" ;;
+	list-subsys) echo '{"Subsystems":[{"NQN":"nqn.test","Paths":[{"Name":"nvme0","Transport":"tcp","Address":"traddr=10.0.0.1,trsvcid=4420","State":"live"}]}]}' ;;
+	disconnect) exit 1 ;;
+esac
+exit 0
+`,
+		"dmsetup": fmt.Sprintf("#!/bin/sh\necho \"$1\" >> %s\nexit 0\n", dmsetupCalls),
+	})
+	defer restorePath()
+
+	executor, err := newExecutorWithoutNamespace()
+	c.Assert(err, IsNil)
+
+	endpoint := filepath.Join(c.MkDir(), "vol-stop-disconnect-fail")
+	c.Assert(os.WriteFile(endpoint, nil, 0600), IsNil)
+
+	i := &Initiator{
+		Name:     "vol-stop-disconnect-fail",
+		Endpoint: endpoint,
+		NVMeTCPInfo: &NVMeTCPInfo{
+			SubsystemNQN:       "nqn.test",
+			ControllerName:     "nvme0",
+			TransportAddress:   "10.0.0.1",
+			TransportServiceID: "4420",
+		},
+		executor: executor,
+		logger:   logrus.New(),
+	}
+
+	err = i.StopDisconnectFirst()
+	c.Assert(err, NotNil)
+	c.Assert(err.Error(), Matches, ".*failed to disconnect target.*")
+	// A failed disconnect must leave the recorded state untouched so a retry
+	// starts from the same state.
+	c.Assert(i.NVMeTCPInfo.ControllerName, Equals, "nvme0")
+	c.Assert(i.NVMeTCPInfo.TransportAddress, Equals, "10.0.0.1")
+	c.Assert(i.NVMeTCPInfo.TransportServiceID, Equals, "4420")
+	// Cleanup must not run: the dm device and endpoint stay in place.
+	_, err = os.Stat(dmsetupCalls)
+	c.Assert(os.IsNotExist(err), Equals, true)
+	_, err = os.Stat(endpoint)
+	c.Assert(err, IsNil)
+}
+
+func (s *InitiatorTestSuite) TestStopDisconnectFirstDisconnectsBeforeCleanup(c *C) {
+	// nvme and dmsetup append to one log so the order of their calls can be
+	// checked. dmsetup reports an existing dm device so removal really runs.
+	callLog := filepath.Join(c.MkDir(), "calls")
+	restorePath := setupFakeCommandPath(c, map[string]string{
+		"nvme": fmt.Sprintf(`#!/bin/sh
+case "$1" in
+	--version) echo "nvme version 1.16" ;;
+	list-subsys) echo '{"Subsystems":[{"NQN":"nqn.test","Paths":[{"Name":"nvme0","Transport":"tcp","Address":"traddr=10.0.0.1,trsvcid=4420","State":"live"}]}]}' ;;
+	disconnect) echo "nvme disconnect" >> %s ;;
+esac
+exit 0
+`, callLog),
+		"dmsetup": fmt.Sprintf(`#!/bin/sh
+case "$1 $2" in
+	"info "*) echo "vol-stop-order dm-0 L--w 253 0 0 1 0" ;;
+	"--noudevsync remove") echo "dmsetup remove" >> %s ;;
+esac
+exit 0
+`, callLog),
+	})
+	defer restorePath()
+
+	executor, err := newExecutorWithoutNamespace()
+	c.Assert(err, IsNil)
+
+	endpoint := filepath.Join(c.MkDir(), "vol-stop-order")
+	c.Assert(os.WriteFile(endpoint, nil, 0600), IsNil)
+
+	i := &Initiator{
+		Name:     "vol-stop-order",
+		Endpoint: endpoint,
+		NVMeTCPInfo: &NVMeTCPInfo{
+			SubsystemNQN:   "nqn.test",
+			ControllerName: "nvme0",
+		},
+		executor: executor,
+		logger:   logrus.New(),
+	}
+
+	c.Assert(i.StopDisconnectFirst(), IsNil)
+
+	// Removing the dm device before the disconnect would block on stuck I/O,
+	// which is the failure this method exists to avoid.
+	calls, err := os.ReadFile(callLog)
+	c.Assert(err, IsNil)
+	c.Assert(string(calls), Equals, "nvme disconnect\ndmsetup remove\n")
+
+	_, err = os.Stat(endpoint)
+	c.Assert(os.IsNotExist(err), Equals, true)
+}
+
+func (s *InitiatorTestSuite) TestStopDisconnectFirstSuccess(c *C) {
+	restorePath := setupFakeCommandPath(c, map[string]string{
+		"nvme": `#!/bin/sh
+case "$1" in
+	--version) echo "nvme version 1.16" ;;
+	list-subsys) echo '{"Subsystems":[{"NQN":"nqn.test","Paths":[{"Name":"nvme0","Transport":"tcp","Address":"traddr=10.0.0.1,trsvcid=4420","State":"live"}]}]}' ;;
+esac
+exit 0
+`,
+		// No dm device exists for this volume; removal must see "does not exist".
+		"dmsetup": "#!/bin/sh\necho 'Device does not exist.' >&2\nexit 1\n",
+	})
+	defer restorePath()
+
+	executor, err := newExecutorWithoutNamespace()
+	c.Assert(err, IsNil)
+
+	i := &Initiator{
+		// No dm device exists for this name; the missing device must be
+		// tolerated. The empty Endpoint makes endpoint removal a no-op.
+		Name: "vol-stop-disconnect-success",
+		NVMeTCPInfo: &NVMeTCPInfo{
+			SubsystemNQN:       "nqn.test",
+			ControllerName:     "nvme0",
+			NamespaceName:      "nvme0n1",
+			TransportAddress:   "10.0.0.1",
+			TransportServiceID: "4420",
+		},
+		executor: executor,
+		logger:   logrus.New(),
+	}
+
+	err = i.StopDisconnectFirst()
+	c.Assert(err, IsNil)
+	c.Assert(i.NVMeTCPInfo.ControllerName, Equals, "")
+	c.Assert(i.NVMeTCPInfo.NamespaceName, Equals, "")
+	c.Assert(i.NVMeTCPInfo.TransportAddress, Equals, "")
+	c.Assert(i.NVMeTCPInfo.TransportServiceID, Equals, "")
+}
+
+func (s *InitiatorTestSuite) TestStopDisconnectFirstRetryDisconnectsAgain(c *C) {
+	disconnectFile := filepath.Join(c.MkDir(), "nvme-disconnects")
+	restorePath := setupFakeCommandPath(c, map[string]string{
+		// The path stays live across calls, as a path that reconnected
+		// between a failed stop and its retry would.
+		"nvme": fmt.Sprintf(`#!/bin/sh
+case "$1" in
+	--version) echo "nvme version 1.16" ;;
+	list-subsys) echo '{"Subsystems":[{"NQN":"nqn.test","Paths":[{"Name":"nvme0","Transport":"tcp","Address":"traddr=10.0.0.1,trsvcid=4420","State":"live"}]}]}' ;;
+	disconnect) echo x >> %s ;;
+esac
+exit 0
+`, disconnectFile),
+		"dmsetup": "#!/bin/sh\necho 'Device does not exist.' >&2\nexit 1\n",
+	})
+	defer restorePath()
+
+	executor, err := newExecutorWithoutNamespace()
+	c.Assert(err, IsNil)
+
+	i := &Initiator{
+		Name: "vol-stop-disconnect-retry",
+		NVMeTCPInfo: &NVMeTCPInfo{
+			SubsystemNQN: "nqn.test",
+		},
+		executor: executor,
+		logger:   logrus.New(),
+	}
+
+	// Every call must disconnect whatever is live: a retry that skipped the
+	// disconnect would leave a reconnected path behind.
+	c.Assert(i.StopDisconnectFirst(), IsNil)
+	c.Assert(i.StopDisconnectFirst(), IsNil)
+
+	data, err := os.ReadFile(disconnectFile)
+	c.Assert(err, IsNil)
+	c.Assert(string(data), Equals, "x\nx\n")
+}
+
 // New multipath tests (plain testing.T)
 
 func TestConnectNVMeTCPPathRequiresNVMeInfo(t *testing.T) {
