@@ -998,23 +998,32 @@ func (i *Initiator) findControllerBySubsystem(nqn, transportAddress, transportSe
 	return "", fmt.Errorf("no controller found for subsystem %s at %s:%s", nqn, transportAddress, transportServiceID)
 }
 
+// acquireStopLock acquires the initiator lock and returns a release func
+// that removes the lock file while still holding the lock, avoiding an
+// unlink race (where a waiter locks the unlinked inode while a new arrival
+// creates and locks a fresh file at the same path).
+func (i *Initiator) acquireStopLock(operation string) (release func(), err error) {
+	lock, err := i.newLock(operation)
+	if err != nil {
+		return nil, err
+	}
+	return func() {
+		errRemove := os.Remove(i.lockFilePath())
+		if errRemove != nil && !os.IsNotExist(errRemove) {
+			i.logger.WithError(errRemove).Warnf("Failed to remove lock file %s after stopping initiator %s", i.lockFilePath(), i.Name)
+		}
+		lock.Unlock()
+	}, nil
+}
+
 // Stop stops the NVMe/TCP initiator
 func (i *Initiator) Stop(spdkClient *client.Client, dmDeviceAndEndpointCleanupRequired, deferDmDeviceCleanup, returnErrorForBusyDevice bool) (bool, error) {
 	if i.hostProc != "" {
-		lock, err := i.newLock("Stop")
+		release, err := i.acquireStopLock("Stop")
 		if err != nil {
 			return false, err
 		}
-		defer func() {
-			// Remove the lock file while still holding the lock to avoid
-			// an unlink race (where a waiter locks the unlinked inode while
-			// a new arrival creates and locks a fresh file at the same path).
-			errRemove := os.Remove(i.lockFilePath())
-			if errRemove != nil && !os.IsNotExist(errRemove) {
-				i.logger.WithError(errRemove).Warnf("Failed to remove lock file %s after stopping initiator %s", i.lockFilePath(), i.Name)
-			}
-			lock.Unlock()
-		}()
+		defer release()
 	}
 
 	return i.stopWithoutLock(spdkClient, dmDeviceAndEndpointCleanupRequired, deferDmDeviceCleanup, returnErrorForBusyDevice)
@@ -1050,15 +1059,9 @@ func (i *Initiator) stopWithoutLock(spdkClient *client.Client, dmDeviceAndEndpoi
 
 	// stopping NvmeTcp initiator
 	if i.NVMeTCPInfo != nil {
-		err = DisconnectUsableTargetPaths(i.NVMeTCPInfo.SubsystemNQN, i.executor)
-		if err != nil {
-			return dmDeviceIsBusy, errors.Wrapf(err, "failed to disconnect target for NVMe/TCP initiator %s", i.Name)
+		if err := i.disconnectNVMeTCPTarget(); err != nil {
+			return dmDeviceIsBusy, err
 		}
-
-		i.NVMeTCPInfo.ControllerName = ""
-		i.NVMeTCPInfo.NamespaceName = ""
-		i.NVMeTCPInfo.TransportAddress = ""
-		i.NVMeTCPInfo.TransportServiceID = ""
 		return dmDeviceIsBusy, nil
 	}
 
@@ -1076,6 +1079,20 @@ func (i *Initiator) stopWithoutLock(spdkClient *client.Client, dmDeviceAndEndpoi
 		return dmDeviceIsBusy, err
 	}
 	return dmDeviceIsBusy, nil
+}
+
+// disconnectNVMeTCPTarget disconnects the NVMe/TCP target and clears the
+// recorded connection state on success.
+func (i *Initiator) disconnectNVMeTCPTarget() error {
+	if err := DisconnectUsableTargetPaths(i.NVMeTCPInfo.SubsystemNQN, i.executor); err != nil {
+		return errors.Wrapf(err, "failed to disconnect target for NVMe/TCP initiator %s", i.Name)
+	}
+
+	i.NVMeTCPInfo.ControllerName = ""
+	i.NVMeTCPInfo.NamespaceName = ""
+	i.NVMeTCPInfo.TransportAddress = ""
+	i.NVMeTCPInfo.TransportServiceID = ""
+	return nil
 }
 
 // GetControllerName returns the controller name
