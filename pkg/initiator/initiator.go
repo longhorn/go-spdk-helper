@@ -955,7 +955,7 @@ func (i *Initiator) findControllerBySubsystem(nqn, transportAddress, transportSe
 		}
 		for _, path := range sys.Paths {
 			controllerIP, controllerPort := GetIPAndPortFromControllerAddress(path.Address)
-			if controllerIP == transportAddress && controllerPort == transportServiceID {
+			if util.IsSameNvmeAddr(controllerIP, transportAddress) && controllerPort == transportServiceID {
 				return path.Name, nil
 			}
 		}
@@ -1102,7 +1102,7 @@ func (i *Initiator) WaitForControllerLive(transportAddress, transportServiceID s
 				}
 				for _, path := range sys.Paths {
 					controllerIP, controllerPort := GetIPAndPortFromControllerAddress(path.Address)
-					if controllerIP == transportAddress && controllerPort == transportServiceID {
+					if util.IsSameNvmeAddr(controllerIP, transportAddress) && controllerPort == transportServiceID {
 						if path.State == "live" {
 							i.logger.Infof("NVMe controller %s for %s:%s reached live state",
 								path.Name, transportAddress, transportServiceID)
