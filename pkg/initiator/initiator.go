@@ -157,6 +157,11 @@ func NewInitiator(name, hostProc string, nvmeTCPInfo *NVMeTCPInfo, ublkInfo *Ubl
 // gets its own lock file so that operations on different volumes can proceed
 // in parallel. The lock serializes operations within the same volume only
 // (e.g., preventing concurrent Start and Stop on the same NVMe subsystem).
+//
+// Never remove the lock file. Unlinking it while it is held lets two callers
+// hold the lock at once, one on the old inode and one on a fresh file at the
+// same path. Lock files are never reclaimed: one empty file per volume name
+// stays under LockFilePrefix until reboot.
 func (i *Initiator) lockFilePath() string {
 	return fmt.Sprintf("%s-%s.lock", LockFilePrefix, i.Name)
 }
@@ -1010,16 +1015,7 @@ func (i *Initiator) Stop(spdkClient *client.Client, dmDeviceAndEndpointCleanupRe
 		if err != nil {
 			return false, err
 		}
-		defer func() {
-			// Remove the lock file while still holding the lock to avoid
-			// an unlink race (where a waiter locks the unlinked inode while
-			// a new arrival creates and locks a fresh file at the same path).
-			errRemove := os.Remove(i.lockFilePath())
-			if errRemove != nil && !os.IsNotExist(errRemove) {
-				i.logger.WithError(errRemove).Warnf("Failed to remove lock file %s after stopping initiator %s", i.lockFilePath(), i.Name)
-			}
-			lock.Unlock()
-		}()
+		defer lock.Unlock()
 	}
 
 	return i.stopWithoutLock(spdkClient, dmDeviceAndEndpointCleanupRequired, deferDmDeviceCleanup, returnErrorForBusyDevice)
