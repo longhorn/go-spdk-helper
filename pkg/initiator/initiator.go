@@ -170,6 +170,10 @@ func NewInitiator(name, hostProc string, nvmeTCPInfo *NVMeTCPInfo, ublkInfo *Ubl
 // gets its own lock file so that operations on different volumes can proceed
 // in parallel. The lock serializes operations within the same volume only
 // (e.g., preventing concurrent Start and Stop on the same NVMe subsystem).
+//
+// Never remove the lock file. Unlinking it while locked lets two callers
+// hold the lock at once: a waiter on the old inode and a newcomer on a
+// fresh file at the same path. A leftover empty file is harmless.
 func (i *Initiator) lockFilePath() string {
 	return fmt.Sprintf("%s-%s.lock", LockFilePrefix, i.Name)
 }
@@ -1023,32 +1027,14 @@ func (i *Initiator) findControllerBySubsystem(nqn, transportAddress, transportSe
 	return "", fmt.Errorf("no controller found for subsystem %s at %s:%s", nqn, transportAddress, transportServiceID)
 }
 
-// acquireStopLock acquires the initiator lock and returns a release func
-// that removes the lock file while still holding the lock, avoiding an
-// unlink race (where a waiter locks the unlinked inode while a new arrival
-// creates and locks a fresh file at the same path).
-func (i *Initiator) acquireStopLock(operation string) (release func(), err error) {
-	lock, err := i.newLock(operation)
-	if err != nil {
-		return nil, err
-	}
-	return func() {
-		errRemove := os.Remove(i.lockFilePath())
-		if errRemove != nil && !os.IsNotExist(errRemove) {
-			i.logger.WithError(errRemove).Warnf("Failed to remove lock file %s after stopping initiator %s", i.lockFilePath(), i.Name)
-		}
-		lock.Unlock()
-	}, nil
-}
-
 // Stop stops the NVMe/TCP initiator
 func (i *Initiator) Stop(spdkClient *client.Client, dmDeviceAndEndpointCleanupRequired, deferDmDeviceCleanup, returnErrorForBusyDevice bool) (bool, error) {
 	if i.hostProc != "" {
-		release, err := i.acquireStopLock("Stop")
+		lock, err := i.newLock("Stop")
 		if err != nil {
 			return false, err
 		}
-		defer release()
+		defer lock.Unlock()
 	}
 
 	return i.stopWithoutLock(spdkClient, dmDeviceAndEndpointCleanupRequired, deferDmDeviceCleanup, returnErrorForBusyDevice)
@@ -1134,11 +1120,11 @@ func (i *Initiator) StopDisconnectFirst() error {
 	}
 
 	if i.hostProc != "" {
-		release, err := i.acquireStopLock("StopDisconnectFirst")
+		lock, err := i.newLock("StopDisconnectFirst")
 		if err != nil {
 			return err
 		}
-		defer release()
+		defer lock.Unlock()
 	}
 
 	if i.targetDisconnected {
