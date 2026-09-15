@@ -23,7 +23,17 @@ const (
 
 	DefaultShortTimeout = 60 * time.Second
 	DefaultLongTimeout  = 24 * time.Hour
+
+	// DefaultStaleEntryCleanupInterval is how often the dispatcher scans for
+	// and removes response bookkeeping for requests whose caller has already
+	// given up (timed out) without ever receiving a matching response.
+	DefaultStaleEntryCleanupInterval = time.Minute
 )
+
+// staleEntryCleanupInterval is a package-level variable (rather than using
+// DefaultStaleEntryCleanupInterval directly) purely so tests can shorten it
+// to observe cleanup without waiting a full minute.
+var staleEntryCleanupInterval = DefaultStaleEntryCleanupInterval
 
 type Client struct {
 	ctx context.Context
@@ -39,15 +49,19 @@ type Client struct {
 	msgWrapperQueue   chan *messageWrapper
 	respReceiverQueue chan *Response
 
-	// TODO: may need to launch a cleanup mechanism for the entries that has been there for a long time.
 	responseChans       map[uint32]chan *Response
 	responseChanInfoMap map[uint32]string
+	// responseChanExpiry records when each entry above should be considered
+	// abandoned (the caller's own timeout has elapsed) if no response ever
+	// arrives for it, so cleanupExpiredEntries can reclaim it.
+	responseChanExpiry map[uint32]time.Time
 }
 
 type messageWrapper struct {
 	method       string
 	params       interface{}
 	responseChan chan *Response
+	timeout      time.Duration
 }
 
 func NewClient(ctx context.Context, conn net.Conn) *Client {
@@ -71,6 +85,7 @@ func NewClient(ctx context.Context, conn net.Conn) *Client {
 		respReceiverQueue:   make(chan *Response, DefaultConcurrentLimit),
 		responseChans:       make(map[uint32]chan *Response),
 		responseChanInfoMap: make(map[uint32]string),
+		responseChanExpiry:  make(map[uint32]time.Time),
 	}
 	c.encoder.SetIndent("", "\t")
 
@@ -171,6 +186,7 @@ func (c *Client) handleSend(msgWrapper *messageWrapper) {
 	c.idCounter++
 	c.responseChans[id] = msgWrapper.responseChan
 	c.responseChanInfoMap[id] = fmt.Sprintf("method: %s, params: %+v", msgWrapper.method, msgWrapper.params)
+	c.responseChanExpiry[id] = time.Now().Add(msgWrapper.timeout)
 }
 
 func (c *Client) handleRecv(resp *Response) {
@@ -182,6 +198,7 @@ func (c *Client) handleRecv(resp *Response) {
 	info := c.responseChanInfoMap[resp.ID]
 	delete(c.responseChans, resp.ID)
 	delete(c.responseChanInfoMap, resp.ID)
+	delete(c.responseChanExpiry, resp.ID)
 
 	select {
 	case ch <- resp:
@@ -191,7 +208,30 @@ func (c *Client) handleRecv(resp *Response) {
 	close(ch)
 }
 
+// cleanupExpiredEntries removes bookkeeping for requests whose caller-side
+// timeout has already elapsed without a matching response ever arriving
+// (e.g. the SPDK target hung, crashed, or dropped the message). Without
+// this, responseChans/responseChanInfoMap/responseChanExpiry grow without
+// bound for a long-lived client, since handleRecv only ever cleans them up
+// on receipt of an actual response.
+func (c *Client) cleanupExpiredEntries() {
+	now := time.Now()
+	for id, expiry := range c.responseChanExpiry {
+		if now.Before(expiry) {
+			continue
+		}
+		info := c.responseChanInfoMap[id]
+		delete(c.responseChans, id)
+		delete(c.responseChanInfoMap, id)
+		delete(c.responseChanExpiry, id)
+		logrus.Warnf("Cleaning up expired response entry for request id %d after its caller timed out, %v", id, info)
+	}
+}
+
 func (c *Client) dispatcher() {
+	cleanupTicker := time.NewTicker(staleEntryCleanupInterval)
+	defer cleanupTicker.Stop()
+
 	for {
 		select {
 		case <-c.ctx.Done():
@@ -201,6 +241,8 @@ func (c *Client) dispatcher() {
 			c.handleSend(msg)
 		case resp := <-c.respReceiverQueue:
 			c.handleRecv(resp)
+		case <-cleanupTicker.C:
+			c.cleanupExpiredEntries()
 		}
 	}
 }
@@ -286,6 +328,7 @@ func (c *Client) SendMsgAsyncWithTimeout(method string, params interface{}, time
 		method:       method,
 		params:       params,
 		responseChan: responseChan,
+		timeout:      timeout,
 	}
 
 	select {
