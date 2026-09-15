@@ -17,6 +17,7 @@ import (
 	commontypes "github.com/longhorn/go-common-libs/types"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
+	"github.com/longhorn/go-spdk-helper/pkg/types"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
@@ -139,6 +140,48 @@ func (s *InitiatorTestSuite) TestWaitForNVMeTCPTargetDisconnectZeroRetries(c *C)
 
 	err := i.WaitForNVMeTCPTargetDisconnect(0, time.Millisecond)
 	c.Assert(err, IsNil)
+}
+
+func (s *InitiatorTestSuite) TestDiscoverAndConnectNVMeTCPTargetFailsFastOnDuplicateCntlid(c *C) {
+	attemptsFile := filepath.Join(c.MkDir(), "connect-attempts")
+	restorePath := setupFakeCommandPath(c, map[string]string{
+		"cat": `#!/bin/sh
+case "$1" in
+	/etc/nvme/hostid) echo "test-host-id"; exit 0 ;;
+	/sys/class/dmi/id/product_uuid) echo "test-product-uuid"; exit 0 ;;
+esac
+exit 1
+`,
+		"nvme": `#!/bin/sh
+case "$1" in
+	--version) echo "nvme version 1.16"; exit 0 ;;
+	--show-hostnqn) echo "nqn.2014-08.org.nvmexpress:uuid:test-host"; exit 0 ;;
+	list) echo '{"Devices":[]}'; exit 0 ;;
+	list-subsys) echo '{"Subsystems":[]}'; exit 0 ;;
+	connect) echo connect >> ` + attemptsFile + `; echo "Failed to write to /dev/nvme-fabrics: Duplicate cntlid" >&2; exit 1 ;;
+esac
+exit 0
+`,
+	})
+	defer restorePath()
+
+	executor, err := newExecutorWithoutNamespace()
+	c.Assert(err, IsNil)
+
+	i := &Initiator{
+		Name:        "vol-a",
+		NVMeTCPInfo: &NVMeTCPInfo{SubsystemNQN: testSubsystemNQN},
+		executor:    executor,
+		logger:      logrus.New(),
+	}
+
+	_, _, err = i.discoverAndConnectNVMeTCPTarget("10.0.0.1", "20006", 3, time.Millisecond)
+	c.Assert(err, NotNil)
+	c.Assert(types.ErrorIsDuplicateCntlid(err), Equals, true)
+
+	attempts, err := os.ReadFile(attemptsFile)
+	c.Assert(err, IsNil)
+	c.Assert(strings.Count(string(attempts), "connect\n"), Equals, 1)
 }
 
 func (s *InitiatorTestSuite) TestNVMeInfoGetters(c *C) {
