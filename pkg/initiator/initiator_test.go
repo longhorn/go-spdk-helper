@@ -376,6 +376,29 @@ func (s *InitiatorTestSuite) TestSyncDmDeviceSizeReloadFailure(c *C) {
 	c.Assert(err.Error(), Matches, ".*dmsetup reload.*")
 }
 
+func (s *InitiatorTestSuite) TestWaitForDeviceSizeDoesNotReloadDmDevice(c *C) {
+	restorePath := setupFakeCommandPath(c, map[string]string{
+		util.BlockdevBinary: "#!/bin/sh\necho 8\n",
+		"dmsetup":           "#!/bin/sh\nexit 1\n",
+	})
+	defer restorePath()
+
+	executor, err := newExecutorWithoutNamespace()
+	c.Assert(err, IsNil)
+
+	i := &Initiator{
+		Name: "vol-wait-size-success",
+		dev: &util.LonghornBlockDevice{
+			Source: util.BlockDevice{Name: "fakeblk"},
+		},
+		executor: executor,
+		logger:   logrus.New(),
+	}
+
+	err = i.WaitForDeviceSize(DmSectorSize)
+	c.Assert(err, IsNil)
+}
+
 func (s *InitiatorTestSuite) TestSyncDmDeviceSizeSuccess(c *C) {
 	restorePath := setupFakeCommandPath(c, map[string]string{
 		util.BlockdevBinary: "#!/bin/sh\necho 8\n",
