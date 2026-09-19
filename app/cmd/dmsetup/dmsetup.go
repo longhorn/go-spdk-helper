@@ -7,6 +7,8 @@ import (
 	"github.com/urfave/cli"
 
 	commontypes "github.com/longhorn/go-common-libs/types"
+
+	"github.com/longhorn/go-spdk-helper/pkg/types"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
@@ -103,7 +105,7 @@ func suspend(c *cli.Context) error {
 
 	logrus.Infof("Suspending device %v with noflush %v and nolockfs %v", deviceName, c.Bool("noflush"), c.Bool("nolockfs"))
 
-	return util.DmsetupSuspend(deviceName, c.Bool("noflush"), c.Bool("nolockfs"), executor)
+	return util.DmsetupSuspend(deviceName, c.Bool("noflush"), c.Bool("nolockfs"), types.DmsetupTimeout, executor)
 }
 
 func ResumeCmd() cli.Command {
@@ -132,7 +134,7 @@ func resume(c *cli.Context) error {
 
 	logrus.Infof("Resuming device %v", deviceName)
 
-	return util.DmsetupResume(deviceName, executor)
+	return util.DmsetupResume(deviceName, types.DmsetupTimeout, executor)
 }
 
 func ReloadCmd() cli.Command {
@@ -167,7 +169,7 @@ func reload(c *cli.Context) error {
 
 	logrus.Infof("Reloading device %v with table %v", deviceName, c.String("table"))
 
-	return util.DmsetupReload(deviceName, c.String("table"), executor)
+	return util.DmsetupReload(deviceName, c.String("table"), types.DmsetupTimeout, executor)
 }
 
 func RemoveCmd() cli.Command {

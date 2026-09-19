@@ -588,7 +588,7 @@ func (s *TestSuite) TestSPDKEngineSuspend(c *C) {
 		c.Assert(err, IsNil)
 	}()
 
-	err = i.Suspend(true, true)
+	err = i.Suspend(true, true, types.DmsetupTimeout)
 	c.Assert(err, IsNil)
 
 	suspended, err := i.IsSuspended()
@@ -599,6 +599,6 @@ func (s *TestSuite) TestSPDKEngineSuspend(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(i.GetEndpoint(), Equals, "/dev/longhorn/test-raid")
 
-	err = i.Resume()
+	err = i.Resume(types.DmsetupTimeout)
 	c.Assert(err, IsNil)
 }
