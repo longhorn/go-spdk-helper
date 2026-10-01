@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/cockroachdb/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
@@ -18,6 +19,14 @@ import (
 // "create only if the transport list is empty" heuristic, which could not add
 // an RDMA transport to a target that already had a TCP transport (and vice
 // versa). Creating a transport that already exists is treated as success.
+//
+// By default SPDK lets the poll groups of each transport reserve half of the
+// shared iobuf pools, so a second transport in the same target would leave no
+// buffers for I/O and its own poll group caches would be partially populated.
+// A transport added next to an existing one, and the RDMA transport, which is
+// always used next to the TCP frontend on engine nodes, are therefore created
+// with explicit per poll group caches sized to a quarter of the pools. TCP and
+// RDMA together then reserve the same half of the pools as TCP alone.
 func (c *Client) ensureNvmfTransport(trtype spdktypes.NvmeTransportType) error {
 	nvmfTransportList, err := c.NvmfGetTransports("", "")
 	if err != nil {
@@ -28,11 +37,42 @@ func (c *Client) ensureNvmfTransport(trtype spdktypes.NvmeTransportType) error {
 			return nil
 		}
 	}
-	logrus.Infof("Creating transport with type %v", trtype)
-	if _, err := c.NvmfCreateTransport(trtype); err != nil && !jsonrpc.IsJSONRPCRespErrorTransportTypeAlreadyExists(err) {
+
+	if len(nvmfTransportList) == 0 && !strings.EqualFold(string(trtype), string(spdktypes.NvmeTransportTypeRDMA)) {
+		logrus.Infof("Creating transport with type %v", trtype)
+		if _, err := c.NvmfCreateTransport(trtype); err != nil && !jsonrpc.IsJSONRPCRespErrorTransportTypeAlreadyExists(err) {
+			return err
+		}
+		return nil
+	}
+
+	iobufOpts, err := c.IobufGetOptions()
+	if err != nil {
+		return errors.Wrap(err, "failed to get iobuf options")
+	}
+	pollGroupCount, err := c.NvmfGetPollGroupCount()
+	if err != nil {
+		return errors.Wrap(err, "failed to get NVMe-oF poll group count")
+	}
+	smallCacheSize, largeCacheSize := sharedTransportIobufCacheSize(iobufOpts, pollGroupCount)
+
+	logrus.Infof("Creating transport with type %v and iobuf small/large cache size per poll group %v/%v, %v existing transport(s)",
+		trtype, smallCacheSize, largeCacheSize, len(nvmfTransportList))
+	if _, err := c.NvmfCreateTransportWithIobufCacheSize(trtype, smallCacheSize, largeCacheSize); err != nil && !jsonrpc.IsJSONRPCRespErrorTransportTypeAlreadyExists(err) {
 		return err
 	}
 	return nil
+}
+
+// sharedTransportIobufCacheSize returns per poll group iobuf cache sizes that
+// reserve a quarter of the small and large pools across all poll groups.
+func sharedTransportIobufCacheSize(opts *spdktypes.IobufOptions, pollGroupCount int) (smallCacheSize, largeCacheSize uint32) {
+	if pollGroupCount < 1 {
+		pollGroupCount = 1
+	}
+	smallCacheSize = uint32(max(opts.SmallPoolCount/4/uint64(pollGroupCount), 1))
+	largeCacheSize = uint32(max(opts.LargePoolCount/4/uint64(pollGroupCount), 1))
+	return smallCacheSize, largeCacheSize
 }
 
 // AddDevice adds a device with the given device path, name, and cluster size.
