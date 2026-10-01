@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/cockroachdb/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
@@ -13,6 +14,17 @@ import (
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	spdkutil "github.com/longhorn/go-spdk-helper/pkg/util"
 )
+
+// sharedTransportIobufCacheSize returns per poll group iobuf cache sizes that
+// reserve a quarter of the small and large pools across all poll groups.
+func sharedTransportIobufCacheSize(opts *spdktypes.IobufOptions, pollGroupCount int) (smallCacheSize, largeCacheSize uint32) {
+	if pollGroupCount < 1 {
+		pollGroupCount = 1
+	}
+	smallCacheSize = uint32(max(opts.SmallPoolCount/4/uint64(pollGroupCount), 1))
+	largeCacheSize = uint32(max(opts.LargePoolCount/4/uint64(pollGroupCount), 1))
+	return smallCacheSize, largeCacheSize
+}
 
 // AddDevice adds a device with the given device path, name, and cluster size.
 func (c *Client) AddDevice(devicePath, name string, clusterSize uint32) (bdevAioName, lvsName, lvsUUID string, err error) {
@@ -97,20 +109,22 @@ func (c *Client) EnsureNvmfTransport() error {
 // check, this lets an RDMA transport be added to a target that already has a TCP transport
 // (and vice versa). It is safe to call concurrently from many goroutines of the same process.
 func (c *Client) EnsureNvmfTransportType(trtype spdktypes.NvmeTransportType) error {
-	hasTransport := func() (bool, error) {
+	// hasTransport also returns the number of transports of any type, which decides how the
+	// iobuf caches of a new transport are sized.
+	hasTransport := func() (bool, int, error) {
 		nvmfTransportList, err := c.NvmfGetTransports("", "")
 		if err != nil {
-			return false, err
+			return false, 0, err
 		}
 		for _, t := range nvmfTransportList {
 			if strings.EqualFold(string(t.Trtype), string(trtype)) {
-				return true, nil
+				return true, len(nvmfTransportList), nil
 			}
 		}
-		return false, nil
+		return false, len(nvmfTransportList), nil
 	}
 
-	if exists, err := hasTransport(); err != nil || exists {
+	if exists, _, err := hasTransport(); err != nil || exists {
 		return err
 	}
 
@@ -119,23 +133,55 @@ func (c *Client) EnsureNvmfTransportType(trtype spdktypes.NvmeTransportType) err
 
 	// Check again: nvmf_create_transport responds only after the transport is visible in
 	// nvmf_get_transports, so a caller that waited for the lock sees the transport created by another one.
-	if exists, err := hasTransport(); err != nil || exists {
+	exists, transportCount, err := hasTransport()
+	if err != nil || exists {
 		return err
 	}
 
-	logrus.Infof("Creating transport with type %v", trtype)
-	if _, err := c.NvmfCreateTransport(trtype); err != nil {
+	if err := c.createNvmfTransport(trtype, transportCount); err != nil {
 		if jsonrpc.IsJSONRPCRespErrorTransportTypeAlreadyExists(err) {
 			return nil
 		}
 		// A duplicate that spdk_tgt only detects after the transport setup is reported as a generic
 		// "Failed to add transport to tgt.(-17)" error instead, so verify by listing the transports.
-		if exists, listErr := hasTransport(); listErr == nil && exists {
+		if exists, _, listErr := hasTransport(); listErr == nil && exists {
 			return nil
 		}
 		return err
 	}
 	return nil
+}
+
+// createNvmfTransport creates a transport of the given type in a target that has existingCount transports.
+//
+// By default SPDK lets the poll groups of each transport reserve half of the
+// shared iobuf pools, so a second transport in the same target would leave no
+// buffers for I/O and its own poll group caches would be partially populated.
+// A transport added next to an existing one, and the RDMA transport, which is
+// always used next to the TCP frontend on engine nodes, are therefore created
+// with explicit per poll group caches sized to a quarter of the pools. TCP and
+// RDMA together then reserve the same half of the pools as TCP alone.
+func (c *Client) createNvmfTransport(trtype spdktypes.NvmeTransportType, existingCount int) error {
+	if existingCount == 0 && !strings.EqualFold(string(trtype), string(spdktypes.NvmeTransportTypeRDMA)) {
+		logrus.Infof("Creating transport with type %v", trtype)
+		_, err := c.NvmfCreateTransport(trtype)
+		return err
+	}
+
+	iobufOpts, err := c.IobufGetOptions()
+	if err != nil {
+		return errors.Wrap(err, "failed to get iobuf options")
+	}
+	pollGroupCount, err := c.NvmfGetPollGroupCount()
+	if err != nil {
+		return errors.Wrap(err, "failed to get NVMe-oF poll group count")
+	}
+	smallCacheSize, largeCacheSize := sharedTransportIobufCacheSize(iobufOpts, pollGroupCount)
+
+	logrus.Infof("Creating transport with type %v and iobuf small/large cache size per poll group %v/%v, %v existing transport(s)",
+		trtype, smallCacheSize, largeCacheSize, existingCount)
+	_, err = c.NvmfCreateTransportWithIobufCacheSize(trtype, smallCacheSize, largeCacheSize)
+	return err
 }
 
 // StartExposeBdev exposes the bdev with the given nqn, bdevName, nguid, ip, port,
