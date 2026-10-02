@@ -4,17 +4,17 @@ import (
 	"context"
 
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
-func BdevVirtioCmd() cli.Command {
-	return cli.Command{
-		Name:      "bdev-virtio",
-		ShortName: "virtio",
-		Subcommands: []cli.Command{
+func BdevVirtioCmd() *cli.Command {
+	return &cli.Command{
+		Name:    "bdev-virtio",
+		Aliases: []string{"virtio"},
+		Commands: []*cli.Command{
 			BdevVirtioAttachControllerCmd(),
 			BdevVirtioDetachControllerCmd(),
 			// BdevVirtioGetCmd(),
@@ -22,36 +22,38 @@ func BdevVirtioCmd() cli.Command {
 	}
 }
 
-func BdevVirtioAttachControllerCmd() cli.Command {
-	return cli.Command{
+func BdevVirtioAttachControllerCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "attach",
 		Usage: "attach a bdev virtio based on a block device: attach --name <BDEV NAME> --trtype <TRTYPE> --traddr <TRADDR> --dev-type <DEV TYPE>",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "trtype",
 				Usage:    "Virtio target trtype: pci or user",
 				Required: true,
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "traddr",
 				Usage:    "Target address: BDF or UNIX socket file path",
 				Required: true,
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "dev-type",
 				Usage:    "Virtio device type: blk or scsi",
 				Required: true,
 			},
 		},
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevVirtioAttachController(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run attach bdev virtio command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevVirtioAttachController(c *cli.Context) error {
+func bdevVirtioAttachController(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -67,19 +69,21 @@ func bdevVirtioAttachController(c *cli.Context) error {
 	return util.PrintObject(bdevNameList)
 }
 
-func BdevVirtioDetachControllerCmd() cli.Command {
-	return cli.Command{
+func BdevVirtioDetachControllerCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "detach",
 		Usage: "detach a bdev virtio using a block device: detach <BDEV NAME>",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevVirtioDetachControllerCmd(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run detach bdev virtio command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevVirtioDetachControllerCmd(c *cli.Context) error {
+func bdevVirtioDetachControllerCmd(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
