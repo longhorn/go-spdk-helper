@@ -5,17 +5,17 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
-func BdevEcCmd() cli.Command {
-	return cli.Command{
-		Name:      "bdev-ec",
-		ShortName: "ec",
-		Subcommands: []cli.Command{
+func BdevEcCmd() *cli.Command {
+	return &cli.Command{
+		Name:    "bdev-ec",
+		Aliases: []string{"ec"},
+		Commands: []*cli.Command{
 			BdevEcCreateCmd(),
 			BdevEcDeleteCmd(),
 			BdevEcGetCmd(),
@@ -32,50 +32,56 @@ func BdevEcCmd() cli.Command {
 	}
 }
 
-func BdevEcCreateCmd() cli.Command {
-	return cli.Command{
+func BdevEcCreateCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "create",
 		Usage: "create an EC bdev: create --name <NAME> --data-chunks <DATA CHUNKS> --parity-chunks <PARITY CHUNKS> --strip-size-kb <KB> --base-bdevs <BDEV1> --base-bdevs <BDEV2> ...",
 		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:     "name,n",
+			&cli.StringFlag{
+				Name:     "name",
+				Aliases:  []string{"n"},
 				Usage:    "Name for the new EC bdev",
 				Required: true,
 			},
-			cli.UintFlag{
+			&cli.UintFlag{
 				Name:     "data-chunks",
 				Usage:    "Number of data chunks per stripe",
 				Required: true,
 			},
-			cli.UintFlag{
+			&cli.UintFlag{
 				Name:     "parity-chunks",
 				Usage:    "Number of parity chunks per stripe",
 				Required: true,
 			},
-			cli.UintFlag{
-				Name:     "strip-size-kb,s",
+			&cli.UintFlag{
+				Name:     "strip-size-kb",
+				Aliases:  []string{"s"},
 				Usage:    "Chunk size in KiB (e.g. 64)",
 				Required: true,
 			},
-			cli.StringSliceFlag{
-				Name:     "base-bdevs,b",
+			&cli.StringSliceFlag{
+				Name:     "base-bdevs",
+				Aliases:  []string{"b"},
 				Usage:    "Ordered list of (data + parity) base bdev names, e.g. --base-bdevs bdev0 --base-bdevs bdev1",
 				Required: true,
 			},
-			cli.BoolFlag{
+			&cli.BoolFlag{
 				Name:  "salvage",
 				Usage: "Refuse to fresh-zero a torn on-disk unmapped bitmap; set on operator-driven recovery",
 			},
 		},
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevEcCreate(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run create bdev ec command")
+				return err
 			}
+			return nil
 		},
+		DisableSliceFlagSeparator: true,
 	}
 }
 
-func bdevEcCreate(c *cli.Context) error {
+func bdevEcCreate(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -96,19 +102,21 @@ func bdevEcCreate(c *cli.Context) error {
 	return util.PrintObject(bdevName)
 }
 
-func BdevEcDeleteCmd() cli.Command {
-	return cli.Command{
+func BdevEcDeleteCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "delete",
 		Usage: "delete an EC bdev: delete <NAME>",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevEcDelete(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run delete bdev ec command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevEcDelete(c *cli.Context) error {
+func bdevEcDelete(c *cli.Command) error {
 	name := c.Args().First()
 	if name == "" {
 		return fmt.Errorf("EC bdev name is required")
@@ -127,19 +135,21 @@ func bdevEcDelete(c *cli.Context) error {
 	return util.PrintObject(deleted)
 }
 
-func BdevEcGetCmd() cli.Command {
-	return cli.Command{
+func BdevEcGetCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "get",
 		Usage: "list EC bdevs; optionally filter by name: get [<NAME>]",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevEcGet(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run get bdev ec command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevEcGet(c *cli.Context) error {
+func bdevEcGet(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -153,36 +163,39 @@ func bdevEcGet(c *cli.Context) error {
 	return util.PrintObject(bdevEcInfoList)
 }
 
-func BdevEcReplaceCmd() cli.Command {
-	return cli.Command{
+func BdevEcReplaceCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "replace",
 		Usage: "hot-swap a failed base bdev slot with a new bdev: replace --name <NAME> --slot <SLOT> --new-bdev <NEW>",
 		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:     "name,n",
+			&cli.StringFlag{
+				Name:     "name",
+				Aliases:  []string{"n"},
 				Usage:    "Name of the EC bdev",
 				Required: true,
 			},
-			cli.UintFlag{
+			&cli.UintFlag{
 				Name:     "slot",
 				Usage:    "Slot index of the failed base bdev to replace",
 				Required: true,
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "new-bdev",
 				Usage:    "Name of the replacement base bdev",
 				Required: true,
 			},
 		},
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevEcReplace(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run replace bdev ec command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevEcReplace(c *cli.Context) error {
+func bdevEcReplace(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -196,19 +209,21 @@ func bdevEcReplace(c *cli.Context) error {
 	return util.PrintObject(resp)
 }
 
-func BdevEcRebuildStartCmd() cli.Command {
-	return cli.Command{
+func BdevEcRebuildStartCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "rebuild-start",
 		Usage: "start background rebuild of all REPLACING slots: rebuild-start <NAME>",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevEcRebuildStart(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run rebuild-start bdev ec command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevEcRebuildStart(c *cli.Context) error {
+func bdevEcRebuildStart(c *cli.Command) error {
 	name := c.Args().First()
 	if name == "" {
 		return fmt.Errorf("EC bdev name is required")
@@ -227,19 +242,21 @@ func bdevEcRebuildStart(c *cli.Context) error {
 	return util.PrintObject(resp)
 }
 
-func BdevEcRebuildStopCmd() cli.Command {
-	return cli.Command{
+func BdevEcRebuildStopCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "rebuild-stop",
 		Usage: "stop a running rebuild: rebuild-stop <NAME>",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevEcRebuildStop(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run rebuild-stop bdev ec command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevEcRebuildStop(c *cli.Context) error {
+func bdevEcRebuildStop(c *cli.Command) error {
 	name := c.Args().First()
 	if name == "" {
 		return fmt.Errorf("EC bdev name is required")
@@ -258,35 +275,38 @@ func bdevEcRebuildStop(c *cli.Context) error {
 	return util.PrintObject(stopped)
 }
 
-func BdevEcRebuildQosSetCmd() cli.Command {
-	return cli.Command{
+func BdevEcRebuildQosSetCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "rebuild-qos-set",
 		Usage: "set rebuild rate limit: rebuild-qos-set --name <NAME> --max-stripes-per-sec <N> [--paused]",
 		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:     "name,n",
+			&cli.StringFlag{
+				Name:     "name",
+				Aliases:  []string{"n"},
 				Usage:    "Name of the EC bdev",
 				Required: true,
 			},
-			cli.UintFlag{
+			&cli.UintFlag{
 				Name:  "max-stripes-per-sec",
 				Usage: "Rebuild rate limit in stripes/sec; 0 means unlimited",
 				Value: 0,
 			},
-			cli.BoolFlag{
+			&cli.BoolFlag{
 				Name:  "paused",
 				Usage: "Suspend the rebuild poller without cancelling it",
 			},
 		},
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevEcRebuildQosSet(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run rebuild-qos-set bdev ec command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevEcRebuildQosSet(c *cli.Context) error {
+func bdevEcRebuildQosSet(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -300,19 +320,21 @@ func bdevEcRebuildQosSet(c *cli.Context) error {
 	return util.PrintObject(set)
 }
 
-func BdevEcRebuildProgressCmd() cli.Command {
-	return cli.Command{
+func BdevEcRebuildProgressCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "rebuild-progress",
 		Usage: "query rebuild progress: rebuild-progress <NAME>",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevEcRebuildProgress(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run rebuild-progress bdev ec command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevEcRebuildProgress(c *cli.Context) error {
+func bdevEcRebuildProgress(c *cli.Command) error {
 	name := c.Args().First()
 	if name == "" {
 		return fmt.Errorf("EC bdev name is required")
@@ -331,19 +353,21 @@ func bdevEcRebuildProgress(c *cli.Context) error {
 	return util.PrintObject(progress)
 }
 
-func BdevEcResizeCmd() cli.Command {
-	return cli.Command{
+func BdevEcResizeCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "resize",
 		Usage: "expand EC bdev capacity in-place (base bdevs must be resized first): resize <NAME>",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevEcResize(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run resize bdev ec command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevEcResize(c *cli.Context) error {
+func bdevEcResize(c *cli.Command) error {
 	name := c.Args().First()
 	if name == "" {
 		return fmt.Errorf("EC bdev name is required")
@@ -362,19 +386,21 @@ func bdevEcResize(c *cli.Context) error {
 	return util.PrintObject(resp)
 }
 
-func BdevEcWibStatusCmd() cli.Command {
-	return cli.Command{
+func BdevEcWibStatusCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "wib-status",
 		Usage: "query Write-Intent Bitmap state: wib-status <NAME>",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevEcWibStatus(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run wib-status bdev ec command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevEcWibStatus(c *cli.Context) error {
+func bdevEcWibStatus(c *cli.Command) error {
 	name := c.Args().First()
 	if name == "" {
 		return fmt.Errorf("EC bdev name is required")
@@ -393,19 +419,21 @@ func bdevEcWibStatus(c *cli.Context) error {
 	return util.PrintObject(status)
 }
 
-func BdevEcUnmapStatusCmd() cli.Command {
-	return cli.Command{
+func BdevEcUnmapStatusCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "unmap-status",
 		Usage: "query in-band unmapped-bitmap state: unmap-status <NAME>",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevEcUnmapStatus(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run unmap-status bdev ec command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevEcUnmapStatus(c *cli.Context) error {
+func bdevEcUnmapStatus(c *cli.Command) error {
 	name := c.Args().First()
 	if name == "" {
 		return fmt.Errorf("EC bdev name is required")
@@ -424,19 +452,21 @@ func bdevEcUnmapStatus(c *cli.Context) error {
 	return util.PrintObject(status)
 }
 
-func BdevEcScrubProgressCmd() cli.Command {
-	return cli.Command{
+func BdevEcScrubProgressCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "scrub-progress",
 		Usage: "query startup scrub progress: scrub-progress <NAME>",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevEcScrubProgress(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run scrub-progress bdev ec command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevEcScrubProgress(c *cli.Context) error {
+func bdevEcScrubProgress(c *cli.Command) error {
 	name := c.Args().First()
 	if name == "" {
 		return fmt.Errorf("EC bdev name is required")

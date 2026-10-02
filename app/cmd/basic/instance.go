@@ -4,32 +4,34 @@ import (
 	"context"
 
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
-func SpdkKillInstanceCmd() cli.Command {
-	return cli.Command{
+func SpdkKillInstanceCmd() *cli.Command {
+	return &cli.Command{
 		Name: "kill-instance",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "sig-name",
 				Usage:    "The signal to send to the SPDK instance (e.g., SIGINT, SIGTERM, SIGKILL)",
 				Required: true,
 			},
 		},
 		Usage: "Send a signal to the SPDK instance: kill-instance --sig-name <SIGNAL>",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := spdkKillInstanceCmd(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run spdk kill instance command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func spdkKillInstanceCmd(c *cli.Context) error {
+func spdkKillInstanceCmd(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err

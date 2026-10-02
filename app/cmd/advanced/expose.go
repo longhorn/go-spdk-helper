@@ -4,62 +4,64 @@ import (
 	"context"
 
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
-func ExposeCmd() cli.Command {
-	return cli.Command{
+func ExposeCmd() *cli.Command {
+	return &cli.Command{
 		Name: "expose",
-		Subcommands: []cli.Command{
+		Commands: []*cli.Command{
 			StartExposeCmd(),
 			StopExposeCmd(),
 		},
 	}
 }
 
-func StartExposeCmd() cli.Command {
-	return cli.Command{
+func StartExposeCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "start",
 		Usage: "Expose a bdev via nvmf: start --nqn <NVMF SUBSYSTEM NQN> --bdev-name <BDEV ALIAS or BDEV UUID> --ip <IP ADDRESS> --port <PORT NUMBER>",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "nqn",
 				Usage:    "NVMe-oF target subsystem NQN",
 				Required: true,
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "bdev-name",
 				Usage:    "Name of the exported bdev lvol",
 				Required: true,
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "nguid",
 				Usage:    "Namespace globally unique identifier",
 				Required: false,
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "ip",
 				Usage:    "This can be host IP or localhost IP",
 				Required: true,
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "port",
 				Usage:    "Port number",
 				Required: true,
 			},
 		},
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := startExpose(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run start expose command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func startExpose(c *cli.Context) error {
+func startExpose(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -72,26 +74,28 @@ func startExpose(c *cli.Context) error {
 	return util.PrintObject(true)
 }
 
-func StopExposeCmd() cli.Command {
-	return cli.Command{
+func StopExposeCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "stop",
 		Usage: "Stop exposing a bdev via nvmf: stop --nqn <NVMF SUBSYSTEM NQN>",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "nqn",
 				Usage:    "NVMe-oF target subsystem NQN",
 				Required: true,
 			},
 		},
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := stopExpose(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run stop expose command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func stopExpose(c *cli.Context) error {
+func stopExpose(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err

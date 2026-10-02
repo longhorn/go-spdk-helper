@@ -5,18 +5,18 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"github.com/longhorn/go-spdk-helper/pkg/types"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
-func BdevLvstoreCmd() cli.Command {
-	return cli.Command{
-		Name:      "bdev-lvstore",
-		ShortName: "lvs",
-		Subcommands: []cli.Command{
+func BdevLvstoreCmd() *cli.Command {
+	return &cli.Command{
+		Name:    "bdev-lvstore",
+		Aliases: []string{"lvs"},
+		Commands: []*cli.Command{
 			BdevLvstoreCreateCmd(),
 			BdevLvstoreDeleteCmd(),
 			BdevLvstoreGetCmd(),
@@ -27,36 +27,38 @@ func BdevLvstoreCmd() cli.Command {
 	}
 }
 
-func BdevLvstoreCreateCmd() cli.Command {
-	return cli.Command{
+func BdevLvstoreCreateCmd() *cli.Command {
+	return &cli.Command{
 		Name: "create",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "bdev-name",
 				Usage:    "The bdev on which to construct logical volume store",
 				Required: true,
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "lvs-name",
 				Usage:    "Name of the logical volume store to create",
 				Required: true,
 			},
-			cli.UintFlag{
+			&cli.UintFlag{
 				Name:  "cluster-size",
 				Usage: "Logical volume store cluster size, by default 1MiB",
 				Value: types.MiB,
 			},
 		},
 		Usage: "create a bdev lvstore based on a block device: \"create --bdev-name <BDEV NAME> --lvs-name <LVSTORE NAME>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvstoreCreate(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run create bdev lvstore command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvstoreCreate(c *cli.Context) error {
+func bdevLvstoreCreate(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -70,31 +72,33 @@ func bdevLvstoreCreate(c *cli.Context) error {
 	return util.PrintObject(uuid)
 }
 
-func BdevLvstoreRenameCmd() cli.Command {
-	return cli.Command{
+func BdevLvstoreRenameCmd() *cli.Command {
+	return &cli.Command{
 		Name: "rename",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "old-name",
 				Usage:    "Old name of the logical volume store",
 				Required: true,
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "new-name",
 				Usage:    "New name of the logical volume store",
 				Required: true,
 			},
 		},
 		Usage: "rename a bdev lvstore: \"rename --old-name <OLD NAME> --new-name <NEW NAME>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvstoreRename(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run rename bdev lvstore command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvstoreRename(c *cli.Context) error {
+func bdevLvstoreRename(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -108,29 +112,31 @@ func bdevLvstoreRename(c *cli.Context) error {
 	return util.PrintObject(renamed)
 }
 
-func BdevLvstoreDeleteCmd() cli.Command {
-	return cli.Command{
+func BdevLvstoreDeleteCmd() *cli.Command {
+	return &cli.Command{
 		Name: "delete",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "lvs-name",
 				Usage: "Specify this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "uuid",
 				Usage: "Specify this or lvs-name",
 			},
 		},
 		Usage: "delete a bdev lvstore using a block device: \"delete --lvs-name <LVSTORE NAME>\" or \"delete --uuid <UUID>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvstoreDelete(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run delete bdev lvstore command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvstoreDelete(c *cli.Context) error {
+func bdevLvstoreDelete(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -144,29 +150,31 @@ func bdevLvstoreDelete(c *cli.Context) error {
 	return util.PrintObject(deleted)
 }
 
-func BdevLvstoreGetCmd() cli.Command {
-	return cli.Command{
+func BdevLvstoreGetCmd() *cli.Command {
+	return &cli.Command{
 		Name: "get",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "lvs-name",
 				Usage: "If you want to get one specific Lvstore info, please input this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "uuid",
 				Usage: "If you want to get one specific Lvstore info, please input this or lvs-name",
 			},
 		},
 		Usage: "get all bdev lvstore if the info is not specified: \"get\", or \"get --lvs-name <LVSTORE NAME>\", or \"get --uuid <UUID>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvstoreGet(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run get bdev lvstore command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvstoreGet(c *cli.Context) error {
+func bdevLvstoreGet(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -180,29 +188,31 @@ func bdevLvstoreGet(c *cli.Context) error {
 	return util.PrintObject(bdevLvstoreGetResp)
 }
 
-func BdevLvstoreGrowCmd() cli.Command {
-	return cli.Command{
+func BdevLvstoreGrowCmd() *cli.Command {
+	return &cli.Command{
 		Name: "grow",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "lvs-name",
 				Usage: "Specify this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "uuid",
 				Usage: "Specify this or lvs-name",
 			},
 		},
 		Usage: "grow a bdev lvstore to fill the underlying bdev after it has been expanded: \"grow --lvs-name <LVSTORE NAME>\" or \"grow --uuid <UUID>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvstoreGrow(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run grow bdev lvstore command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvstoreGrow(c *cli.Context) error {
+func bdevLvstoreGrow(c *cli.Command) error {
 	lvsName := c.String("lvs-name")
 	uuid := c.String("uuid")
 	if lvsName == "" && uuid == "" {
@@ -225,29 +235,31 @@ func bdevLvstoreGrow(c *cli.Context) error {
 	return util.PrintObject(grown)
 }
 
-func BdevLvstoreGetLvolsCmd() cli.Command {
-	return cli.Command{
+func BdevLvstoreGetLvolsCmd() *cli.Command {
+	return &cli.Command{
 		Name: "list-lvols",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "lvs-name",
 				Usage: "If you want to get one specific Lvstore info, please input this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "uuid",
 				Usage: "If you want to get one specific Lvstore info, please input this or lvs-name",
 			},
 		},
 		Usage: "list all logical volumes info: \"list\", or \"list --lvs-name <LVSTORE NAME>\", or \"list --uuid <LVSTORE UUID>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolList(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run list lvol command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolList(c *cli.Context) error {
+func bdevLvolList(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err

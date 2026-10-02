@@ -5,43 +5,45 @@ import (
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"github.com/longhorn/go-spdk-helper/pkg/types"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
-func DeviceCmd() cli.Command {
-	return cli.Command{
+func DeviceCmd() *cli.Command {
+	return &cli.Command{
 		Name: "device",
-		Subcommands: []cli.Command{
+		Commands: []*cli.Command{
 			DeviceAddCmd(),
 			DeviceDeleteCmd(),
 		},
 	}
 }
 
-func DeviceAddCmd() cli.Command {
-	return cli.Command{
+func DeviceAddCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "add",
 		Usage: "Add a device for SPDK. The file device file name would be the aio name as well as the lvs name: add <device path>",
 		Flags: []cli.Flag{
-			cli.UintFlag{
+			&cli.UintFlag{
 				Name:  "cluster-size",
 				Usage: "Logical volume store cluster size, by default 1MiB",
 				Value: types.MiB,
 			},
 		},
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := deviceAdd(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run add device command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func deviceAdd(c *cli.Context) error {
+func deviceAdd(c *cli.Command) error {
 	devicePath := c.Args().First()
 
 	spdkCli, err := client.NewClient(context.Background())
@@ -61,19 +63,21 @@ func deviceAdd(c *cli.Context) error {
 	})
 }
 
-func DeviceDeleteCmd() cli.Command {
-	return cli.Command{
+func DeviceDeleteCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "delete",
 		Usage: "Delete a device for SPDK. The aio name and the lvs name should be the file device file name: delete <device path>",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := deviceDelete(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run delete device command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func deviceDelete(c *cli.Context) error {
+func deviceDelete(c *cli.Command) error {
 	devicePath := c.Args().First()
 	fileName := filepath.Base(devicePath)
 
