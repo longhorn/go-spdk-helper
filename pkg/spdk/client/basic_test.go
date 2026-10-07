@@ -395,6 +395,154 @@ func TestBdevNvmeResetControllerSendsCorrectMethod(t *testing.T) {
 	)
 }
 
+func TestBdevNvmeGetIoPaths(t *testing.T) {
+	tests := []struct {
+		name           string
+		queryName      string
+		result         interface{}
+		wantPollGroups []spdktypes.BdevNvmePollGroupIoPaths
+	}{
+		{
+			name:      "decodes poll groups",
+			queryName: "",
+			result: map[string]interface{}{
+				"poll_groups": []map[string]interface{}{
+					{
+						"thread": "nvmf_tgt_poll_group_0",
+						"io_paths": []map[string]interface{}{
+							{
+								"bdev_name":   "Nvme0n1",
+								"cntlid":      1,
+								"current":     true,
+								"connected":   true,
+								"accessible":  true,
+								"qpair_state": "CONNECTED",
+								"transport": map[string]interface{}{
+									"trtype":  "TCP",
+									"traddr":  "10.0.0.1",
+									"trsvcid": "20001",
+									"adrfam":  "IPv4",
+								},
+							},
+						},
+					},
+				},
+			},
+			wantPollGroups: []spdktypes.BdevNvmePollGroupIoPaths{
+				{
+					Thread: "nvmf_tgt_poll_group_0",
+					IoPaths: []spdktypes.BdevNvmeIoPath{
+						{
+							BdevName:   "Nvme0n1",
+							Cntlid:     1,
+							Current:    true,
+							Connected:  true,
+							Accessible: true,
+							State:      spdktypes.BdevNvmeQpairStateConnected,
+							Transport: spdktypes.BdevNvmeIoPathTransport{
+								Trtype:  "TCP",
+								Traddr:  "10.0.0.1",
+								Trsvcid: "20001",
+								Adrfam:  "IPv4",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			// A filter matching nothing (e.g. querying by controller name
+			// "Nvme0" instead of the namespace bdev name "Nvme0n1") still
+			// returns one object per poll group, each with an empty io_paths
+			// list: the RPC writes the poll-group object unconditionally and
+			// filters by name inside the io_paths loop.
+			name:      "unmatched name returns poll groups with empty io_paths",
+			queryName: "Nvme0",
+			result: map[string]interface{}{
+				"poll_groups": []map[string]interface{}{
+					{
+						"thread":   "nvmf_tgt_poll_group_0",
+						"io_paths": []map[string]interface{}{},
+					},
+				},
+			},
+			wantPollGroups: []spdktypes.BdevNvmePollGroupIoPaths{
+				{
+					Thread:  "nvmf_tgt_poll_group_0",
+					IoPaths: []spdktypes.BdevNvmeIoPath{},
+				},
+			},
+		},
+		{
+			// A response without the qpair_state field must decode with an
+			// empty State.
+			name:      "missing qpair_state decodes as empty state",
+			queryName: "Nvme0n1",
+			result: map[string]interface{}{
+				"poll_groups": []map[string]interface{}{
+					{
+						"thread": "nvmf_tgt_poll_group_0",
+						"io_paths": []map[string]interface{}{
+							{
+								"bdev_name":  "Nvme0n1",
+								"cntlid":     1,
+								"current":    true,
+								"connected":  true,
+								"accessible": true,
+							},
+						},
+					},
+				},
+			},
+			wantPollGroups: []spdktypes.BdevNvmePollGroupIoPaths{
+				{
+					Thread: "nvmf_tgt_poll_group_0",
+					IoPaths: []spdktypes.BdevNvmeIoPath{
+						{
+							BdevName:   "Nvme0n1",
+							Cntlid:     1,
+							Current:    true,
+							Connected:  true,
+							Accessible: true,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var pollGroups []spdktypes.BdevNvmePollGroupIoPaths
+			runJSONRPCRequestTest(t,
+				func(cli *Client) error {
+					var err error
+					pollGroups, err = cli.BdevNvmeGetIoPaths(test.queryName)
+					return err
+				},
+				func(t *testing.T, method string, params map[string]interface{}) {
+					t.Helper()
+					if method != "bdev_nvme_get_io_paths" {
+						t.Fatalf("unexpected method %s", method)
+					}
+					if test.queryName == "" {
+						if _, exists := params["name"]; exists {
+							t.Fatalf("expected name omitted for unfiltered request, got %#v", params["name"])
+						}
+					} else if params["name"] != test.queryName {
+						t.Fatalf("expected name %q, got %#v", test.queryName, params["name"])
+					}
+				},
+				test.result,
+			)
+
+			if !reflect.DeepEqual(pollGroups, test.wantPollGroups) {
+				t.Fatalf("got poll groups %#v, want %#v", pollGroups, test.wantPollGroups)
+			}
+		})
+	}
+}
+
 func TestBdevLvolGrowLvstoreRPCRequests(t *testing.T) {
 	cases := []struct {
 		name       string
