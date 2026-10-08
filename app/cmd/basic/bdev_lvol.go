@@ -7,7 +7,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
@@ -15,11 +15,11 @@ import (
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 )
 
-func BdevLvolCmd() cli.Command {
-	return cli.Command{
-		Name:      "bdev-lvol",
-		ShortName: "lvol",
-		Subcommands: []cli.Command{
+func BdevLvolCmd() *cli.Command {
+	return &cli.Command{
+		Name:    "bdev-lvol",
+		Aliases: []string{"lvol"},
+		Commands: []*cli.Command{
 			BdevLvolCreateCmd(),
 			BdevLvolDeleteCmd(),
 			BdevLvolGetCmd(),
@@ -48,38 +48,40 @@ func BdevLvolCmd() cli.Command {
 	}
 }
 
-func BdevLvolCreateCmd() cli.Command {
-	return cli.Command{
+func BdevLvolCreateCmd() *cli.Command {
+	return &cli.Command{
 		Name: "create",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "lvs-name",
 				Usage: "Specify this or lvs-uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "lvs-uuid",
 				Usage: "Specify this or lvs-name",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "lvol-name",
 				Required: true,
 			},
-			cli.Uint64Flag{
+			&cli.Uint64Flag{
 				Name:     "size",
 				Usage:    "Specify bdev lvol size in MiB",
 				Required: true,
 			},
 		},
 		Usage: "create a bdev lvol on a lvstore: \"create --lvs-name <LVSTORE NAME> --lvol-name <LVOL NAME> --size <LVOL SIZE in MIB>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolCreate(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run create bdev lvol command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolCreate(c *cli.Context) error {
+func bdevLvolCreate(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -98,29 +100,31 @@ func bdevLvolCreate(c *cli.Context) error {
 	return util.PrintObject(map[string]string{"uuid": uuid, "alias": fmt.Sprintf("%s/%s", lvsName, lvolName)})
 }
 
-func BdevLvolDeleteCmd() cli.Command {
-	return cli.Command{
+func BdevLvolDeleteCmd() *cli.Command {
+	return &cli.Command{
 		Name: "delete",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "alias",
 				Usage: "The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "uuid",
 				Usage: "Specify this or alias",
 			},
 		},
 		Usage: "delete a bdev lvol using a block device: \"delete --alias <LVSTORE NAME>/<LVOL NAME>\" or \"delete --uuid <UUID>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolDelete(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run delete bdev lvol command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolDelete(c *cli.Context) error {
+func bdevLvolDelete(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -139,26 +143,29 @@ func bdevLvolDelete(c *cli.Context) error {
 	return util.PrintObject(deleted)
 }
 
-func BdevLvolGetCmd() cli.Command {
-	return cli.Command{
+func BdevLvolGetCmd() *cli.Command {
+	return &cli.Command{
 		Name: "get",
 		Flags: []cli.Flag{
-			cli.Uint64Flag{
-				Name:  "timeout, t",
-				Usage: "Determine the timeout of the execution",
-				Value: 0,
+			&cli.Uint64Flag{
+				Name:    "timeout",
+				Aliases: []string{"t"},
+				Usage:   "Determine the timeout of the execution",
+				Value:   0,
 			},
 		},
 		Usage: "get all bdev lvol if the info is not specified: \"get\", or \"get <LVSTORE NAME>/<LVOL NAME>\", or \"get <UUID>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolGet(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run get bdev lvol command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolGet(c *cli.Context) error {
+func bdevLvolGet(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -172,38 +179,41 @@ func bdevLvolGet(c *cli.Context) error {
 	return util.PrintObject(bdevLvolGetResp)
 }
 
-func BdevLvolSnapshotCmd() cli.Command {
-	return cli.Command{
+func BdevLvolSnapshotCmd() *cli.Command {
+	return &cli.Command{
 		Name: "snapshot",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "alias",
 				Usage: "The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "uuid",
 				Usage: "Specify this or alias",
 			},
-			cli.StringSliceFlag{
+			&cli.StringSliceFlag{
 				Name:  "xattr",
 				Usage: "Xattr for the snapshot in the format name=value. Optional",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "snapshot-name",
 				Usage:    "The snapshot lvol name",
 				Required: true,
 			},
 		},
 		Usage: "create a snapshot as a new bdev lvol based on an existing one: \"snapshot --alias <LVSTORE NAME>/<LVOL NAME> --snapshot-name <SNAPSHOT NAME>\", or \"snapshot --uuid <UUID> --snapshot-name <SNAPSHOT NAME>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolSnapshot(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run snapshot bdev lvol command")
+				return err
 			}
+			return nil
 		},
+		DisableSliceFlagSeparator: true,
 	}
 }
 
-func bdevLvolSnapshot(c *cli.Context) error {
+func bdevLvolSnapshot(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -237,31 +247,33 @@ func bdevLvolSnapshot(c *cli.Context) error {
 	return util.PrintObject(uuid)
 }
 
-func BdevLvolCloneCmd() cli.Command {
-	return cli.Command{
+func BdevLvolCloneCmd() *cli.Command {
+	return &cli.Command{
 		Name: "clone",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "snapshot",
 				Usage:    "UUID or alias of the snapshot lvol to clone. Alias is <LVSTORE NAME>/<LVOL NAME>",
 				Required: true,
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "clone-name",
 				Usage:    "Name for the logical volume to create",
 				Required: true,
 			},
 		},
 		Usage: "create a lvol based on an existing snapshot lvol: \"clone --snapshot <LVSTORE NAME>/<SNAPSHOT LVOL NAME> --clone-name <CLONE NAME>\", or \"clone --snapshot <SNAPSHOT LVOL UUID> --clone-name <CLONE NAME>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolClone(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run clone bdev lvol command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolClone(c *cli.Context) error {
+func bdevLvolClone(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -275,33 +287,35 @@ func bdevLvolClone(c *cli.Context) error {
 	return util.PrintObject(uuid)
 }
 
-func BdevLvolCloneBdevCmd() cli.Command {
-	return cli.Command{
+func BdevLvolCloneBdevCmd() *cli.Command {
+	return &cli.Command{
 		Name: "clone-bdev",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "bdev",
 				Usage: "Name or UUID for bdev that acts as the external snapshot",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name: "lvs-name",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "clone-name",
 				Usage:    "Name for the logical volume to create",
 				Required: true,
 			},
 		},
 		Usage: "create a lvol based on an external snapshot bdev: \"clone-bdev --bdev <BDEV NAME or UUID> --lvs-name <LVSTORE NAME> --clone-name <CLONE NAME>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolCloneBdev(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run clone bdev command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolCloneBdev(c *cli.Context) error {
+func bdevLvolCloneBdev(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -315,29 +329,31 @@ func bdevLvolCloneBdev(c *cli.Context) error {
 	return util.PrintObject(uuid)
 }
 
-func BdevLvolDecoupleParentCmd() cli.Command {
-	return cli.Command{
+func BdevLvolDecoupleParentCmd() *cli.Command {
+	return &cli.Command{
 		Name: "decouple",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "alias",
 				Usage: "The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "uuid",
 				Usage: "Specify this or alias",
 			},
 		},
 		Usage: "decouple a lvol from its parent lvol: \"decouple --alias <LVSTORE NAME>/<LVOL NAME>\", or \"decouple --uuid <LVOL UUID>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolDecoupleParent(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run decouple parent bdev lvol command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolDecoupleParent(c *cli.Context) error {
+func bdevLvolDecoupleParent(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -356,29 +372,31 @@ func bdevLvolDecoupleParent(c *cli.Context) error {
 	return util.PrintObject(decoupled)
 }
 
-func BdevLvolDetachParentCmd() cli.Command {
-	return cli.Command{
+func BdevLvolDetachParentCmd() *cli.Command {
+	return &cli.Command{
 		Name: "detach",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "alias",
 				Usage: "The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "uuid",
 				Usage: "Specify this or alias",
 			},
 		},
 		Usage: "detach a lvol from its parent lvol without modifying lvol's data. The parent must be a standard snapshot, not an external snapshot: \"detach --alias <LVSTORE NAME>/<LVOL NAME>\", or \"detach --uuid <LVOL UUID>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolDetachParent(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run detach parent bdev lvol command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolDetachParent(c *cli.Context) error {
+func bdevLvolDetachParent(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -397,31 +415,33 @@ func bdevLvolDetachParent(c *cli.Context) error {
 	return util.PrintObject(decoupled)
 }
 
-func BdevLvolSetParentCmd() cli.Command {
-	return cli.Command{
+func BdevLvolSetParentCmd() *cli.Command {
+	return &cli.Command{
 		Name: "set-parent",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "lvol",
 				Usage:    "Alias or UUID for the lvol to set parent of. The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>.",
 				Required: true,
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "parent",
 				Usage:    "Alias or UUID for the snapshot lvol to become the parent",
 				Required: true,
 			},
 		},
 		Usage: "set a snapshot as the parent of a lvol: \"set-parent --lvol <LVSTORE NAME>/<CLONE LVOL NAME>\" --parent <LVSTORE NAME>/<PARENT SNAPSHOT LVOL NAME>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolSetParent(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run set parent bdev lvol command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolSetParent(c *cli.Context) error {
+func bdevLvolSetParent(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -435,33 +455,35 @@ func bdevLvolSetParent(c *cli.Context) error {
 	return util.PrintObject(set)
 }
 
-func BdevLvolResizeCmd() cli.Command {
-	return cli.Command{
+func BdevLvolResizeCmd() *cli.Command {
+	return &cli.Command{
 		Name: "resize",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "alias",
 				Usage: "The alias of a snapshot lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "uuid",
 				Usage: "Specify this or alias",
 			},
-			cli.Uint64Flag{
+			&cli.Uint64Flag{
 				Name:     "size-in-mib",
 				Required: true,
 			},
 		},
 		Usage: "resize a lvol to a new size: \"resize --alias <LVSTORE NAME>/<LVOL NAME> --size-in-mib <SIZE>\", or \"resize --uuid <LVOL UUID> --size-in-mib <SIZE>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolResize(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run resize bdev lvol command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolResize(c *cli.Context) error {
+func bdevLvolResize(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -480,34 +502,36 @@ func bdevLvolResize(c *cli.Context) error {
 	return util.PrintObject(resized)
 }
 
-func BdevLvolStartShallowCopyCmd() cli.Command {
-	return cli.Command{
+func BdevLvolStartShallowCopyCmd() *cli.Command {
+	return &cli.Command{
 		Name: "shallow-copy-start",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "src-lvol-alias",
 				Usage: "The alias of a snapshot lvol to create a copy from, which is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "src-lvol-uuid",
 				Usage: "Specify this or alias",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "dst-bdev-name",
 				Usage:    "Name of the bdev that acts as destination for the copy",
 				Required: true,
 			},
 		},
 		Usage: "start a copy of active clusters/data from a read-only logical volume to a bdev: \"shallow-copy-start --src-lvol-alias <LVSTORE NAME>/<LVOL NAME> --dst-bdev-name <BDEV NAME>\", or \"shallow-copy --uuid <LVOL UUID> --dst-bdev-name <BDEV NAME>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolStartShallowCopy(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run start shallow copy bdev lvol command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolStartShallowCopy(c *cli.Context) error {
+func bdevLvolStartShallowCopy(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -526,24 +550,24 @@ func bdevLvolStartShallowCopy(c *cli.Context) error {
 	return util.PrintObject(operationId)
 }
 
-func BdevLvolStartRangeShallowCopyCmd() cli.Command {
-	return cli.Command{
+func BdevLvolStartRangeShallowCopyCmd() *cli.Command {
+	return &cli.Command{
 		Name: "range-shallow-copy-start",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "src-lvol-alias",
 				Usage: "The alias of a snapshot lvol to create a copy from, which is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "src-lvol-uuid",
 				Usage: "Specify this or alias",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "dst-bdev-name",
 				Usage:    "Name of the bdev that acts as destination for the copy",
 				Required: true,
 			},
-			cli.Int64SliceFlag{
+			&cli.Int64SliceFlag{
 				Name:  "cluster",
 				Usage: "Cluster index to copy/unmap",
 			},
@@ -551,15 +575,17 @@ func BdevLvolStartRangeShallowCopyCmd() cli.Command {
 		Usage: "start a synchronization of clusters in the list from a read-only logical volume to a bdev, copying data of allocated clusters or unmapping data of unallocated clusters:" +
 			"\"shallow-copy-start --src-lvol-alias <LVSTORE NAME>/<LVOL NAME> --dst-bdev-name <BDEV NAME> --cluster <CLUSTER_INDEX_0> --cluster <CLUSTER_INDEX_1> ... \", or " +
 			"\"shallow-copy --uuid <LVOL UUID> --dst-bdev-name <BDEV NAME> --cluster <CLUSTER_INDEX_0> --cluster <CLUSTER_INDEX_1> ...\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolStartRangeShallowCopy(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run start range shallow copy bdev lvol command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolStartRangeShallowCopy(c *cli.Context) error {
+func bdevLvolStartRangeShallowCopy(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -584,26 +610,28 @@ func bdevLvolStartRangeShallowCopy(c *cli.Context) error {
 	return util.PrintObject(operationId)
 }
 
-func BdevLvolCheckShallowCopyCmd() cli.Command {
-	return cli.Command{
+func BdevLvolCheckShallowCopyCmd() *cli.Command {
+	return &cli.Command{
 		Name: "shallow-copy-check",
 		Flags: []cli.Flag{
-			cli.UintFlag{
+			&cli.UintFlag{
 				Name:     "operation-id",
 				Usage:    "The operation ID returned by the command shallow-copy-start",
 				Required: true,
 			},
 		},
 		Usage: "check the status of a previously started shallow copy: \"shallow-copy-check --operation-id <OPERATION ID>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolCheckShallowCopy(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run check shallow copy bdev lvol command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolCheckShallowCopy(c *cli.Context) error {
+func bdevLvolCheckShallowCopy(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -619,31 +647,33 @@ func bdevLvolCheckShallowCopy(c *cli.Context) error {
 	return util.PrintObject(copied)
 }
 
-func BdevLvolStartDeepCopyCmd() cli.Command {
-	return cli.Command{
+func BdevLvolStartDeepCopyCmd() *cli.Command {
+	return &cli.Command{
 		Name: "deep-copy-start",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "src-lvol",
 				Usage:    "The alias or uuid of the source lvol to create a copy from",
 				Required: true,
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "dst-bdev",
 				Usage:    "Name of the bdev that acts as destination for the copy",
 				Required: true,
 			},
 		},
 		Usage: "start a copy of allocated clusters from a read-only logical volume or its ancestors to a bdev: \"deep-copy-start --src-lvol <LVSTORE NAME>/<LVOL NAME> --dst-bdev <BDEV NAME>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolStartDeepCopy(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run start deep copy bdev lvol command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolStartDeepCopy(c *cli.Context) error {
+func bdevLvolStartDeepCopy(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -659,26 +689,28 @@ func bdevLvolStartDeepCopy(c *cli.Context) error {
 	return util.PrintObject(operationId)
 }
 
-func BdevLvolCheckDeepCopyCmd() cli.Command {
-	return cli.Command{
+func BdevLvolCheckDeepCopyCmd() *cli.Command {
+	return &cli.Command{
 		Name: "deep-copy-check",
 		Flags: []cli.Flag{
-			cli.UintFlag{
+			&cli.UintFlag{
 				Name:     "operation-id",
 				Usage:    "The operation ID returned by the command deep-copy-start",
 				Required: true,
 			},
 		},
 		Usage: "check the status of a previously started deep copy: \"deep-copy-check --operation-id <OPERATION ID>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolCheckDeepCopy(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run check deep copy bdev lvol command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolCheckDeepCopy(c *cli.Context) error {
+func bdevLvolCheckDeepCopy(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -694,37 +726,39 @@ func bdevLvolCheckDeepCopy(c *cli.Context) error {
 	return util.PrintObject(deepCopyStatus)
 }
 
-func BdevLvolSetXattrCmd() cli.Command {
-	return cli.Command{
+func BdevLvolSetXattrCmd() *cli.Command {
+	return &cli.Command{
 		Name: "set-xattr",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "alias",
 				Usage: "The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "uuid",
 				Usage: "Specify this or alias",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "xattr-name",
 				Usage: "Specify the xattr name",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "xattr-value",
 				Usage: "Specify the xattr value",
 			},
 		},
 		Usage: "set xattr value of a lvol: \"set-xattr --name <LVSTORE NAME>/<LVOL NAME> --xattr-name <XATTR NAME> --xattr-value <XATTR VALUE>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolSetXattr(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run set bdev lvol xattr command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolSetXattr(c *cli.Context) error {
+func bdevLvolSetXattr(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -743,33 +777,35 @@ func bdevLvolSetXattr(c *cli.Context) error {
 	return util.PrintObject(set)
 }
 
-func BdevLvolGetXattrCmd() cli.Command {
-	return cli.Command{
+func BdevLvolGetXattrCmd() *cli.Command {
+	return &cli.Command{
 		Name: "get-xattr",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "alias",
 				Usage: "The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "uuid",
 				Usage: "Specify this or alias",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "xattr-name",
 				Usage: "Specify the xattr name",
 			},
 		},
 		Usage: "get xattr value of a lvol: \"get-xattr --name <LVSTORE NAME>/<LVOL NAME> --xattr-name <XATTR NAME>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolGetXattr(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run get bdev lvol xattr command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolGetXattr(c *cli.Context) error {
+func bdevLvolGetXattr(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -788,39 +824,41 @@ func bdevLvolGetXattr(c *cli.Context) error {
 	return util.PrintObject(bdevLvolGetResp)
 }
 
-func BdevLvolGetFragmapCmd() cli.Command {
-	return cli.Command{
+func BdevLvolGetFragmapCmd() *cli.Command {
+	return &cli.Command{
 		Name: "get-fragmap",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "alias",
 				Usage: "The alias of a lvol is <LVSTORE NAME>/<LVOL NAME>. Specify this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "uuid",
 				Usage: "Specify this or alias",
 			},
-			cli.Uint64Flag{
+			&cli.Uint64Flag{
 				Name:     "offset",
 				Usage:    "Offset in bytes of the specific segment of the logical volume (Default: 0)",
 				Required: false,
 			},
-			cli.Uint64Flag{
+			&cli.Uint64Flag{
 				Name:     "size",
 				Usage:    "Size in bytes of the specific segment of the logical volume (Default: 0 for representing the entire file)",
 				Required: false,
 			},
 		},
 		Usage: "Get fragmap of the specific segment of the logical volume: \"get-fragmap --uuid <LVOL UUID> --offset <OFFSET> --size <SIZE>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolGetFragmap(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run get lvol get fragmap command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolGetFragmap(c *cli.Context) error {
+func bdevLvolGetFragmap(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -841,31 +879,33 @@ func bdevLvolGetFragmap(c *cli.Context) error {
 	return util.PrintObject(output)
 }
 
-func BdevLvolRenameCmd() cli.Command {
-	return cli.Command{
+func BdevLvolRenameCmd() *cli.Command {
+	return &cli.Command{
 		Name: "rename",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "old-name",
 				Usage:    "The UUID or alias (<LVSTORE NAME>/<LVOL NAME>) of the existing logical volume",
 				Required: true,
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "new-name",
 				Usage:    "New logical volume name.",
 				Required: true,
 			},
 		},
 		Usage: "Rename a logical volume. New name will rename only the alias of the logical volume: \"rename --old-name <LVSTORE NAME>/<LVOL NAME> --new-name <LVOL NAME>\" or \"rename --old-name <UUID> --new-name <LVOL NAME>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolRename(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run rename bdev lvol command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolRename(c *cli.Context) error {
+func bdevLvolRename(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -889,30 +929,32 @@ func bdevLvolRename(c *cli.Context) error {
 	return util.PrintObject(renamed)
 }
 
-func BdevLvolRegisterSnapshotChecksumCmd() cli.Command {
-	return cli.Command{
+func BdevLvolRegisterSnapshotChecksumCmd() *cli.Command {
+	return &cli.Command{
 		Name: "register-snapshot-checksum",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "alias",
 				Usage: "The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>. Specify this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "uuid",
 				Usage: "Specify this or alias",
 			},
 		},
 		Usage: "compute and store checksum of snapshot's data: \"register-snapshot-checksum --alias <LVSTORE NAME>/<LVOL NAME>\"," +
 			" or \"register-snapshot-checksum --uuid <LVOL UUID>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolRegisterSnapshotChecksum(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run register snapshot checksum command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolRegisterSnapshotChecksum(c *cli.Context) error {
+func bdevLvolRegisterSnapshotChecksum(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -934,30 +976,32 @@ func bdevLvolRegisterSnapshotChecksum(c *cli.Context) error {
 	return util.PrintObject(registered)
 }
 
-func BdevLvolRegisterRangeChecksumsCmd() cli.Command {
-	return cli.Command{
+func BdevLvolRegisterRangeChecksumsCmd() *cli.Command {
+	return &cli.Command{
 		Name: "register-range-checksums",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "alias",
 				Usage: "The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>. Specify this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "uuid",
 				Usage: "Specify this or alias",
 			},
 		},
 		Usage: "compute and store a checksum for the whole snapshot and a checksum for every snapshot's cluster data: \"register-range-checksums --alias <LVSTORE NAME>/<LVOL NAME>\"," +
 			" or \"register-range-checksums --uuid <LVOL UUID>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolRegisterRangeChecksums(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run register range checksums command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolRegisterRangeChecksums(c *cli.Context) error {
+func bdevLvolRegisterRangeChecksums(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -979,30 +1023,32 @@ func bdevLvolRegisterRangeChecksums(c *cli.Context) error {
 	return util.PrintObject(registered)
 }
 
-func BdevLvolGetSnapshotChecksumCmd() cli.Command {
-	return cli.Command{
+func BdevLvolGetSnapshotChecksumCmd() *cli.Command {
+	return &cli.Command{
 		Name: "get-snapshot-checksum",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "alias",
 				Usage: "The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>. Specify this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "uuid",
 				Usage: "Specify this or alias",
 			},
 		},
 		Usage: "get checksum of snapshot's data: \"get-snapshot-checksum --alias <LVSTORE NAME>/<LVOL NAME>\"," +
 			" or \"get-snapshot-checksum --uuid <LVOL UUID>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolGetSnapshotChecksum(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run get snapshot checksum command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolGetSnapshotChecksum(c *cli.Context) error {
+func bdevLvolGetSnapshotChecksum(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -1027,38 +1073,40 @@ func bdevLvolGetSnapshotChecksum(c *cli.Context) error {
 	return util.PrintObject(checksum)
 }
 
-func BdevLvolGetRangeChecksumsCmd() cli.Command {
-	return cli.Command{
+func BdevLvolGetRangeChecksumsCmd() *cli.Command {
+	return &cli.Command{
 		Name: "get-range-checksums",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "alias",
 				Usage: "The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>. Specify this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "uuid",
 				Usage: "Specify this or alias",
 			},
-			cli.Uint64Flag{
+			&cli.Uint64Flag{
 				Name:  "cluster-start-index",
 				Usage: "Cluster start index to retrieve checksum for",
 			},
-			cli.Uint64Flag{
+			&cli.Uint64Flag{
 				Name:  "cluster-count",
 				Usage: "Number of clusters to retrieve checksums for",
 			},
 		},
 		Usage: "get a checksum for every snapshot's cluster in the range: \"get-snapshot-checksum --alias <LVSTORE NAME>/<LVOL NAME> --cluster-start-index <CLUSTER_START_INDEX> --cluster-count <CLUSTER_COUNT>\"," +
 			" or \"get-snapshot-checksum --uuid <LVOL UUID> --cluster-start-index <CLUSTER_START_INDEX> --cluster-count <CLUSTER_COUNT>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolGetRangeChecksums(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run get range checksums command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolGetRangeChecksums(c *cli.Context) error {
+func bdevLvolGetRangeChecksums(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -1090,30 +1138,32 @@ func bdevLvolGetRangeChecksums(c *cli.Context) error {
 	return util.PrintObject(checksums)
 }
 
-func BdevLvolStopSnapshotChecksumCmd() cli.Command {
-	return cli.Command{
+func BdevLvolStopSnapshotChecksumCmd() *cli.Command {
+	return &cli.Command{
 		Name: "stop-snapshot-checksum",
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "alias",
 				Usage: "The alias of a snapshot is <LVSTORE NAME>/<SNAPSHOT NAME>. Specify this or uuid",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "uuid",
 				Usage: "Specify this or alias",
 			},
 		},
 		Usage: "stop an ongoing registration of a snapshot's checksum: \"stop-snapshot-checksum --alias <LVSTORE NAME>/<LVOL NAME>\"," +
 			" or \"stop-snapshot-checksum --uuid <LVOL UUID>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevLvolStopSnapshotChecksum(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run stop snapshot checksum command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevLvolStopSnapshotChecksum(c *cli.Context) error {
+func bdevLvolStopSnapshotChecksum(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err

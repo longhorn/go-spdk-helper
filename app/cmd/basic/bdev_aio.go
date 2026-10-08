@@ -4,17 +4,17 @@ import (
 	"context"
 
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
 )
 
-func BdevAioCmd() cli.Command {
-	return cli.Command{
-		Name:      "bdev-aio",
-		ShortName: "aio",
-		Subcommands: []cli.Command{
+func BdevAioCmd() *cli.Command {
+	return &cli.Command{
+		Name:    "bdev-aio",
+		Aliases: []string{"aio"},
+		Commands: []*cli.Command{
 			BdevAioCreateCmd(),
 			BdevAioDeleteCmd(),
 			BdevAioGetCmd(),
@@ -22,36 +22,41 @@ func BdevAioCmd() cli.Command {
 	}
 }
 
-func BdevAioCreateCmd() cli.Command {
-	return cli.Command{
+func BdevAioCreateCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "create",
 		Usage: "create a bdev aio based on a block device: create --file-path <BLOCK DEVICE PATH> --bdev-name <BDEV NAME> --block-size <BLOCK SIZE>",
 		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:     "file-path, f",
+			&cli.StringFlag{
+				Name:     "file-path",
+				Aliases:  []string{"f"},
 				Usage:    "Path to device or file",
 				Required: true,
 			},
-			cli.StringFlag{
-				Name:     "bdev-name, n",
+			&cli.StringFlag{
+				Name:     "bdev-name",
+				Aliases:  []string{"n"},
 				Usage:    "Bdev name to use",
 				Required: true,
 			},
-			cli.Uint64Flag{
-				Name:  "block-size, b",
-				Usage: "The block size in bytes. By default 4096",
-				Value: 4096,
+			&cli.Uint64Flag{
+				Name:    "block-size",
+				Aliases: []string{"b"},
+				Usage:   "The block size in bytes. By default 4096",
+				Value:   4096,
 			},
 		},
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevAioCreate(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run create bdev aio command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevAioCreate(c *cli.Context) error {
+func bdevAioCreate(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -65,19 +70,21 @@ func bdevAioCreate(c *cli.Context) error {
 	return util.PrintObject(map[string]string{"bdev_name": bdevName})
 }
 
-func BdevAioDeleteCmd() cli.Command {
-	return cli.Command{
+func BdevAioDeleteCmd() *cli.Command {
+	return &cli.Command{
 		Name:  "delete",
 		Usage: "delete a bdev aio using a block device: delete <BDEV NAME>",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevAioDelete(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run delete bdev aio command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevAioDelete(c *cli.Context) error {
+func bdevAioDelete(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err
@@ -91,26 +98,29 @@ func bdevAioDelete(c *cli.Context) error {
 	return util.PrintObject(deleted)
 }
 
-func BdevAioGetCmd() cli.Command {
-	return cli.Command{
+func BdevAioGetCmd() *cli.Command {
+	return &cli.Command{
 		Name: "get",
 		Flags: []cli.Flag{
-			cli.Uint64Flag{
-				Name:  "timeout, t",
-				Usage: "Determine the timeout of the execution",
-				Value: 0,
+			&cli.Uint64Flag{
+				Name:    "timeout",
+				Aliases: []string{"t"},
+				Usage:   "Determine the timeout of the execution",
+				Value:   0,
 			},
 		},
 		Usage: "get all AIO bdevs if a bdev name is not specified: \"get\", or \"get <AIO BDEV NAME>\"",
-		Action: func(c *cli.Context) {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := bdevAioGet(c); err != nil {
 				logrus.WithError(err).Fatalf("Failed to run get bdev aio command")
+				return err
 			}
+			return nil
 		},
 	}
 }
 
-func bdevAioGet(c *cli.Context) error {
+func bdevAioGet(c *cli.Command) error {
 	spdkCli, err := client.NewClient(context.Background())
 	if err != nil {
 		return err

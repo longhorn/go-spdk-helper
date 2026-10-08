@@ -1,10 +1,11 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/longhorn/go-spdk-helper/app/cmd/advanced"
 	"github.com/longhorn/go-spdk-helper/app/cmd/basic"
@@ -15,44 +16,44 @@ import (
 )
 
 func main() {
-	a := cli.NewApp()
+	a := &cli.Command{
+		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
+			if c.Bool("debug") {
+				logrus.SetLevel(logrus.DebugLevel)
+			}
+			return nil, nil
+		},
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name: "debug",
+			},
+		},
+		Commands: []*cli.Command{
+			basic.BdevCmd(),
+			basic.BdevAioCmd(),
+			basic.BdevVirtioCmd(),
+			basic.BdevLvstoreCmd(),
+			basic.BdevLvolCmd(),
+			basic.BdevNvmeCmd(),
+			basic.BdevRaidCmd(),
+			basic.BdevEcCmd(),
+			basic.NvmfCmd(),
+			basic.LogCmd(),
+			basic.UblkCmd(),
+			basic.SpdkKillInstanceCmd(),
 
-	a.Before = func(c *cli.Context) error {
-		if c.GlobalBool("debug") {
-			logrus.SetLevel(logrus.DebugLevel)
-		}
-		return nil
-	}
-	a.Flags = []cli.Flag{
-		cli.BoolFlag{
-			Name: "debug",
+			advanced.DeviceCmd(),
+			advanced.ExposeCmd(),
+
+			nvmecli.Cmd(),
+
+			dmsetup.Cmd(),
+
+			spdktgt.Cmd(),
+			spdksetup.Cmd(),
 		},
 	}
-	a.Commands = []cli.Command{
-		basic.BdevCmd(),
-		basic.BdevAioCmd(),
-		basic.BdevVirtioCmd(),
-		basic.BdevLvstoreCmd(),
-		basic.BdevLvolCmd(),
-		basic.BdevNvmeCmd(),
-		basic.BdevRaidCmd(),
-		basic.BdevEcCmd(),
-		basic.NvmfCmd(),
-		basic.LogCmd(),
-		basic.UblkCmd(),
-		basic.SpdkKillInstanceCmd(),
-
-		advanced.DeviceCmd(),
-		advanced.ExposeCmd(),
-
-		nvmecli.Cmd(),
-
-		dmsetup.Cmd(),
-
-		spdktgt.Cmd(),
-		spdksetup.Cmd(),
-	}
-	if err := a.Run(os.Args); err != nil {
+	if err := a.Run(context.Background(), os.Args); err != nil {
 		logrus.WithError(err).Fatal("Failed to execute command")
 	}
 }
