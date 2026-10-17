@@ -8,7 +8,7 @@ require (
 	github.com/cockroachdb/errors v1.12.0
 	github.com/longhorn/go-common-libs v0.0.0-20260909075701-1a37e0e5083e
 	github.com/sirupsen/logrus v1.9.4
-	github.com/urfave/cli/v3 v3.13.0
+	github.com/urfave/cli/v3 v3.14.0
 	golang.org/x/sys v0.44.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 )
