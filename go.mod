@@ -5,7 +5,7 @@ go 1.25.10
 require (
 	github.com/avast/retry-go/v4 v4.7.0
 	github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8
-	github.com/cockroachdb/errors v1.12.0
+	github.com/cockroachdb/errors v1.14.0
 	github.com/longhorn/go-common-libs v0.0.0-20260909075701-1a37e0e5083e
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli/v3 v3.13.0
@@ -16,7 +16,7 @@ require (
 require (
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
-	github.com/getsentry/sentry-go v0.27.0 // indirect
+	github.com/getsentry/sentry-go v0.46.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
