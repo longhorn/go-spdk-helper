@@ -97,7 +97,7 @@ github.com/shirou/gopsutil/v3/internal/common
 # github.com/sirupsen/logrus v1.10.2
 ## explicit; go 1.23
 github.com/sirupsen/logrus
-# github.com/urfave/cli/v3 v3.13.0
+# github.com/urfave/cli/v3 v3.14.0
 ## explicit; go 1.22
 github.com/urfave/cli/v3
 # github.com/yusufpapurcu/wmi v1.2.4
