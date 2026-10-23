@@ -49,9 +49,21 @@ const (
 	testMixedDeviceList = `{"Devices":[{"DevicePath":"/dev/nvme0n1","Namespace":1,"SectorSize":512},{"DevicePath":"` + testOtherDevicePath + `","Namespace":1,"SectorSize":512}]}`
 )
 
+// disableSysfsForTest temporarily points the sysfs discovery global to a non-existent
+// path so that CLI-fallback tests can execute deterministically without being
+// shadowed by the host's sysfs filesystem.
+func disableSysfsForTest() func() {
+	origBlock := sysfsBlockPath
+	sysfsBlockPath = "/nonexistent/sys/block"
+	return func() {
+		sysfsBlockPath = origBlock
+	}
+}
+
 // The scan sees every NVMe device on the host, so one that answers with another
 // subsystem NQN must not be taken for the requested one.
 func (s *InitiatorTestSuite) TestGetDevicesSkipsDeviceOfAnotherSubsystem(c *C) {
+	defer disableSysfsForTest()()
 	restorePath := setupFakeCommandPath(c, map[string]string{
 		"nvme": fakeNvmeScript(testMixedDeviceList, testLivePath, testLivePath),
 	})
@@ -68,6 +80,7 @@ func (s *InitiatorTestSuite) TestGetDevicesSkipsDeviceOfAnotherSubsystem(c *C) {
 }
 
 func (s *InitiatorTestSuite) TestGetDevicesMatchesRequestedAddress(c *C) {
+	defer disableSysfsForTest()()
 	restorePath := setupFakeCommandPath(c, map[string]string{
 		"nvme": fakeNvmeScript(testDeviceList, testDeletingPath+","+testLivePath, testDeletingPath+","+testLivePath),
 	})
@@ -85,6 +98,7 @@ func (s *InitiatorTestSuite) TestGetDevicesMatchesRequestedAddress(c *C) {
 // An address no controller answers to leaves the device unmatched, and the state of
 // the paths that are there is what explains why.
 func (s *InitiatorTestSuite) TestGetDevicesSkipsMismatchedAddress(c *C) {
+	defer disableSysfsForTest()()
 	restorePath := setupFakeCommandPath(c, map[string]string{
 		"nvme": fakeNvmeScript(testDeviceList, testLivePath, testLivePath),
 	})
@@ -99,6 +113,7 @@ func (s *InitiatorTestSuite) TestGetDevicesSkipsMismatchedAddress(c *C) {
 }
 
 func (s *InitiatorTestSuite) TestGetDevicesIgnoresPathBeingTornDown(c *C) {
+	defer disableSysfsForTest()()
 	restorePath := setupFakeCommandPath(c, map[string]string{
 		"nvme": fakeNvmeScript(testDeviceList, "", testDeletingPath+","+testLivePath),
 	})
@@ -116,6 +131,7 @@ func (s *InitiatorTestSuite) TestGetDevicesIgnoresPathBeingTornDown(c *C) {
 // The missing device is the real problem; a path on its way out must not be reported
 // in its place.
 func (s *InitiatorTestSuite) TestGetDevicesReportsMissingDeviceNotDyingPath(c *C) {
+	defer disableSysfsForTest()()
 	restorePath := setupFakeCommandPath(c, map[string]string{
 		"nvme": fakeNvmeScript(testEmptyList, "", testDeletingPath),
 	})
