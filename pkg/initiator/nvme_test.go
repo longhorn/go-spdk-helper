@@ -49,17 +49,14 @@ const (
 	testMixedDeviceList = `{"Devices":[{"DevicePath":"/dev/nvme0n1","Namespace":1,"SectorSize":512},{"DevicePath":"` + testOtherDevicePath + `","Namespace":1,"SectorSize":512}]}`
 )
 
-// disableSysfsForTest temporarily points sysfs discovery globals to non-existent
-// paths so that CLI-fallback tests can execute deterministically without being
+// disableSysfsForTest temporarily points the sysfs discovery global to a non-existent
+// path so that CLI-fallback tests can execute deterministically without being
 // shadowed by the host's sysfs filesystem.
 func disableSysfsForTest() func() {
 	origBlock := sysfsBlockPath
-	origSubsys := sysfsNvmeSubsystemPath
 	sysfsBlockPath = "/nonexistent/sys/block"
-	sysfsNvmeSubsystemPath = "/nonexistent/sys/devices/virtual/nvme-subsystem"
 	return func() {
 		sysfsBlockPath = origBlock
-		sysfsNvmeSubsystemPath = origSubsys
 	}
 }
 

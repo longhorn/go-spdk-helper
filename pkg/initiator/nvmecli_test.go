@@ -153,73 +153,9 @@ func TestListRecognizedNvmeDevicesFromSysfs(t *testing.T) {
 		}
 	})
 
-	t.Run("sysfs subsystem directory layout", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		// Mock /sys/devices/virtual/nvme-subsystem layout
-		subsys0 := filepath.Join(tmpDir, "nvme-subsys0")
-		if err := os.MkdirAll(filepath.Join(subsys0, "nvme0"), 0755); err != nil { // controller (should be ignored)
-			t.Fatal(err)
-		}
-		if err := os.MkdirAll(filepath.Join(subsys0, "nvme0n1"), 0755); err != nil { // namespace
-			t.Fatal(err)
-		}
-
-		if err := os.WriteFile(filepath.Join(subsys0, "nvme0n1", "size"), []byte("20971520\n"), 0644); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(filepath.Join(subsys0, "nvme0n1", "nsid"), []byte("5\n"), 0644); err != nil {
-			t.Fatal(err)
-		}
-
-		subsys1 := filepath.Join(tmpDir, "nvme-subsys1")
-		if err := os.MkdirAll(filepath.Join(subsys1, "nvme1"), 0755); err != nil { // controller (should be ignored)
-			t.Fatal(err)
-		}
-		if err := os.MkdirAll(filepath.Join(subsys1, "nvme1n1"), 0755); err != nil { // namespace
-			t.Fatal(err)
-		}
-
-		devices, err := listRecognizedNvmeDevicesFromSysfs(tmpDir)
-		if err != nil {
-			t.Fatalf("expected no error, got: %v", err)
-		}
-		if len(devices) != 2 {
-			t.Fatalf("expected 2 devices, got: %d", len(devices))
-		}
-
-		devMap := make(map[string]CliDevice)
-		for _, d := range devices {
-			devMap[d.DevicePath] = d
-		}
-
-		if d0, ok := devMap["/dev/nvme0n1"]; !ok || d0.NameSpace != 5 || d0.PhysicalSize != 20971520*512 {
-			t.Fatalf("expected /dev/nvme0n1 with NSID 5 and size %d, got: %+v", int64(20971520*512), d0)
-		}
-		if d1, ok := devMap["/dev/nvme1n1"]; !ok || d1.NameSpace != 1 {
-			t.Fatalf("expected /dev/nvme1n1 with NSID 1, got: %+v", devMap)
-		}
-		if _, ok := devMap["/dev/nvme0"]; ok {
-			t.Fatalf("controller devices should not be included, got: %+v", devices)
-		}
-		if _, ok := devMap["/dev/nvme1"]; ok {
-			t.Fatalf("controller devices should not be included, got: %+v", devices)
-		}
-	})
-
-	t.Run("subsystem directory with unreadable entry propagates error", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		subsys0 := filepath.Join(tmpDir, "nvme-subsys0")
-		if err := os.MkdirAll(subsys0, 0755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.Chmod(subsys0, 0000); err != nil {
-			t.Fatal(err)
-		}
-		defer os.Chmod(subsys0, 0755)
-
-		_, err := listRecognizedNvmeDevicesFromSysfs(tmpDir)
-		if err == nil {
-			t.Fatalf("expected error when reading unreadable subsystem directory, got nil")
+	t.Run("nonexistent sysfs path propagates error", func(t *testing.T) {
+		if _, err := listRecognizedNvmeDevicesFromSysfs(filepath.Join(t.TempDir(), "nonexistent")); err == nil {
+			t.Fatalf("expected error for nonexistent sysfs path, got nil")
 		}
 	})
 

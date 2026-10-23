@@ -26,8 +26,7 @@ const (
 )
 
 var (
-	sysfsBlockPath         = "/sys/block"
-	sysfsNvmeSubsystemPath = "/sys/devices/virtual/nvme-subsystem"
+	sysfsBlockPath = "/sys/block"
 )
 
 const (
@@ -229,18 +228,11 @@ var nvmeNamespaceRegex = regexp.MustCompile(`^nvme[0-9]+n([0-9]+)$`)
 func listRecognizedNvmeDevices(executor *commonns.Executor) ([]CliDevice, error) {
 	// 1. Fast Path: Directly query sysfs (/sys/block) to avoid spawning external processes and issuing blocking ioctls.
 	// If /sys/block is successfully read, its result is authoritative (even if empty).
-	devices, err := listRecognizedNvmeDevicesFromSysfs(sysfsBlockPath)
-	if err == nil {
+	if devices, err := listRecognizedNvmeDevicesFromSysfs(sysfsBlockPath); err == nil {
 		return devices, nil
 	}
 
-	// If /sys/block is inaccessible (e.g. in restricted containers), try the subsystem path.
-	devices, err = listRecognizedNvmeDevicesFromSysfs(sysfsNvmeSubsystemPath)
-	if err == nil {
-		return devices, nil
-	}
-
-	logrus.WithError(err).Debug("Failed to list NVMe devices from sysfs, falling back to nvme cli")
+	logrus.WithField("sysfs_path", sysfsBlockPath).Debug("Failed to list NVMe devices from sysfs, falling back to nvme cli")
 
 	// 2. Fallback Path: Query nvme cli if sysfs discovery is unavailable.
 	opts := []string{
@@ -324,8 +316,11 @@ func parseSysfsNamespaceMetadata(blockDevDir, nsName string) CliDevice {
 	return dev
 }
 
-// listRecognizedNvmeDevicesFromSysfs scans sysfs (/sys/block or /sys/devices/virtual/nvme-subsystem)
-// for active NVMe namespace block devices and populates metadata from the corresponding sysfs paths.
+// listRecognizedNvmeDevicesFromSysfs scans a sysfs directory (e.g. /sys/block)
+// for NVMe namespace block devices and populates metadata from the corresponding sysfs paths.
+// /sys/block holds every registered gendisk, covering NVMe namespaces under both native
+// multipath (nvme_core.multipath=Y, gendisks under /sys/devices/virtual/nvme-subsystem)
+// and non-multipath (gendisks under the controller directory) kernel configurations.
 func listRecognizedNvmeDevicesFromSysfs(sysfsPath string) ([]CliDevice, error) {
 	entries, err := os.ReadDir(sysfsPath)
 	if err != nil {
@@ -333,46 +328,12 @@ func listRecognizedNvmeDevicesFromSysfs(sysfsPath string) ([]CliDevice, error) {
 	}
 
 	var devices []CliDevice
-	seen := make(map[string]bool)
-
-	// Check direct entries (e.g. /sys/block/nvme*n*)
 	for _, entry := range entries {
+		// Namespace gendisks are named nvme<N>n<M>; controller char devices (nvme<N>)
+		// and partitions (nvme<N>n<M>p<K>) do not match.
 		if nvmeNamespaceRegex.MatchString(entry.Name()) {
-			devNode := filepath.Join("/dev", entry.Name())
-			if !seen[devNode] {
-				seen[devNode] = true
-				blockDevDir := filepath.Join(sysfsPath, entry.Name())
-				devices = append(devices, parseSysfsNamespaceMetadata(blockDevDir, entry.Name()))
-			}
-		}
-	}
-
-	// If no direct namespace entries found, check subsystem subdirectories (e.g. /sys/devices/virtual/nvme-subsystem/nvme-subsys*/nvme*n*)
-	if len(devices) == 0 {
-		var readErr error
-		for _, entry := range entries {
-			if entry.IsDir() && strings.HasPrefix(entry.Name(), "nvme-subsys") {
-				subsysDir := filepath.Join(sysfsPath, entry.Name())
-				nsEntries, err := os.ReadDir(subsysDir)
-				if err != nil {
-					readErr = err
-					continue
-				}
-
-				for _, nsEntry := range nsEntries {
-					if nvmeNamespaceRegex.MatchString(nsEntry.Name()) {
-						devNode := filepath.Join("/dev", nsEntry.Name())
-						if !seen[devNode] {
-							seen[devNode] = true
-							blockDevDir := filepath.Join(subsysDir, nsEntry.Name())
-							devices = append(devices, parseSysfsNamespaceMetadata(blockDevDir, nsEntry.Name()))
-						}
-					}
-				}
-			}
-		}
-		if readErr != nil {
-			return nil, errors.Wrapf(readErr, "failed to read subsystem entries under %s", sysfsPath)
+			blockDevDir := filepath.Join(sysfsPath, entry.Name())
+			devices = append(devices, parseSysfsNamespaceMetadata(blockDevDir, entry.Name()))
 		}
 	}
 
