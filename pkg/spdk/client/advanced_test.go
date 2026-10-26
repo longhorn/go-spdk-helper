@@ -30,3 +30,27 @@ func TestDetectAddressFamily(t *testing.T) {
 		})
 	}
 }
+
+func TestSharedTransportIobufCacheSize(t *testing.T) {
+	testCases := []struct {
+		name           string
+		small, large   uint64
+		pollGroupCount int
+		wantSmall      uint32
+		wantLarge      uint32
+	}{
+		{"defaults with 8 poll groups", 8192, 1024, 8, 256, 32},
+		{"defaults with 2 poll groups", 8192, 1024, 2, 1024, 128},
+		{"larger pools", 32768, 4096, 8, 1024, 128},
+		{"unknown poll group count", 8192, 1024, 0, 2048, 256},
+		{"tiny pools never go to zero", 16, 2, 8, 1, 1},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			small, large := sharedTransportIobufCacheSize(&spdktypes.IobufOptions{SmallPoolCount: tc.small, LargePoolCount: tc.large}, tc.pollGroupCount)
+			if small != tc.wantSmall || large != tc.wantLarge {
+				t.Errorf("sharedTransportIobufCacheSize(%v, %v, %v) = %v/%v, want %v/%v", tc.small, tc.large, tc.pollGroupCount, small, large, tc.wantSmall, tc.wantLarge)
+			}
+		})
+	}
+}

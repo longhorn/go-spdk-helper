@@ -1182,6 +1182,65 @@ func (c *Client) NvmfCreateTransport(trtype spdktypes.NvmeTransportType) (create
 	return created, json.Unmarshal(cmdOutput, &created)
 }
 
+// NvmfCreateTransportWithIobufCacheSize initializes an NVMe-oF transport whose poll
+// groups each reserve the given number of small and large iobuf buffers.
+//
+//	"trtype": Required. Transport type, "tcp" or "rdma". "tcp" by default.
+//
+//	"smallCacheSize": Required. Per poll group small iobuf cache size.
+//
+//	"largeCacheSize": Required. Per poll group large iobuf cache size.
+func (c *Client) NvmfCreateTransportWithIobufCacheSize(trtype spdktypes.NvmeTransportType, smallCacheSize, largeCacheSize uint32) (created bool, err error) {
+	if trtype == "" {
+		trtype = spdktypes.NvmeTransportTypeTCP
+	}
+	req := spdktypes.NvmfCreateTransportRequest{
+		Trtype:              trtype,
+		IobufSmallCacheSize: smallCacheSize,
+		IobufLargeCacheSize: largeCacheSize,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("nvmf_create_transport", req)
+	if err != nil {
+		return false, err
+	}
+
+	return created, json.Unmarshal(cmdOutput, &created)
+}
+
+// IobufGetOptions returns the iobuf pool options the target is running with.
+func (c *Client) IobufGetOptions() (*spdktypes.IobufOptions, error) {
+	cmdOutput, err := c.jsonCli.SendCommand("framework_get_config", spdktypes.FrameworkGetConfigRequest{Name: "iobuf"})
+	if err != nil {
+		return nil, err
+	}
+
+	var entries []spdktypes.IobufConfigEntry
+	if err := json.Unmarshal(cmdOutput, &entries); err != nil {
+		return nil, err
+	}
+	for _, e := range entries {
+		if e.Method == "iobuf_set_options" {
+			return &e.Params, nil
+		}
+	}
+	return nil, fmt.Errorf("cannot find iobuf_set_options in the iobuf framework config")
+}
+
+// NvmfGetPollGroupCount returns the number of poll groups of the NVMe-oF target.
+func (c *Client) NvmfGetPollGroupCount() (int, error) {
+	cmdOutput, err := c.jsonCli.SendCommand("nvmf_get_stats", nil)
+	if err != nil {
+		return 0, err
+	}
+
+	var stats spdktypes.NvmfStats
+	if err := json.Unmarshal(cmdOutput, &stats); err != nil {
+		return 0, err
+	}
+	return len(stats.PollGroups), nil
+}
+
 // NvmfGetTransports lists all transports if no parameters specified.
 //
 //	"trtype": Optional. Transport type, "tcp" or "rdma"
