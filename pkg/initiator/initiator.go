@@ -1051,15 +1051,9 @@ func (i *Initiator) stopWithoutLock(spdkClient *client.Client, dmDeviceAndEndpoi
 
 	// stopping NvmeTcp initiator
 	if i.NVMeTCPInfo != nil {
-		err = DisconnectUsableTargetPaths(i.NVMeTCPInfo.SubsystemNQN, i.executor)
-		if err != nil {
-			return dmDeviceIsBusy, errors.Wrapf(err, "failed to disconnect target for NVMe/TCP initiator %s", i.Name)
+		if err := i.disconnectNVMeTCPTarget(); err != nil {
+			return dmDeviceIsBusy, err
 		}
-
-		i.NVMeTCPInfo.ControllerName = ""
-		i.NVMeTCPInfo.NamespaceName = ""
-		i.NVMeTCPInfo.TransportAddress = ""
-		i.NVMeTCPInfo.TransportServiceID = ""
 		return dmDeviceIsBusy, nil
 	}
 
@@ -1077,6 +1071,27 @@ func (i *Initiator) stopWithoutLock(spdkClient *client.Client, dmDeviceAndEndpoi
 		return dmDeviceIsBusy, err
 	}
 	return dmDeviceIsBusy, nil
+}
+
+// disconnectNVMeTCPTarget disconnects the NVMe/TCP target. On success it
+// clears the recorded connection state.
+func (i *Initiator) disconnectNVMeTCPTarget() error {
+	if err := DisconnectUsableTargetPaths(i.NVMeTCPInfo.SubsystemNQN, i.executor); err != nil {
+		return errors.Wrapf(err, "failed to disconnect target for NVMe/TCP initiator %s", i.Name)
+	}
+
+	i.clearNVMeTCPConnectionState()
+	return nil
+}
+
+// clearNVMeTCPConnectionState clears the recorded connection state:
+// controller name, namespace name, transport address, and transport
+// service ID.
+func (i *Initiator) clearNVMeTCPConnectionState() {
+	i.NVMeTCPInfo.ControllerName = ""
+	i.NVMeTCPInfo.NamespaceName = ""
+	i.NVMeTCPInfo.TransportAddress = ""
+	i.NVMeTCPInfo.TransportServiceID = ""
 }
 
 // GetControllerName returns the controller name
