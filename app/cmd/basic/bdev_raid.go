@@ -7,8 +7,9 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
-	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
+
+	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 )
 
 func BdevRaidCmd() *cli.Command {
@@ -21,6 +22,8 @@ func BdevRaidCmd() *cli.Command {
 			BdevRaidGetCmd(),
 			BdevRaidRemoveBaseBdevCmd(),
 			BdevRaidGrowBaseBdevCmd(),
+			BdevRaidResizeCmd(),
+			BdevRaidSetOptionsCmd(),
 		},
 	}
 }
@@ -214,4 +217,94 @@ func bdevRaidGrowBaseBdev(c *cli.Command) error {
 	}
 
 	return util.PrintObject(growed)
+}
+
+func BdevRaidResizeCmd() *cli.Command {
+	return &cli.Command{
+		Name:  "resize",
+		Usage: "recalculate the size of a raid bdev from its current base bdevs: resize <RAID BDEV NAME>",
+		Action: func(ctx context.Context, c *cli.Command) error {
+			if err := bdevRaidResize(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run resize bdev raid command")
+				return err
+			}
+			return nil
+		},
+	}
+}
+
+func bdevRaidResize(c *cli.Command) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	resp, err := spdkCli.BdevRaidResize(c.Args().First())
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(resp)
+}
+
+func BdevRaidSetOptionsCmd() *cli.Command {
+	return &cli.Command{
+		Name:  "set-options",
+		Usage: "set the global options of the raid bdev module, unset options keep their current values: set-options [--process-window-size-kb <KB>] [--process-max-bandwidth-mb-sec <MB>] [--resize-on-base-bdev-resize=<true|false>]",
+		Flags: []cli.Flag{
+			&cli.Uint32Flag{
+				Name:  "process-window-size-kb",
+				Usage: "Background process (e.g. rebuild) window size in KiB, must not be 0",
+			},
+			&cli.Uint32Flag{
+				Name:  "process-max-bandwidth-mb-sec",
+				Usage: "Background process (e.g. rebuild) maximum bandwidth in MiB/Sec, 0 disables the bandwidth limit",
+			},
+			&cli.BoolFlag{
+				Name:  "resize-on-base-bdev-resize",
+				Usage: "Resize raid bdevs automatically when a base bdev is resized. If false, raid bdevs are only resized by the resize command",
+			},
+		},
+		Action: func(ctx context.Context, c *cli.Command) error {
+			if err := bdevRaidSetOptions(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run set bdev raid options command")
+				return err
+			}
+			return nil
+		},
+	}
+}
+
+func bdevRaidSetOptions(c *cli.Command) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	set, err := spdkCli.BdevRaidSetOptions(bdevRaidSetOptionsRequest(c))
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(set)
+}
+
+// bdevRaidSetOptionsRequest builds the request from the flags that are explicitly set, so an
+// explicit 0 or false is sent and an unset flag keeps the current SPDK value. Uint32Flag
+// rejects values that do not fit in uint32 while parsing the command line.
+func bdevRaidSetOptionsRequest(c *cli.Command) spdktypes.BdevRaidSetOptionsRequest {
+	req := spdktypes.BdevRaidSetOptionsRequest{}
+	if c.IsSet("process-window-size-kb") {
+		windowSizeKb := c.Uint32("process-window-size-kb")
+		req.ProcessWindowSizeKb = &windowSizeKb
+	}
+	if c.IsSet("process-max-bandwidth-mb-sec") {
+		maxBandwidthMbSec := c.Uint32("process-max-bandwidth-mb-sec")
+		req.ProcessMaxBandwidthMbSec = &maxBandwidthMbSec
+	}
+	if c.IsSet("resize-on-base-bdev-resize") {
+		resize := c.Bool("resize-on-base-bdev-resize")
+		req.ResizeOnBaseBdevResize = &resize
+	}
+	return req
 }
