@@ -9,6 +9,7 @@ import (
 	"github.com/cockroachdb/errors"
 
 	"github.com/longhorn/go-spdk-helper/pkg/jsonrpc"
+
 	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 )
 
@@ -968,6 +969,47 @@ func (c *Client) BdevRaidGrowBaseBdev(raidName, baseBdevName string) (growed boo
 	}
 
 	return growed, json.Unmarshal(cmdOutput, &growed)
+}
+
+// BdevRaidResize recalculates the size of a raid bdev from its current base bdevs.
+// The raid bdev size only changes on this call when the raid option
+// resize_on_base_bdev_resize is disabled. SPDK answers after the superblock is updated.
+// When nothing changes, the call succeeds with Resized false and the current block count.
+// It fails with -EBUSY while a base bdev is being removed or added, a background process
+// runs, or a base bdev is faulty; the caller can retry later.
+//
+//	"name": Required. The RAID bdev name.
+func (c *Client) BdevRaidResize(name string) (resp spdktypes.BdevRaidResizeResponse, err error) {
+	req := spdktypes.BdevRaidResizeRequest{
+		Name: name,
+	}
+
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_raid_resize", req)
+	if err != nil {
+		return resp, err
+	}
+
+	return resp, json.Unmarshal(cmdOutput, &resp)
+}
+
+// BdevRaidSetOptions sets the global options of the raid bdev module.
+// Nil fields of the request are not sent and keep their current values.
+//
+//	"ProcessWindowSizeKb": Optional. Background process (e.g. rebuild) window size in KiB.
+//	                       SPDK rejects 0.
+//
+//	"ProcessMaxBandwidthMbSec": Optional. Background process (e.g. rebuild) maximum bandwidth in MiB/Sec.
+//	                            0 removes the limit.
+//
+//	"ResizeOnBaseBdevResize": Optional. Resize raid bdevs automatically when a base bdev is resized.
+//	                          If disabled, raid bdevs are only resized by BdevRaidResize.
+func (c *Client) BdevRaidSetOptions(req spdktypes.BdevRaidSetOptionsRequest) (result bool, err error) {
+	cmdOutput, err := c.jsonCli.SendCommand("bdev_raid_set_options", req)
+	if err != nil {
+		return false, err
+	}
+
+	return result, json.Unmarshal(cmdOutput, &result)
 }
 
 // BdevNvmeAttachController constructs NVMe bdev.
