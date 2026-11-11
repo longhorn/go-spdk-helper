@@ -130,6 +130,21 @@ type BdevEcReplaceBaseBdevResponse struct {
 	NeedsRebuild bool            `json:"needs_rebuild"`
 }
 
+// BdevEcFailBaseBdevRequest is the request for bdev_ec_fail_base_bdev.
+type BdevEcFailBaseBdevRequest struct {
+	Name string `json:"ec_name"`
+	Slot uint32 `json:"slot"`
+}
+
+// BdevEcFailBaseBdevResponse is the response for bdev_ec_fail_base_bdev.
+// State is always "failed" on success.
+type BdevEcFailBaseBdevResponse struct {
+	EcName         string          `json:"ec_name"`
+	Slot           uint32          `json:"slot"`
+	State          BdevEcSlotState `json:"state"`
+	CleanupPending bool            `json:"cleanup_pending"`
+}
+
 // BdevEcStartRebuildRequest is the request for bdev_ec_start_rebuild.
 type BdevEcStartRebuildRequest struct {
 	Name string `json:"ec_name"`
