@@ -7,8 +7,9 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/longhorn/go-spdk-helper/pkg/spdk/client"
-	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 	"github.com/longhorn/go-spdk-helper/pkg/util"
+
+	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 )
 
 func BdevRaidCmd() *cli.Command {
@@ -21,6 +22,8 @@ func BdevRaidCmd() *cli.Command {
 			BdevRaidGetCmd(),
 			BdevRaidRemoveBaseBdevCmd(),
 			BdevRaidGrowBaseBdevCmd(),
+			BdevRaidResizeCmd(),
+			BdevRaidSetRaidOptionsCmd(),
 		},
 	}
 }
@@ -214,4 +217,82 @@ func bdevRaidGrowBaseBdev(c *cli.Command) error {
 	}
 
 	return util.PrintObject(growed)
+}
+
+func BdevRaidResizeCmd() *cli.Command {
+	return &cli.Command{
+		Name:  "resize",
+		Usage: "recalculate the size of a raid bdev from its current base bdevs: resize [--expected-size-in-mib <MIB>] <RAID BDEV NAME>",
+		Flags: []cli.Flag{
+			&cli.Uint64Flag{
+				Name:  "expected-size-in-mib",
+				Usage: "Optional. The minimum size in MiB that the raid bdev must reach (raid1 only); otherwise the resize is refused and the size is unchanged",
+			},
+		},
+		Action: func(ctx context.Context, c *cli.Command) error {
+			if err := bdevRaidResize(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run resize bdev raid command")
+				return err
+			}
+			return nil
+		},
+	}
+}
+
+func BdevRaidSetRaidOptionsCmd() *cli.Command {
+	return &cli.Command{
+		Name:  "set-raid-options",
+		Usage: "set the options of one raid bdev: set-raid-options --name <RAID BDEV NAME> [--explicit-resize=true|false]",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     "name",
+				Required: true,
+			},
+			&cli.BoolFlag{
+				Name:  "explicit-resize",
+				Usage: "Optional. If true, the raid bdev does not resize on a base bdev resize event and grows only through bdev-raid resize; unchanged if not given",
+			},
+		},
+		Action: func(ctx context.Context, c *cli.Command) error {
+			if err := bdevRaidSetRaidOptions(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run set raid options command")
+				return err
+			}
+			return nil
+		},
+	}
+}
+
+func bdevRaidSetRaidOptions(c *cli.Command) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	req := spdktypes.BdevRaidSetRaidOptionsRequest{Name: c.String("name")}
+	if c.IsSet("explicit-resize") {
+		explicitResize := c.Bool("explicit-resize")
+		req.ExplicitResize = &explicitResize
+	}
+
+	result, err := spdkCli.BdevRaidSetRaidOptions(req)
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(result)
+}
+
+func bdevRaidResize(c *cli.Command) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	resp, err := spdkCli.BdevRaidResize(c.Args().First(), c.Uint64("expected-size-in-mib"))
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(resp)
 }
