@@ -42,6 +42,15 @@ func (c *Client) BdevGetBdevs(name string, timeout uint64) (bdevInfoList []spdkt
 	return bdevInfoList, json.Unmarshal(cmdOutput, &bdevInfoList)
 }
 
+// BdevWaitForExamine waits until all the bdev modules finish examining the
+// registered bdevs, e.g., until the lvstore on a newly attached bdev is loaded.
+func (c *Client) BdevWaitForExamine() (err error) {
+	// Loading an lvstore during the examination may need a long blob recovery
+	// if the spdk_tgt is not shutdown gracefully.
+	_, err = c.jsonCli.SendCommandWithLongTimeout("bdev_wait_for_examine", nil)
+	return err
+}
+
 // BdevAioCreate constructs Linux AIO bdev.
 func (c *Client) BdevAioCreate(filePath, name string, blockSize uint64) (bdevName string, err error) {
 	req := spdktypes.BdevAioCreateRequest{

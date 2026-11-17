@@ -543,6 +543,25 @@ func TestBdevNvmeGetIoPaths(t *testing.T) {
 	}
 }
 
+func TestBdevWaitForExamineSendsNoParams(t *testing.T) {
+	runJSONRPCRequestTest(t,
+		func(cli *Client) error {
+			return cli.BdevWaitForExamine()
+		},
+		func(t *testing.T, method string, params map[string]interface{}) {
+			t.Helper()
+			if method != "bdev_wait_for_examine" {
+				t.Fatalf("unexpected method %s", method)
+			}
+			// SPDK rejects this method if any params are given
+			if params != nil {
+				t.Fatalf("expected no params, got %#v", params)
+			}
+		},
+		true,
+	)
+}
+
 func TestBdevLvolGrowLvstoreRPCRequests(t *testing.T) {
 	cases := []struct {
 		name       string
