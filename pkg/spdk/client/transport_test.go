@@ -108,10 +108,10 @@ func TestStartExposeBdevCreatesOneTransportWhenCalledConcurrently(t *testing.T) 
 			defer wg.Done()
 			<-start
 			if i%2 == 0 {
-				errs <- cli.StartExposeBdev("nqn.test:"+string(rune('a'+i)), "bdev", "nguid", "10.0.0.1", "20001")
+				errs <- cli.StartExposeBdev("nqn.test:"+string(rune('a'+i)), "bdev", "nguid", "10.0.0.1", "20001", spdktypes.NvmeTransportTypeTCP)
 				return
 			}
-			errs <- cli.StartExposeBdevWithANAState("nqn.test:"+string(rune('a'+i)), "bdev", "nguid", "", "10.0.0.1", "20001",
+			errs <- cli.StartExposeBdevWithANAState("nqn.test:"+string(rune('a'+i)), "bdev", "nguid", "", "10.0.0.1", "20001", spdktypes.NvmeTransportTypeTCP,
 				spdktypes.NvmfSubsystemListenerAnaStateOptimized, 0, 0)
 		}(i)
 	}
