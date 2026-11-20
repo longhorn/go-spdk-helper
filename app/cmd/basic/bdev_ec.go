@@ -216,7 +216,7 @@ func BdevEcReplaceCmd() *cli.Command {
 				Usage:    "Name of the EC bdev",
 				Required: true,
 			},
-			&cli.UintFlag{
+			&cli.Uint32Flag{
 				Name:     "slot",
 				Usage:    "Slot index of the failed base bdev to replace",
 				Required: true,
@@ -243,7 +243,7 @@ func bdevEcReplace(c *cli.Command) error {
 		return err
 	}
 
-	resp, err := spdkCli.BdevEcReplaceBaseBdev(c.String("name"), uint32(c.Uint("slot")), c.String("new-bdev"))
+	resp, err := spdkCli.BdevEcReplaceBaseBdev(c.String("name"), c.Uint32("slot"), c.String("new-bdev"))
 	if err != nil {
 		return err
 	}
