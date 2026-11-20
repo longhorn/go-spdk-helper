@@ -19,6 +19,7 @@ func BdevEcCmd() *cli.Command {
 			BdevEcCreateCmd(),
 			BdevEcDeleteCmd(),
 			BdevEcGetCmd(),
+			BdevEcFailCmd(),
 			BdevEcReplaceCmd(),
 			BdevEcRebuildStartCmd(),
 			BdevEcRebuildStopCmd(),
@@ -163,6 +164,47 @@ func bdevEcGet(c *cli.Command) error {
 	return util.PrintObject(bdevEcInfoList)
 }
 
+func BdevEcFailCmd() *cli.Command {
+	return &cli.Command{
+		Name:  "fail",
+		Usage: "mark a base bdev slot as failed: fail --name <NAME> --slot <SLOT>",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     "name",
+				Aliases:  []string{"n"},
+				Usage:    "Name of the EC bdev",
+				Required: true,
+			},
+			&cli.Uint32Flag{
+				Name:     "slot",
+				Usage:    "Slot index of the base bdev to fail",
+				Required: true,
+			},
+		},
+		Action: func(ctx context.Context, c *cli.Command) error {
+			if err := bdevEcFail(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run fail bdev ec command")
+				return err
+			}
+			return nil
+		},
+	}
+}
+
+func bdevEcFail(c *cli.Command) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	resp, err := spdkCli.BdevEcFailBaseBdev(c.String("name"), c.Uint32("slot"))
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(resp)
+}
+
 func BdevEcReplaceCmd() *cli.Command {
 	return &cli.Command{
 		Name:  "replace",
@@ -174,7 +216,7 @@ func BdevEcReplaceCmd() *cli.Command {
 				Usage:    "Name of the EC bdev",
 				Required: true,
 			},
-			&cli.UintFlag{
+			&cli.Uint32Flag{
 				Name:     "slot",
 				Usage:    "Slot index of the failed base bdev to replace",
 				Required: true,
@@ -201,7 +243,7 @@ func bdevEcReplace(c *cli.Command) error {
 		return err
 	}
 
-	resp, err := spdkCli.BdevEcReplaceBaseBdev(c.String("name"), uint32(c.Uint("slot")), c.String("new-bdev"))
+	resp, err := spdkCli.BdevEcReplaceBaseBdev(c.String("name"), c.Uint32("slot"), c.String("new-bdev"))
 	if err != nil {
 		return err
 	}

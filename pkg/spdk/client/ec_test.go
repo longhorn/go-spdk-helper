@@ -3,6 +3,8 @@ package client
 import (
 	"reflect"
 	"testing"
+
+	spdktypes "github.com/longhorn/go-spdk-helper/pkg/spdk/types"
 )
 
 func TestBdevEcRPCRequests(t *testing.T) {
@@ -71,6 +73,20 @@ func TestBdevEcRPCRequests(t *testing.T) {
 			},
 			expectKeys: map[string]any{"name": "ec0"},
 			result:     []map[string]any{},
+		},
+		{
+			name:   "BdevEcFailBaseBdev",
+			method: "bdev_ec_fail_base_bdev",
+			call: func(cli *Client) error {
+				_, err := cli.BdevEcFailBaseBdev("ec0", 3)
+				return err
+			},
+			expectKeys: map[string]any{
+				"ec_name": "ec0",
+				"slot":    float64(3),
+			},
+			absentKeys: []string{"name", "new_bdev_name"},
+			result:     map[string]any{},
 		},
 		{
 			name:   "BdevEcReplaceBaseBdev",
@@ -208,4 +224,33 @@ func TestBdevEcRPCRequests(t *testing.T) {
 			)
 		})
 	}
+}
+
+func TestBdevEcFailBaseBdevResponse(t *testing.T) {
+	want := spdktypes.BdevEcFailBaseBdevResponse{
+		EcName:         "ec0",
+		Slot:           3,
+		State:          spdktypes.BdevEcSlotStateFailed,
+		CleanupPending: true,
+	}
+
+	runJSONRPCRequestTest(t,
+		func(cli *Client) error {
+			got, err := cli.BdevEcFailBaseBdev("ec0", 3)
+			if err != nil {
+				return err
+			}
+			if got != want {
+				t.Errorf("got %+v, want %+v", got, want)
+			}
+			return nil
+		},
+		func(t *testing.T, method string, params map[string]any) {},
+		map[string]any{
+			"ec_name":         "ec0",
+			"slot":            3,
+			"state":           "failed",
+			"cleanup_pending": true,
+		},
+	)
 }
