@@ -33,6 +33,32 @@ func (groupID *NvmfANAGroupID) UnmarshalJSON(data []byte) error {
 
 type NvmfCreateTransportRequest struct {
 	Trtype NvmeTransportType `json:"trtype"`
+
+	// IobufSmallCacheSize and IobufLargeCacheSize are the per poll group iobuf
+	// cache sizes. Zero (omitted) lets SPDK size them dynamically.
+	IobufSmallCacheSize uint32 `json:"iobuf_small_cache_size,omitempty"`
+	IobufLargeCacheSize uint32 `json:"iobuf_large_cache_size,omitempty"`
+}
+
+type FrameworkGetConfigRequest struct {
+	Name string `json:"name"`
+}
+
+type IobufOptions struct {
+	SmallPoolCount uint64 `json:"small_pool_count"`
+	LargePoolCount uint64 `json:"large_pool_count"`
+	SmallBufsize   uint64 `json:"small_bufsize"`
+	LargeBufsize   uint64 `json:"large_bufsize"`
+}
+
+type IobufConfigEntry struct {
+	Method string       `json:"method"`
+	Params IobufOptions `json:"params"`
+}
+
+type NvmfStats struct {
+	TickRate   uint64            `json:"tick_rate"`
+	PollGroups []json.RawMessage `json:"poll_groups"`
 }
 
 type NvmfGetTransportRequest struct {
