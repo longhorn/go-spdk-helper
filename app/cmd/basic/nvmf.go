@@ -28,6 +28,7 @@ func NvmfCmd() *cli.Command {
 			NvmfSubsystemAddListenerCmd(),
 			NvmfSubsystemRemoveListenerCmd(),
 			NvmfSubsystemGetListenersCmd(),
+			NvmfSubsystemGetControllersCmd(),
 		},
 	}
 }
@@ -218,6 +219,11 @@ func NvmfSubsystemAddNsCmd() *cli.Command {
 				Usage:    "Namespace globally unique identifier",
 				Required: false,
 			},
+			&cli.StringFlag{
+				Name:     "ptpl-file",
+				Usage:    "File path to persist the NVMe reservation state (Persist Through Power Loss)",
+				Required: false,
+			},
 		},
 		Usage: "add a bdev as a namespace for subsystem of nvmf: ns-add <SUBSYSTEM NQN>",
 		Action: func(ctx context.Context, c *cli.Command) error {
@@ -236,7 +242,7 @@ func nvmfSubsystemAddNs(c *cli.Command) error {
 		return err
 	}
 
-	added, err := spdkCli.NvmfSubsystemAddNs(c.String("nqn"), c.String("bdev-name"), c.String("nguid"))
+	added, err := spdkCli.NvmfSubsystemAddNsWithPtplFile(c.String("nqn"), c.String("bdev-name"), c.String("nguid"), "", c.String("ptpl-file"))
 	if err != nil {
 		return err
 	}
@@ -470,4 +476,32 @@ func nvmfSubsystemGetListeners(c *cli.Command) error {
 	}
 
 	return util.PrintObject(listenerList)
+}
+
+func NvmfSubsystemGetControllersCmd() *cli.Command {
+	return &cli.Command{
+		Name:  "controller-get",
+		Usage: "list all controllers for a subsystem of nvmf: controller-get <SUBSYSTEM NQN>",
+		Action: func(ctx context.Context, c *cli.Command) error {
+			if err := nvmfSubsystemGetControllers(c); err != nil {
+				logrus.WithError(err).Fatalf("Failed to run get nvmf subsystem controllers command")
+				return err
+			}
+			return nil
+		},
+	}
+}
+
+func nvmfSubsystemGetControllers(c *cli.Command) error {
+	spdkCli, err := client.NewClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	controllerList, err := spdkCli.NvmfSubsystemGetControllers(c.Args().First(), "")
+	if err != nil {
+		return err
+	}
+
+	return util.PrintObject(controllerList)
 }

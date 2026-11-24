@@ -349,6 +349,166 @@ func TestNvmfSubsystemAddNsUsesDefaultANAGroup(t *testing.T) {
 	)
 }
 
+func TestNvmfSubsystemAddNsWithPtplFile(t *testing.T) {
+	tests := []struct {
+		name     string
+		ptplFile string
+	}{
+		{name: "ptpl file set", ptplFile: "/metadata/ptpl/vol.json"},
+		{name: "ptpl file omitted when empty", ptplFile: ""},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			runJSONRPCRequestTest(t,
+				func(cli *Client) error {
+					_, err := cli.NvmfSubsystemAddNsWithPtplFile("nqn.test", "bdev0", "nguid0", "", test.ptplFile)
+					return err
+				},
+				func(t *testing.T, method string, params map[string]interface{}) {
+					t.Helper()
+					// Use Errorf, as Fatalf in the server goroutine would
+					// leave the client waiting for the response.
+					if method != "nvmf_subsystem_add_ns" {
+						t.Errorf("unexpected method %s", method)
+						return
+					}
+
+					namespace, ok := params["namespace"].(map[string]interface{})
+					if !ok {
+						t.Errorf("unexpected namespace payload %T", params["namespace"])
+						return
+					}
+					got, exists := namespace["ptpl_file"]
+					if test.ptplFile == "" {
+						if exists {
+							t.Errorf("expected add_ns to omit ptpl_file, got %#v", got)
+						}
+						return
+					}
+					if got != test.ptplFile {
+						t.Errorf("got ptpl_file %#v, want %q", got, test.ptplFile)
+					}
+				},
+				float64(1),
+			)
+		})
+	}
+}
+
+func TestNvmfSubsystemGetControllers(t *testing.T) {
+	controller := spdktypes.NvmfSubsystemController{
+		Cntlid:      0x5c71,
+		Hostnqn:     "nqn.2014-08.org.nvmexpress:uuid:host-a",
+		Hostid:      "b1a5c054-0000-0000-0000-000000000054",
+		NumIoQpairs: 4,
+	}
+
+	tests := []struct {
+		name          string
+		tgtName       string
+		params        map[string]interface{}
+		result        interface{}
+		responseError *jsonrpc.ResponseError
+		expected      []spdktypes.NvmfSubsystemController
+		expectError   bool
+	}{
+		{
+			name:   "target name omitted",
+			params: map[string]interface{}{"nqn": "nqn.test"},
+			result: []map[string]interface{}{{
+				"cntlid":        0x5c71,
+				"hostnqn":       "nqn.2014-08.org.nvmexpress:uuid:host-a",
+				"hostid":        "b1a5c054-0000-0000-0000-000000000054",
+				"num_io_qpairs": 4,
+			}},
+			expected: []spdktypes.NvmfSubsystemController{controller},
+		},
+		{
+			name:     "target name set and no controller",
+			tgtName:  "tgt0",
+			params:   map[string]interface{}{"nqn": "nqn.test", "tgt_name": "tgt0"},
+			result:   []interface{}{},
+			expected: []spdktypes.NvmfSubsystemController{},
+		},
+		{
+			name:          "rpc error",
+			params:        map[string]interface{}{"nqn": "nqn.test"},
+			responseError: &jsonrpc.ResponseError{Code: -32602, Message: "Invalid parameters"},
+			expectError:   true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			steps := []jsonRPCScriptStep{{
+				method:        "nvmf_subsystem_get_controllers",
+				params:        test.params,
+				result:        test.result,
+				responseError: test.responseError,
+			}}
+			runJSONRPCScriptTest(t, steps, func(cli *Client) {
+				controllers, err := cli.NvmfSubsystemGetControllers("nqn.test", test.tgtName)
+				if test.expectError {
+					if err == nil {
+						t.Fatalf("expected an error, got controllers %#v", controllers)
+					}
+					return
+				}
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !reflect.DeepEqual(controllers, test.expected) {
+					t.Fatalf("got controllers %#v, want %#v", controllers, test.expected)
+				}
+			})
+		})
+	}
+}
+
+func TestNvmfSubsystemAllowAnyHost(t *testing.T) {
+	tests := []struct {
+		name          string
+		allowAnyHost  bool
+		responseError *jsonrpc.ResponseError
+	}{
+		{name: "reject hosts not in the allowed list", allowAnyHost: false},
+		{name: "allow any host", allowAnyHost: true},
+		{
+			name:          "rpc error",
+			allowAnyHost:  false,
+			responseError: &jsonrpc.ResponseError{Code: -32602, Message: "Invalid parameters"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			steps := []jsonRPCScriptStep{{
+				method: "nvmf_subsystem_allow_any_host",
+				// allow_any_host must be sent even if it is false.
+				params:        map[string]interface{}{"nqn": "nqn.test", "allow_any_host": test.allowAnyHost},
+				result:        true,
+				responseError: test.responseError,
+			}}
+			runJSONRPCScriptTest(t, steps, func(cli *Client) {
+				set, err := cli.NvmfSubsystemAllowAnyHost("nqn.test", test.allowAnyHost)
+				if test.responseError != nil {
+					if err == nil {
+						t.Fatalf("expected an error, got %v", set)
+					}
+					return
+				}
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !set {
+					t.Fatal("expected the setting to be applied")
+				}
+			})
+		})
+	}
+}
+
 func TestNvmfSubsystemListenerSetANAStateDefaultsANAGroup(t *testing.T) {
 	runJSONRPCRequestTest(t,
 		func(cli *Client) error {
