@@ -6,7 +6,7 @@ require (
 	github.com/avast/retry-go/v4 v4.7.0
 	github.com/c9s/goprocinfo v0.0.0-20210130143923-c95fcf8c64a8
 	github.com/cockroachdb/errors v1.14.0
-	github.com/longhorn/go-common-libs v0.0.0-20261028232656-6805a1f65080
+	github.com/longhorn/go-common-libs v0.0.0-20261114062950-d3ec8b4403d1
 	github.com/sirupsen/logrus v1.10.2
 	github.com/urfave/cli/v3 v3.14.0
 	golang.org/x/sys v0.50.0
